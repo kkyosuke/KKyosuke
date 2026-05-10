@@ -8,6 +8,10 @@ type = "Text"
 globs = ["**/*.md"]
 fallbacks = []
 
+[observability.logs]
+enabled = true
+invocation_logs = false
+
 # Define standard variables (secrets must be uploaded via wrangler secret put)
 # [vars]
 # You can add non-sensitive environment variables here
