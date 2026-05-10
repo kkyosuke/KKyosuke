@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { anthropic } from "@ai-sdk/anthropic";
 
 export interface ReviewContext {
 	title: string;
@@ -11,33 +11,8 @@ export interface ReviewContext {
 }
 
 export async function generateCodeReview(context: ReviewContext): Promise<string> {
-	// ローカルテスト用にモックを返す処理
-	if (process.env.USE_MOCK_LLM === "true") {
-		console.log("[LLM] Mock mode is enabled. Returning mock response...");
-		// API通信を模倣するため、わざと2秒待機
-		await new Promise((resolve) => setTimeout(resolve, 2000));
-		return `## 評価スコア
 
-**総合評価: Good**
-
-| 評価観点 | スコア (各10点満点) | コメント（任意） |
-| :--- | :--- | :--- |
-| 機能の正確性・バグのリスク | 10 / 10 | モックのため評価をスキップ |
-
-## サマリ
-
-(これは \`USE_MOCK_LLM=true\` によるモックのレビュー結果です)
-全体的に問題ありません。LGTM！
-
-## 指摘点一覧
-
-| 指摘理由 | 対応度 | 概要 |
-| :--- | :--- | :--- |
-| モック | Nits | これはモックデータです。 |`;
-	}
-
-	// ここでモデルを切り替えることが可能です（例: openai('gpt-4o')）
-	const model = google("gemini-2.5-pro");
+	const model = anthropic("claude-haiku-4-5");
 
 	const prompt = `
 ${context.instruction}

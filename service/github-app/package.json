@@ -18,6 +18,7 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.76",
 		"@ai-sdk/google": "^3.0.71",
 		"@octokit/app": "^16.1.2",
 		"@octokit/rest": "^22.0.1",
