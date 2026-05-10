@@ -1,4 +1,4 @@
-name = "github-app"
+name = "ai-kyosuke"
 main = "index.ts"
 compatibility_date = "2024-04-01"
 
@@ -7,6 +7,10 @@ compatibility_date = "2024-04-01"
 type = "Text"
 globs = ["**/*.md"]
 fallbacks = []
+
+[observability.logs]
+enabled = true
+invocation_logs = false
 
 # Define standard variables (secrets must be uploaded via wrangler secret put)
 # [vars]
