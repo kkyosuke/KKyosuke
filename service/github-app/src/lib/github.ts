@@ -1,14 +1,22 @@
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
-import { env } from "../config/env";
 
-export const app = new App({
-	appId: env.GITHUB_APP_ID,
-	privateKey: env.GITHUB_PRIVATE_KEY,
-	Octokit: Octokit,
-});
+export function getGithubApp(env: Record<string, string | undefined>) {
+	return new App({
+		appId: env.GITHUB_APP_ID || "",
+		privateKey: env.GITHUB_PRIVATE_KEY?.replace(/\\n/g, "\n") || "",
+		Octokit: Octokit,
+	});
+}
 
-export async function getPullRequest(installationId: number, owner: string, repo: string, pullNumber: number) {
+export async function getPullRequest(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+) {
+	const app = getGithubApp(env);
 	const octokit = await app.getInstallationOctokit(installationId);
 	const { data } = await octokit.rest.pulls.get({
 		owner,
@@ -18,7 +26,14 @@ export async function getPullRequest(installationId: number, owner: string, repo
 	return data;
 }
 
-export async function getPullRequestDiff(installationId: number, owner: string, repo: string, pullNumber: number) {
+export async function getPullRequestDiff(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+) {
+	const app = getGithubApp(env);
 	const octokit = await app.getInstallationOctokit(installationId);
 	const { data } = await octokit.rest.pulls.get({
 		owner,
@@ -31,7 +46,14 @@ export async function getPullRequestDiff(installationId: number, owner: string, 
 	return data as unknown as string;
 }
 
-export async function getIssueComments(installationId: number, owner: string, repo: string, issueNumber: number) {
+export async function getIssueComments(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	issueNumber: number,
+) {
+	const app = getGithubApp(env);
 	const octokit = await app.getInstallationOctokit(installationId);
 	const { data } = await octokit.rest.issues.listComments({
 		owner,
@@ -41,7 +63,15 @@ export async function getIssueComments(installationId: number, owner: string, re
 	return data;
 }
 
-export async function createPlaceholderComment(installationId: number, owner: string, repo: string, issueNumber: number, body: string) {
+export async function createPlaceholderComment(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	issueNumber: number,
+	body: string,
+) {
+	const app = getGithubApp(env);
 	const octokit = await app.getInstallationOctokit(installationId);
 	const { data } = await octokit.rest.issues.createComment({
 		owner,
@@ -52,7 +82,15 @@ export async function createPlaceholderComment(installationId: number, owner: st
 	return data;
 }
 
-export async function updateComment(installationId: number, owner: string, repo: string, commentId: number, body: string) {
+export async function updateComment(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	commentId: number,
+	body: string,
+) {
+	const app = getGithubApp(env);
 	const octokit = await app.getInstallationOctokit(installationId);
 	const { data } = await octokit.rest.issues.updateComment({
 		owner,

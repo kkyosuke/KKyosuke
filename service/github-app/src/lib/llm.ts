@@ -1,5 +1,5 @@
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
 
 export interface ReviewContext {
 	title: string;
@@ -10,7 +10,13 @@ export interface ReviewContext {
 	template: string;
 }
 
-export async function generateCodeReview(context: ReviewContext): Promise<string> {
+export async function generateCodeReview(
+	env: Record<string, string | undefined>,
+	context: ReviewContext,
+): Promise<string> {
+	const anthropic = createAnthropic({
+		apiKey: env.ANTHROPIC_API_KEY || "",
+	});
 
 	const model = anthropic("claude-haiku-4-5");
 

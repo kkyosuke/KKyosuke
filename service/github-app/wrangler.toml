@@ -1,0 +1,13 @@
+name = "github-app"
+main = "index.ts"
+compatibility_date = "2024-04-01"
+
+# Automatically bundle text files imported with `.md` extension
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallbacks = []
+
+# Define standard variables (secrets must be uploaded via wrangler secret put)
+# [vars]
+# You can add non-sensitive environment variables here

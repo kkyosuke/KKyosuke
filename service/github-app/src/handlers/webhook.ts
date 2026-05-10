@@ -1,13 +1,14 @@
-import type { Context } from "hono";
 import { Webhooks } from "@octokit/webhooks";
-import { env } from "../config/env";
+import type { Context } from "hono";
+import { env } from "hono/adapter";
 import { runReviewAgent } from "../jobs/reviewAgent";
 
-const webhooks = new Webhooks({
-	secret: env.GITHUB_WEBHOOK_SECRET,
-});
-
 export async function githubWebhookHandler(c: Context) {
+	const e = env<Record<string, string | undefined>>(c);
+	const webhooks = new Webhooks({
+		secret: e.GITHUB_WEBHOOK_SECRET || "",
+	});
+
 	const signature = c.req.header("x-hub-signature-256");
 	const eventName = c.req.header("x-github-event");
 	const id = c.req.header("x-github-delivery");
@@ -15,7 +16,9 @@ export async function githubWebhookHandler(c: Context) {
 	console.log(`[Webhook] Received event: ${eventName}, delivery ID: ${id}`);
 
 	if (!signature || !eventName || !id) {
-		console.warn(`[Webhook] Missing headers. signature: ${!!signature}, eventName: ${!!eventName}, id: ${!!id}`);
+		console.warn(
+			`[Webhook] Missing headers. signature: ${!!signature}, eventName: ${!!eventName}, id: ${!!id}`,
+		);
 		return c.text("Missing required GitHub headers", 400);
 	}
 
@@ -38,7 +41,7 @@ export async function githubWebhookHandler(c: Context) {
 	let payload: any;
 	try {
 		payload = JSON.parse(rawBody);
-	} catch (e) {
+	} catch (err) {
 		console.warn(`[Webhook] Invalid JSON payload`);
 		return c.text("Invalid JSON", 400);
 	}
@@ -66,19 +69,32 @@ export async function githubWebhookHandler(c: Context) {
 					`[Webhook] Triggering review for ${owner}/${repo}#${pullNumber} (Installation: ${installationId})`,
 				);
 
-				// 非同期でレビューを実行 (Fire and forget)
-				// ※ 本番環境で実行が途切れる可能性がある場合は、キューなどの導入を検討します
-				Promise.resolve()
-					.then(() => runReviewAgent(installationId, owner, repo, pullNumber))
-					.catch((e) => console.error("Agent failed critically", e));
+				// 非同期でレビューを実行 (Fire and forget / Background task)
+				const reviewTask = Promise.resolve()
+					.then(() =>
+						runReviewAgent(e, installationId, owner, repo, pullNumber),
+					)
+					.catch((err) => console.error("Agent failed critically", err));
+
+				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+					// Cloudflare Workers 等でのバックグラウンド実行
+					c.executionCtx.waitUntil(reviewTask);
+				} else {
+					// ローカル Bun 環境など
+					// fire and forget のまま
+				}
 			} else {
-				console.log(`[Webhook] Ignored comment: does not include 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`);
+				console.log(
+					`[Webhook] Ignored comment: does not include 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
+				);
 			}
 		} else {
 			console.log(`[Webhook] Ignored comment: not a pull request issue`);
 		}
 	} else {
-		console.log(`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`);
+		console.log(
+			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,
+		);
 	}
 
 	// GitHub Webhook に即座に200を返す
