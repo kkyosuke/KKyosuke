@@ -30,3 +30,6 @@
 - Better: No major issues, but would be beneficial to fix (Readability improvement, Refactoring, etc.)
 - Nits: Minor details (Typos, personal preferences, etc. Fix optional)
 -->
+
+---
+* Reference: [Code Review Perspectives](https://kyosuke.dev/en/code/review.html)
