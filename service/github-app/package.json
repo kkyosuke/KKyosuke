@@ -1,0 +1,33 @@
+{
+	"name": "github-app",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bun run --hot index.ts",
+		"check": "biome check --write .",
+		"format": "biome format --write .",
+		"lint": "biome lint --write .",
+		"deploy": "wrangler deploy"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.15",
+		"@cloudflare/workers-types": "^4.20260510.1",
+		"@types/bun": "latest",
+		"smee-client": "^5.0.0",
+		"wrangler": "^4.90.0"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@ai-sdk/anthropic": "^3.0.76",
+		"@ai-sdk/google": "^3.0.71",
+		"@octokit/app": "^16.1.2",
+		"@octokit/rest": "^22.0.1",
+		"@octokit/webhooks": "^14.2.0",
+		"ai": "^6.0.177",
+		"dotenv": "^17.4.2",
+		"hono": "^4.12.18"
+	}
+}
