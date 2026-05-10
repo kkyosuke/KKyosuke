@@ -1,18 +1,22 @@
 {
-  "name": "github-app",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "dev": "bun run --hot index.ts"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "hono": "^4.12.18"
-  }
+	"name": "github-app",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bun run --hot index.ts",
+		"check": "biome check --write .",
+		"format": "biome format --write .",
+		"lint": "biome lint --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.15",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"hono": "^4.12.18"
+	}
 }
