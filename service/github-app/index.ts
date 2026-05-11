@@ -9,7 +9,9 @@ app.use("*", async (c, next) => {
 	await next();
 	const ms = Date.now() - start;
 	const seconds = ms / 1000;
-	console.log(`[Execution Time] ${c.req.method} ${c.req.url} - ${seconds}s (${ms}ms)`);
+	console.log(
+		`[Execution Time] ${c.req.method} ${c.req.url} - ${seconds}s (${ms}ms)`,
+	);
 });
 
 app.get("/", (c) => {

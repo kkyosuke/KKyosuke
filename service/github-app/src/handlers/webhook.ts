@@ -53,9 +53,12 @@ export async function githubWebhookHandler(c: Context) {
 		if (payload.issue && payload.issue.pull_request) {
 			const commentBody = payload.comment?.body || "";
 
+			const isLocal = typeof process !== "undefined" && process.env.NODE_ENV !== "production";
+			const triggerMention = isLocal ? "@test.kkyosuke.ai" : "@kkyosuke.ai";
+
 			// トリガー文字列の確認
 			if (
-				commentBody.includes("@kkyosuke.ai") &&
+				commentBody.includes(triggerMention) &&
 				commentBody.includes("レビューして")
 			) {
 				const owner = payload.repository.owner.login;
@@ -79,16 +82,18 @@ export async function githubWebhookHandler(c: Context) {
 					)
 					.catch((err) => console.error("Agent failed critically", err));
 
-				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
-					// Cloudflare Workers 等でのバックグラウンド実行
-					c.executionCtx.waitUntil(reviewTask);
-				} else {
-					// ローカル Bun 環境など
+				try {
+					if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+						// Cloudflare Workers 等でのバックグラウンド実行
+						c.executionCtx.waitUntil(reviewTask);
+					}
+				} catch {
+					// ローカル Bun 環境などで c.executionCtx へのアクセスがエラーになる場合は無視
 					// fire and forget のまま
 				}
 			} else {
 				console.log(
-					`[Webhook] Ignored comment: does not include both '@kkyosuke.ai' and 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
+					`[Webhook] Ignored comment: does not include both '${triggerMention}' and 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
 				);
 			}
 		} else {

@@ -7,8 +7,8 @@ import {
 	updateComment,
 } from "../lib/github";
 import { generateCodeReview } from "../lib/llm";
-import instruction from "../prompts/instruction.md";
-import template from "../prompts/template.md";
+import instruction from "../prompts/instruction.md" with { type: "text" };
+import template from "../prompts/template.md" with { type: "text" };
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -75,6 +75,37 @@ export async function runReviewAgent(
 			template: template,
 		});
 
+		// 制限: 指摘事項は最大10個まで
+		const feedbacks = reviewResult.feedback.slice(0, 10);
+
+		// ファイルと行番号が特定できる指摘はインラインコメントにするため一覧からは除外
+		const generalFeedback = feedbacks.filter(
+			(f) => !(f.path && f.path !== "-" && f.line > 0),
+		);
+
+		const feedbackTable = generalFeedback.length > 0
+			? generalFeedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")
+			: "| - | - | - | - | 特に指摘事項はありません |";
+
+		const markdownReport = template
+			.replaceAll("{{overallEvaluation}}", reviewResult.overallEvaluation)
+			.replaceAll("{{summary}}", reviewResult.summary)
+			.replaceAll("{{feedbackTable}}", feedbackTable)
+			.replaceAll("{{score_functionality}}", String(reviewResult.scores.functionality.score))
+			.replaceAll("{{comment_functionality}}", reviewResult.scores.functionality.comment)
+			.replaceAll("{{score_security}}", String(reviewResult.scores.security.score))
+			.replaceAll("{{comment_security}}", reviewResult.scores.security.comment)
+			.replaceAll("{{score_maintainability}}", String(reviewResult.scores.maintainability.score))
+			.replaceAll("{{comment_maintainability}}", reviewResult.scores.maintainability.comment)
+			.replaceAll("{{score_performance}}", String(reviewResult.scores.performance.score))
+			.replaceAll("{{comment_performance}}", reviewResult.scores.performance.comment)
+			.replaceAll("{{score_testQuality}}", String(reviewResult.scores.testQuality.score))
+			.replaceAll("{{comment_testQuality}}", reviewResult.scores.testQuality.comment)
+			.replaceAll("{{score_architecture}}", String(reviewResult.scores.architecture.score))
+			.replaceAll("{{comment_architecture}}", reviewResult.scores.architecture.comment)
+			.replaceAll("{{score_documentation}}", String(reviewResult.scores.documentation.score))
+			.replaceAll("{{comment_documentation}}", reviewResult.scores.documentation.comment);
+
 		// 4. 結果の更新
 		console.log(
 			`[ReviewAgent] Updating comment for ${owner}/${repo}#${pullNumber}`,
@@ -85,69 +116,36 @@ export async function runReviewAgent(
 			owner,
 			repo,
 			placeholderCommentId,
-			reviewResult,
+			markdownReport,
 		);
 
-		// 5. 「💬 Q」の該当行にインラインコメントを追加する
-		const lines = reviewResult.split("\n");
-		let inTable = false;
-		let headerParsed = false;
-		let colPathIdx = -1, colLineIdx = -1, colSeverityIdx = -1, colSummaryIdx = -1, colReasonIdx = -1;
-
-		for (const line of lines) {
-			if (line.trim().startsWith("|")) {
-				const cells = line.split("|").map((c) => c.trim()).slice(1, -1);
-				if (!inTable) {
-					inTable = true;
-					colPathIdx = cells.findIndex((c) => c.includes("対象"));
-					colLineIdx = cells.findIndex((c) => c.includes("該当行"));
-					colReasonIdx = cells.findIndex((c) => c.includes("指摘理由"));
-					colSeverityIdx = cells.findIndex((c) => c.includes("対応度"));
-					colSummaryIdx = cells.findIndex((c) => c.includes("概要"));
-				} else if (!headerParsed) {
-					if (cells.some((c) => c.includes("---"))) {
-						headerParsed = true;
-					}
-				} else {
-					if (
-						colPathIdx !== -1 &&
-						colLineIdx !== -1 &&
-						colSeverityIdx !== -1 &&
-						cells.length >= Math.max(colPathIdx, colLineIdx, colSeverityIdx)
-					) {
-						const path = cells[colPathIdx];
-						const lineStr = cells[colLineIdx];
-						const severity = cells[colSeverityIdx];
-						const summary = colSummaryIdx !== -1 ? cells[colSummaryIdx] : "";
-						const reason = colReasonIdx !== -1 ? cells[colReasonIdx] : "";
-
-						if (severity.includes("Q") && path && lineStr) {
-							const match = lineStr.match(/\d+/);
-							if (match && pr.head?.sha) {
-								const lineNum = parseInt(match[0], 10);
-								try {
-									await createReviewComment(
-										env,
-										installationId,
-										owner,
-										repo,
-										pullNumber,
-										pr.head.sha,
-										path,
-										lineNum,
-										`**💬 Q: 質問や意図の確認**\n\n**概要:** ${summary}\n\n**指摘理由:** ${reason}`
-									);
-									console.log(`[ReviewAgent] Created inline comment for ${path}:${lineNum}`);
-								} catch (err: any) {
-									console.error(`[ReviewAgent] Failed to create inline comment for ${path}:${lineNum}:`, err.message);
-								}
-							}
-						}
+		// 5. 該当行にインラインコメントを追加する
+		for (const item of feedbacks) {
+			if (item.path && item.path !== "-" && item.line > 0) {
+				if (pr.head?.sha) {
+					try {
+						await createReviewComment(
+							env,
+							installationId,
+							owner,
+							repo,
+							pullNumber,
+							pr.head.sha,
+							item.path,
+							item.line,
+							`**${item.severity}**\n\n**概要:** ${item.summary}\n\n**指摘理由:** ${item.reason}`,
+						);
+						console.log(
+							`[ReviewAgent] Created inline comment for ${item.path}:${item.line}`,
+						);
+						await new Promise((resolve) => setTimeout(resolve, 500));
+					} catch (err: any) {
+						console.error(
+							`[ReviewAgent] Failed to create inline comment for ${item.path}:${item.line}:`,
+							err.message,
+						);
 					}
 				}
-			} else {
-				inTable = false;
-				headerParsed = false;
 			}
 		}
 

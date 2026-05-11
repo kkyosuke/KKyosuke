@@ -3,38 +3,30 @@
 ## 📝 Summary
 
 > [!NOTE]
-> **Overall Evaluation: <!-- Example: 🌟 Excellent / 👍 Good / ⚠️ Fair / ❌ Poor -->**
+> **Overall Evaluation: {{overallEvaluation}}**
 
-<!-- Briefly describe the overall evaluation of the PR, including what was positive and any general concerns -->
+{{summary}}
 
 ## 💡 List of Points
+* Feedback with a specific file and line number will be commented directly on the code and is not displayed here.
 
-| Target (File, etc.) | Reason | Priority | Overview |
-| :--- | :--- | :--- | :--- |
-| <!-- Example: src/index.ts --> | <!-- Potential bug, Readability, etc. --> | <!-- 🔴 must / 🟡 want / 🟢 nits / 💬 Q --> | <!-- Briefly describe the specific point raised --> |
-| | | | |
+| Target (File, etc.) | Line | Reason | Priority | Overview |
+| :--- | :--- | :--- | :--- | :--- |
+{{feedbackTable}}
 
 **[Response Policy]**
 - `🔴 must` / `🟡 want`: Please address and fix.
 - `💬 Q`: Please provide an answer.
 - `🟢 nits`: Optional to address.
 
-<!--
-[Priority Guidelines]
-- 🔴 must: Required change.
-- 🟡 want: Suggested change (if possible).
-- 🟢 nits: Minor point (at the author's discretion).
-- 💬 Q: Question or confirmation of intent.
--->
-
 ## 📊 Evaluation Score Details
 
 | Perspective | Score (Out of 10) | Comments (Optional) |
 | :--- | :--- | :--- |
-| Correctness / Bug Risk | <!-- 9 / 10 --> | <!-- Example: Excellent consideration for edge cases. --> |
-| Security | <!-- 10 / 10 --> | <!-- --> |
-| Maintainability / Readability | <!-- 7 / 10 --> | <!-- --> |
-| Performance | <!-- 8 / 10 --> | <!-- --> |
-| Testing | <!-- 7 / 10 --> | <!-- --> |
-| Design / Architecture | <!-- 8 / 10 --> | <!-- --> |
-| PR Structure & Documentation | <!-- 10 / 10 --> | <!-- --> |
+| Correctness / Bug Risk | {{score_functionality}} / 10 | {{comment_functionality}} |
+| Security | {{score_security}} / 10 | {{comment_security}} |
+| Maintainability / Readability | {{score_maintainability}} / 10 | {{comment_maintainability}} |
+| Performance | {{score_performance}} / 10 | {{comment_performance}} |
+| Testing | {{score_testQuality}} / 10 | {{comment_testQuality}} |
+| Design / Architecture | {{score_architecture}} / 10 | {{comment_architecture}} |
+| PR Structure & Documentation | {{score_documentation}} / 10 | {{comment_documentation}} |
