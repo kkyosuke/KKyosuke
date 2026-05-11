@@ -20,15 +20,16 @@
 
 | Reason | Priority | Overview |
 | :--- | :--- | :--- |
-| <!-- Potential bug, Readability, Performance, etc. --> | <!-- Must / Better / Nits --> | <!-- Briefly describe the specific point raised --> |
+| <!-- Potential bug, Readability, Performance, etc. --> | <!-- must / want / nits / Q --> | <!-- Briefly describe the specific point raised --> |
 | | | |
 | | | |
 
 <!--
 [Priority Guidelines]
-- Must: Critical bugs, security risks, or clear violations of coding standards (Fix required)
-- Better: No major issues, but would be beneficial to fix (Readability improvement, Refactoring, etc.)
-- Nits: Minor details (Typos, personal preferences, etc. Fix optional)
+- must: Required change.
+- want: Suggested change (if possible).
+- nits: Minor point (at the author's discretion).
+- Q: Question or confirmation of intent.
 -->
 
 ---
