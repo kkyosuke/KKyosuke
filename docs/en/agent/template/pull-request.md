@@ -1,6 +1,33 @@
-## Evaluation Score
+* Reference: [Code Review Perspectives](https://kyosuke.dev/en/code/review.html)
 
-**Overall Evaluation: <!-- Example: Excellent / Good / Fair / Poor -->**
+## 📝 Summary
+
+> [!NOTE]
+> **Overall Evaluation: <!-- Example: 🌟 Excellent / 👍 Good / ⚠️ Fair / ❌ Poor -->**
+
+<!-- Briefly describe the overall evaluation of the PR, including what was positive and any general concerns -->
+
+## 💡 List of Points
+
+| Target (File, etc.) | Reason | Priority | Overview |
+| :--- | :--- | :--- | :--- |
+| <!-- Example: src/index.ts --> | <!-- Potential bug, Readability, etc. --> | <!-- 🔴 must / 🟡 want / 🟢 nits / 💬 Q --> | <!-- Briefly describe the specific point raised --> |
+| | | | |
+
+**[Response Policy]**
+- `🔴 must` / `🟡 want`: Please address and fix.
+- `💬 Q`: Please provide an answer.
+- `🟢 nits`: Optional to address.
+
+<!--
+[Priority Guidelines]
+- 🔴 must: Required change.
+- 🟡 want: Suggested change (if possible).
+- 🟢 nits: Minor point (at the author's discretion).
+- 💬 Q: Question or confirmation of intent.
+-->
+
+## 📊 Evaluation Score Details
 
 | Perspective | Score (Out of 10) | Comments (Optional) |
 | :--- | :--- | :--- |
@@ -11,26 +38,3 @@
 | Testing | <!-- 7 / 10 --> | <!-- --> |
 | Design / Architecture | <!-- 8 / 10 --> | <!-- --> |
 | PR Structure & Documentation | <!-- 10 / 10 --> | <!-- --> |
-
-## Summary
-
-<!-- Briefly describe the overall evaluation of the PR, including what was positive and any general concerns -->
-
-## List of Points
-
-| Reason | Priority | Overview |
-| :--- | :--- | :--- |
-| <!-- Potential bug, Readability, Performance, etc. --> | <!-- must / want / nits / Q --> | <!-- Briefly describe the specific point raised --> |
-| | | |
-| | | |
-
-<!--
-[Priority Guidelines]
-- must: Required change.
-- want: Suggested change (if possible).
-- nits: Minor point (at the author's discretion).
-- Q: Question or confirmation of intent.
--->
-
----
-* Reference: [Code Review Perspectives](https://kyosuke.dev/en/code/review.html)
