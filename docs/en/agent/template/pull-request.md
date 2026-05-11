@@ -8,6 +8,7 @@
 {{summary}}
 
 ## 💡 List of Points
+* Feedback with a specific file and line number will be commented directly on the code and is not displayed here.
 
 | Target (File, etc.) | Line | Reason | Priority | Overview |
 | :--- | :--- | :--- | :--- | :--- |

@@ -75,8 +75,13 @@ export async function runReviewAgent(
 			template: template,
 		});
 
-		const feedbackTable = reviewResult.feedback.length > 0
-			? reviewResult.feedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")
+		// ファイルと行番号が特定できる指摘はインラインコメントにするため一覧からは除外
+		const generalFeedback = reviewResult.feedback.filter(
+			(f) => !(f.path && f.path !== "-" && f.line > 0),
+		);
+
+		const feedbackTable = generalFeedback.length > 0
+			? generalFeedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")
 			: "| - | - | - | - | 特に指摘事項はありません |";
 
 		const markdownReport = template
@@ -113,7 +118,7 @@ export async function runReviewAgent(
 
 		// 5. 該当行にインラインコメントを追加する
 		for (const item of reviewResult.feedback) {
-			if (item.path && item.line > 0) {
+			if (item.path && item.path !== "-" && item.line > 0) {
 				if (pr.head?.sha) {
 					try {
 						await createReviewComment(
