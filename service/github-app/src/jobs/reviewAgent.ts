@@ -135,6 +135,7 @@ export async function runReviewAgent(
 						console.log(
 							`[ReviewAgent] Created inline comment for ${item.path}:${item.line}`,
 						);
+						await new Promise((resolve) => setTimeout(resolve, 500));
 					} catch (err: any) {
 						console.error(
 							`[ReviewAgent] Failed to create inline comment for ${item.path}:${item.line}:`,
