@@ -38,7 +38,9 @@ export const reviewSchema = z.object({
 				summary: z.string().describe("指摘の具体的な内容を簡潔に記載"),
 			}),
 		)
-		.describe("指摘点一覧。重要度が高い順に最大10個まで出力してください。指摘がない場合は空配列。"),
+		.describe(
+			"指摘点一覧。重要度が高い順に最大10個まで出力してください。指摘がない場合は空配列。",
+		),
 	scores: z
 		.object({
 			functionality: z
