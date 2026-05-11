@@ -7,8 +7,8 @@ import {
 	updateComment,
 } from "../lib/github";
 import { generateCodeReview } from "../lib/llm";
-import instruction from "../prompts/instruction.md";
-import template from "../prompts/template.md";
+import instruction from "../prompts/instruction.md" with { type: "text" };
+import template from "../prompts/template.md" with { type: "text" };
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,

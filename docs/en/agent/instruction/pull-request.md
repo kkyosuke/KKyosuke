@@ -22,11 +22,10 @@ Based on the team's PR creation policy ([`docs/en/code/pull-request.md`](../../c
    - Is the PR granularity appropriate (not too large)? Are the title and description clear? Are necessary documents updated?
 
 ## [Output Format]
-Please output strictly in the format defined in the following template file ([`docs/en/agent/template/pull-request.md`](../template/pull-request.md)). Avoid adding any extra greetings or introductory texts.
+Please output the following information in JSON format according to the provided schema.
 
 ### Format Guideline Details
-- **Overall Evaluation**: Evaluate the overall PR using one of the four levels with icons: "🌟 Excellent", "👍 Good", "⚠️ Fair", or "❌ Poor".
+- **Overall Evaluation**: Select an overall evaluation from the 4 levels: "🌟 Excellent", "👍 Good", "⚠️ Fair", or "❌ Poor", and output it with the icon.
 - **Summary**: Briefly summarize the overall evaluation of the PR, highlighting its strong points and any general concerns.
-- **List of Points**: Focus on the areas needing improvement or modification. Output this as a Markdown table that includes the Target (File name, etc.), Reason, Priority (`🔴 must` / `🟡 want` / `🟢 nits` / `💬 Q`), and Overview. Please use the guidelines provided in the template to determine the correct priority level, and make sure to include the icons.
-- **Perspective Scores**: Evaluate each review perspective separately and score it out of `10` points.
-- **Static Text Maintenance**: Do not omit the reference link at the top of the file or the `[Response Policy]` below the points list. **Please output all static text exactly as it is in the template**.
+- **List of Points**: For areas needing improvement or modification, output the target file path, corresponding line number, reason for the point, priority (`🔴 must` / `🟡 want` / `🟢 nits` / `💬 Q`), and an overview. If the line cannot be specified or the point applies to the entire PR, specify 0 or -1 for the line number, and `-` for the file path. Follow the reference notes for the priority criteria, and make sure to include the icons.
+- **Perspective Scores**: Evaluate each review perspective separately and score it out of 10 points, adding a brief comment.

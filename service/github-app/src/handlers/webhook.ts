@@ -82,11 +82,13 @@ export async function githubWebhookHandler(c: Context) {
 					)
 					.catch((err) => console.error("Agent failed critically", err));
 
-				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
-					// Cloudflare Workers 等でのバックグラウンド実行
-					c.executionCtx.waitUntil(reviewTask);
-				} else {
-					// ローカル Bun 環境など
+				try {
+					if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+						// Cloudflare Workers 等でのバックグラウンド実行
+						c.executionCtx.waitUntil(reviewTask);
+					}
+				} catch {
+					// ローカル Bun 環境などで c.executionCtx へのアクセスがエラーになる場合は無視
 					// fire and forget のまま
 				}
 			} else {
