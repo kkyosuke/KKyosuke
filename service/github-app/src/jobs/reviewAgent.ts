@@ -111,9 +111,9 @@ export async function runReviewAgent(
 			markdownReport,
 		);
 
-		// 5. 「💬 Q」などの該当行にインラインコメントを追加する
+		// 5. 該当行にインラインコメントを追加する
 		for (const item of reviewResult.feedback) {
-			if (item.severity.includes("Q") && item.path && item.line > 0) {
+			if (item.path && item.line > 0) {
 				if (pr.head?.sha) {
 					try {
 						await createReviewComment(
@@ -125,7 +125,7 @@ export async function runReviewAgent(
 							pr.head.sha,
 							item.path,
 							item.line,
-							`**${item.severity}: 質問や意図の確認**\n\n**概要:** ${item.summary}\n\n**指摘理由:** ${item.reason}`,
+							`**${item.severity}**\n\n**概要:** ${item.summary}\n\n**指摘理由:** ${item.reason}`,
 						);
 						console.log(
 							`[ReviewAgent] Created inline comment for ${item.path}:${item.line}`,
