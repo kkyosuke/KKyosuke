@@ -54,7 +54,10 @@ export async function githubWebhookHandler(c: Context) {
 			const commentBody = payload.comment?.body || "";
 
 			// トリガー文字列の確認
-			if (commentBody.includes("レビューして")) {
+			if (
+				commentBody.includes("@kkyosuke.ai") &&
+				commentBody.includes("レビューして")
+			) {
 				const owner = payload.repository.owner.login;
 				const repo = payload.repository.name;
 				const pullNumber = payload.issue.number;
@@ -85,7 +88,7 @@ export async function githubWebhookHandler(c: Context) {
 				}
 			} else {
 				console.log(
-					`[Webhook] Ignored comment: does not include 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
+					`[Webhook] Ignored comment: does not include both '@kkyosuke.ai' and 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
 				);
 			}
 		} else {
