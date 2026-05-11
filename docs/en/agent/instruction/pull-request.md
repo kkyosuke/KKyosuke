@@ -29,3 +29,4 @@ Please output strictly in the format defined in the following template file ([`d
 - **Perspective Scores**: Evaluate each review perspective separately and score it out of `10` points.
 - **Summary**: Briefly summarize the overall evaluation of the PR, highlighting its strong points and any general concerns.
 - **List of Points**: Focus on the areas needing improvement or modification. Output this as a Markdown table that includes the Reason, Priority (`Must` / `Better` / `Nits`), and Overview. Please use the guidelines provided in the template to determine the correct priority level.
+- **Footer Maintenance**: Do not omit the references and static texts below the `---` separator at the end of the template. **Please output them exactly as they are**.
