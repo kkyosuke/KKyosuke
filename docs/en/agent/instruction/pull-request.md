@@ -25,8 +25,8 @@ Based on the team's PR creation policy ([`docs/en/code/pull-request.md`](../../c
 Please output strictly in the format defined in the following template file ([`docs/en/agent/template/pull-request.md`](../template/pull-request.md)). Avoid adding any extra greetings or introductory texts.
 
 ### Format Guideline Details
-- **Overall Evaluation**: Evaluate the overall PR using one of the four academic grading levels: "Excellent", "Good", "Fair", or "Poor".
-- **Perspective Scores**: Evaluate each review perspective separately and score it out of `10` points.
+- **Overall Evaluation**: Evaluate the overall PR using one of the four levels with icons: "🌟 Excellent", "👍 Good", "⚠️ Fair", or "❌ Poor".
 - **Summary**: Briefly summarize the overall evaluation of the PR, highlighting its strong points and any general concerns.
-- **List of Points**: Focus on the areas needing improvement or modification. Output this as a Markdown table that includes the Reason, Priority (`must` / `want` / `nits` / `Q`), and Overview. Please use the guidelines provided in the template to determine the correct priority level.
-- **Footer Maintenance**: Do not omit the references and static texts below the `---` separator at the end of the template. **Please output them exactly as they are**.
+- **List of Points**: Focus on the areas needing improvement or modification. Output this as a Markdown table that includes the Target (File name, etc.), Reason, Priority (`🔴 must` / `🟡 want` / `🟢 nits` / `💬 Q`), and Overview. Please use the guidelines provided in the template to determine the correct priority level, and make sure to include the icons.
+- **Perspective Scores**: Evaluate each review perspective separately and score it out of `10` points.
+- **Static Text Maintenance**: Do not omit the reference link at the top of the file or the `[Response Policy]` below the points list. **Please output all static text exactly as it is in the template**.
