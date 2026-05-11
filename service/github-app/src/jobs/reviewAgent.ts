@@ -75,6 +75,39 @@ export async function runReviewAgent(
 			template: template,
 		});
 
+		const markdownReport = `※ [コードレビューの観点](https://kyosuke.dev/ja/code/review.html) を参考にしています。
+
+## 📝 サマリ
+
+> [!NOTE]
+> **総合評価: ${reviewResult.overallEvaluation}**
+
+${reviewResult.summary}
+
+## 💡 指摘点一覧
+
+| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |
+| :--- | :--- | :--- | :--- | :--- |
+${reviewResult.feedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")}
+
+**【対応方針】**
+- \`🔴 must\` / \`🟡 want\`: 修正対応をお願いします。
+- \`💬 Q\`: 回答をお願いします。
+- \`🟢 nits\`: 対応は任意です。
+
+## 📊 評価スコア詳細
+
+| 評価観点 | スコア (各10点満点) | コメント（任意） |
+| :--- | :--- | :--- |
+| 機能の正確性・バグのリスク | ${reviewResult.scores.functionality.score} / 10 | ${reviewResult.scores.functionality.comment} |
+| セキュリティ | ${reviewResult.scores.security.score} / 10 | ${reviewResult.scores.security.comment} |
+| 保守性・可読性 | ${reviewResult.scores.maintainability.score} / 10 | ${reviewResult.scores.maintainability.comment} |
+| パフォーマンス | ${reviewResult.scores.performance.score} / 10 | ${reviewResult.scores.performance.comment} |
+| テスト品質 | ${reviewResult.scores.testQuality.score} / 10 | ${reviewResult.scores.testQuality.comment} |
+| 設計・アーキテクチャ | ${reviewResult.scores.architecture.score} / 10 | ${reviewResult.scores.architecture.comment} |
+| PR要件・ドキュメント | ${reviewResult.scores.documentation.score} / 10 | ${reviewResult.scores.documentation.comment} |
+`;
+
 		// 4. 結果の更新
 		console.log(
 			`[ReviewAgent] Updating comment for ${owner}/${repo}#${pullNumber}`,
@@ -85,69 +118,35 @@ export async function runReviewAgent(
 			owner,
 			repo,
 			placeholderCommentId,
-			reviewResult,
+			markdownReport,
 		);
 
-		// 5. 「💬 Q」の該当行にインラインコメントを追加する
-		const lines = reviewResult.split("\n");
-		let inTable = false;
-		let headerParsed = false;
-		let colPathIdx = -1, colLineIdx = -1, colSeverityIdx = -1, colSummaryIdx = -1, colReasonIdx = -1;
-
-		for (const line of lines) {
-			if (line.trim().startsWith("|")) {
-				const cells = line.split("|").map((c) => c.trim()).slice(1, -1);
-				if (!inTable) {
-					inTable = true;
-					colPathIdx = cells.findIndex((c) => c.includes("対象"));
-					colLineIdx = cells.findIndex((c) => c.includes("該当行"));
-					colReasonIdx = cells.findIndex((c) => c.includes("指摘理由"));
-					colSeverityIdx = cells.findIndex((c) => c.includes("対応度"));
-					colSummaryIdx = cells.findIndex((c) => c.includes("概要"));
-				} else if (!headerParsed) {
-					if (cells.some((c) => c.includes("---"))) {
-						headerParsed = true;
-					}
-				} else {
-					if (
-						colPathIdx !== -1 &&
-						colLineIdx !== -1 &&
-						colSeverityIdx !== -1 &&
-						cells.length >= Math.max(colPathIdx, colLineIdx, colSeverityIdx)
-					) {
-						const path = cells[colPathIdx];
-						const lineStr = cells[colLineIdx];
-						const severity = cells[colSeverityIdx];
-						const summary = colSummaryIdx !== -1 ? cells[colSummaryIdx] : "";
-						const reason = colReasonIdx !== -1 ? cells[colReasonIdx] : "";
-
-						if (severity.includes("Q") && path && lineStr) {
-							const match = lineStr.match(/\d+/);
-							if (match && pr.head?.sha) {
-								const lineNum = parseInt(match[0], 10);
-								try {
-									await createReviewComment(
-										env,
-										installationId,
-										owner,
-										repo,
-										pullNumber,
-										pr.head.sha,
-										path,
-										lineNum,
-										`**💬 Q: 質問や意図の確認**\n\n**概要:** ${summary}\n\n**指摘理由:** ${reason}`
-									);
-									console.log(`[ReviewAgent] Created inline comment for ${path}:${lineNum}`);
-								} catch (err: any) {
-									console.error(`[ReviewAgent] Failed to create inline comment for ${path}:${lineNum}:`, err.message);
-								}
-							}
-						}
+		// 5. 「💬 Q」などの該当行にインラインコメントを追加する
+		for (const item of reviewResult.feedback) {
+			if (item.severity.includes("Q") && item.path && item.line > 0) {
+				if (pr.head?.sha) {
+					try {
+						await createReviewComment(
+							env,
+							installationId,
+							owner,
+							repo,
+							pullNumber,
+							pr.head.sha,
+							item.path,
+							item.line,
+							`**${item.severity}: 質問や意図の確認**\n\n**概要:** ${item.summary}\n\n**指摘理由:** ${item.reason}`,
+						);
+						console.log(
+							`[ReviewAgent] Created inline comment for ${item.path}:${item.line}`,
+						);
+					} catch (err: any) {
+						console.error(
+							`[ReviewAgent] Failed to create inline comment for ${item.path}:${item.line}:`,
+							err.message,
+						);
 					}
 				}
-			} else {
-				inTable = false;
-				headerParsed = false;
 			}
 		}
 
