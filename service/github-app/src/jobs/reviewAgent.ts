@@ -75,8 +75,11 @@ export async function runReviewAgent(
 			template: template,
 		});
 
+		// 制限: 指摘事項は最大10個まで
+		const feedbacks = reviewResult.feedback.slice(0, 10);
+
 		// ファイルと行番号が特定できる指摘はインラインコメントにするため一覧からは除外
-		const generalFeedback = reviewResult.feedback.filter(
+		const generalFeedback = feedbacks.filter(
 			(f) => !(f.path && f.path !== "-" && f.line > 0),
 		);
 
@@ -117,7 +120,7 @@ export async function runReviewAgent(
 		);
 
 		// 5. 該当行にインラインコメントを追加する
-		for (const item of reviewResult.feedback) {
+		for (const item of feedbacks) {
 			if (item.path && item.path !== "-" && item.line > 0) {
 				if (pr.head?.sha) {
 					try {
