@@ -53,9 +53,12 @@ export async function githubWebhookHandler(c: Context) {
 		if (payload.issue && payload.issue.pull_request) {
 			const commentBody = payload.comment?.body || "";
 
+			const isLocal = typeof process !== "undefined" && process.env.NODE_ENV !== "production";
+			const triggerMention = isLocal ? "@test.kkyosuke.ai" : "@kkyosuke.ai";
+
 			// トリガー文字列の確認
 			if (
-				commentBody.includes("@kkyosuke.ai") &&
+				commentBody.includes(triggerMention) &&
 				commentBody.includes("レビューして")
 			) {
 				const owner = payload.repository.owner.login;
@@ -88,7 +91,7 @@ export async function githubWebhookHandler(c: Context) {
 				}
 			} else {
 				console.log(
-					`[Webhook] Ignored comment: does not include both '@kkyosuke.ai' and 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
+					`[Webhook] Ignored comment: does not include both '${triggerMention}' and 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
 				);
 			}
 		} else {
