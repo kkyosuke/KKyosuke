@@ -100,3 +100,28 @@ export async function updateComment(
 	});
 	return data;
 }
+
+export async function createReviewComment(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+	commitId: string,
+	path: string,
+	line: number,
+	body: string,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.pulls.createReviewComment({
+		owner,
+		repo,
+		pull_number: pullNumber,
+		commit_id: commitId,
+		path,
+		line,
+		body,
+	});
+	return data;
+}

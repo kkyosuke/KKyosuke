@@ -1,5 +1,6 @@
 import {
 	createPlaceholderComment,
+	createReviewComment,
 	getIssueComments,
 	getPullRequest,
 	getPullRequestDiff,
@@ -86,6 +87,70 @@ export async function runReviewAgent(
 			placeholderCommentId,
 			reviewResult,
 		);
+
+		// 5. 「💬 Q」の該当行にインラインコメントを追加する
+		const lines = reviewResult.split("\n");
+		let inTable = false;
+		let headerParsed = false;
+		let colPathIdx = -1, colLineIdx = -1, colSeverityIdx = -1, colSummaryIdx = -1, colReasonIdx = -1;
+
+		for (const line of lines) {
+			if (line.trim().startsWith("|")) {
+				const cells = line.split("|").map((c) => c.trim()).slice(1, -1);
+				if (!inTable) {
+					inTable = true;
+					colPathIdx = cells.findIndex((c) => c.includes("対象"));
+					colLineIdx = cells.findIndex((c) => c.includes("該当行"));
+					colReasonIdx = cells.findIndex((c) => c.includes("指摘理由"));
+					colSeverityIdx = cells.findIndex((c) => c.includes("対応度"));
+					colSummaryIdx = cells.findIndex((c) => c.includes("概要"));
+				} else if (!headerParsed) {
+					if (cells.some((c) => c.includes("---"))) {
+						headerParsed = true;
+					}
+				} else {
+					if (
+						colPathIdx !== -1 &&
+						colLineIdx !== -1 &&
+						colSeverityIdx !== -1 &&
+						cells.length >= Math.max(colPathIdx, colLineIdx, colSeverityIdx)
+					) {
+						const path = cells[colPathIdx];
+						const lineStr = cells[colLineIdx];
+						const severity = cells[colSeverityIdx];
+						const summary = colSummaryIdx !== -1 ? cells[colSummaryIdx] : "";
+						const reason = colReasonIdx !== -1 ? cells[colReasonIdx] : "";
+
+						if (severity.includes("Q") && path && lineStr) {
+							const match = lineStr.match(/\d+/);
+							if (match && pr.head?.sha) {
+								const lineNum = parseInt(match[0], 10);
+								try {
+									await createReviewComment(
+										env,
+										installationId,
+										owner,
+										repo,
+										pullNumber,
+										pr.head.sha,
+										path,
+										lineNum,
+										`**💬 Q: 質問や意図の確認**\n\n**概要:** ${summary}\n\n**指摘理由:** ${reason}`
+									);
+									console.log(`[ReviewAgent] Created inline comment for ${path}:${lineNum}`);
+								} catch (err: any) {
+									console.error(`[ReviewAgent] Failed to create inline comment for ${path}:${lineNum}:`, err.message);
+								}
+							}
+						}
+					}
+				}
+			} else {
+				inTable = false;
+				headerParsed = false;
+			}
+		}
+
 		console.log(
 			`[ReviewAgent] Completed review for ${owner}/${repo}#${pullNumber}`,
 		);
