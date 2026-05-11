@@ -75,38 +75,28 @@ export async function runReviewAgent(
 			template: template,
 		});
 
-		const markdownReport = `※ [コードレビューの観点](https://kyosuke.dev/ja/code/review.html) を参考にしています。
+		const feedbackTable = reviewResult.feedback.length > 0
+			? reviewResult.feedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")
+			: "| - | - | - | - | 特に指摘事項はありません |";
 
-## 📝 サマリ
-
-> [!NOTE]
-> **総合評価: ${reviewResult.overallEvaluation}**
-
-${reviewResult.summary}
-
-## 💡 指摘点一覧
-
-| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |
-| :--- | :--- | :--- | :--- | :--- |
-${reviewResult.feedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")}
-
-**【対応方針】**
-- \`🔴 must\` / \`🟡 want\`: 修正対応をお願いします。
-- \`💬 Q\`: 回答をお願いします。
-- \`🟢 nits\`: 対応は任意です。
-
-## 📊 評価スコア詳細
-
-| 評価観点 | スコア (各10点満点) | コメント（任意） |
-| :--- | :--- | :--- |
-| 機能の正確性・バグのリスク | ${reviewResult.scores.functionality.score} / 10 | ${reviewResult.scores.functionality.comment} |
-| セキュリティ | ${reviewResult.scores.security.score} / 10 | ${reviewResult.scores.security.comment} |
-| 保守性・可読性 | ${reviewResult.scores.maintainability.score} / 10 | ${reviewResult.scores.maintainability.comment} |
-| パフォーマンス | ${reviewResult.scores.performance.score} / 10 | ${reviewResult.scores.performance.comment} |
-| テスト品質 | ${reviewResult.scores.testQuality.score} / 10 | ${reviewResult.scores.testQuality.comment} |
-| 設計・アーキテクチャ | ${reviewResult.scores.architecture.score} / 10 | ${reviewResult.scores.architecture.comment} |
-| PR要件・ドキュメント | ${reviewResult.scores.documentation.score} / 10 | ${reviewResult.scores.documentation.comment} |
-`;
+		const markdownReport = template
+			.replaceAll("{{overallEvaluation}}", reviewResult.overallEvaluation)
+			.replaceAll("{{summary}}", reviewResult.summary)
+			.replaceAll("{{feedbackTable}}", feedbackTable)
+			.replaceAll("{{score_functionality}}", String(reviewResult.scores.functionality.score))
+			.replaceAll("{{comment_functionality}}", reviewResult.scores.functionality.comment)
+			.replaceAll("{{score_security}}", String(reviewResult.scores.security.score))
+			.replaceAll("{{comment_security}}", reviewResult.scores.security.comment)
+			.replaceAll("{{score_maintainability}}", String(reviewResult.scores.maintainability.score))
+			.replaceAll("{{comment_maintainability}}", reviewResult.scores.maintainability.comment)
+			.replaceAll("{{score_performance}}", String(reviewResult.scores.performance.score))
+			.replaceAll("{{comment_performance}}", reviewResult.scores.performance.comment)
+			.replaceAll("{{score_testQuality}}", String(reviewResult.scores.testQuality.score))
+			.replaceAll("{{comment_testQuality}}", reviewResult.scores.testQuality.comment)
+			.replaceAll("{{score_architecture}}", String(reviewResult.scores.architecture.score))
+			.replaceAll("{{comment_architecture}}", reviewResult.scores.architecture.comment)
+			.replaceAll("{{score_documentation}}", String(reviewResult.scores.documentation.score))
+			.replaceAll("{{comment_documentation}}", reviewResult.scores.documentation.comment);
 
 		// 4. 結果の更新
 		console.log(
