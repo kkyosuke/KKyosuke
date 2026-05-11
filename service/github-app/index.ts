@@ -3,6 +3,15 @@ import { githubWebhookHandler } from "./src/handlers/webhook";
 
 const app = new Hono();
 
+// APIの実行時間を測定しログに出力するミドルウェア
+app.use("*", async (c, next) => {
+	const start = Date.now();
+	await next();
+	const ms = Date.now() - start;
+	const seconds = ms / 1000;
+	console.log(`[Execution Time] ${c.req.method} ${c.req.url} - ${seconds}s (${ms}ms)`);
+});
+
 app.get("/", (c) => {
 	return c.text("Hello Hono! PR Review Agent is running.");
 });
