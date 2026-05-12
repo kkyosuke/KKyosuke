@@ -11,7 +11,14 @@ export const routeCommentCommand = async (ctx: CommandContext) => {
 		return;
 	}
 
-	for (const command of availableCommands) {
+	// 優先度が高い順にソート（未設定の場合は0）
+	const sortedCommands = [...availableCommands].sort((a, b) => {
+		const pA = a.priority ?? 0;
+		const pB = b.priority ?? 0;
+		return pB - pA;
+	});
+
+	for (const command of sortedCommands) {
 		const isTriggered = command.triggerWords.some((word) =>
 			ctx.commentBody.includes(word),
 		);

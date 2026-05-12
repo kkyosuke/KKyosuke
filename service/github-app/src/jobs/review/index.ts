@@ -1,5 +1,5 @@
-import { runReviewAgent } from "./reviewAgent";
-import type { CommandContext, CommandJob } from "./types";
+import { runReviewAgent } from "./agent";
+import type { CommandContext, CommandJob } from "../types";
 
 export const reviewCommand: CommandJob = {
 	name: "review",

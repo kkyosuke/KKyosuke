@@ -10,5 +10,6 @@ export interface CommandContext {
 export interface CommandJob {
 	name: string;
 	triggerWords: string[]; // このコマンドが反応するキーワード
+	priority?: number; // 判定の優先順位（大きいほど優先）
 	execute: (ctx: CommandContext) => Promise<void>;
 }
