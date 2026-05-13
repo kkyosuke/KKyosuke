@@ -1,1 +1,0 @@
-../../../../docs/ja/agent/template/pull-request.md
