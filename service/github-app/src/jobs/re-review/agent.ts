@@ -171,16 +171,17 @@ export async function runReReviewAgent(
 			(f) => !(f.path && f.path !== "-" && f.line > 0),
 		);
 
-		let newFeedbackSection = "";
+		let newFeedbackSection = "### 🚨 新たな懸念点\n\nなし\n";
 		if (generalNewFeedback.length > 0) {
 			newFeedbackSection =
-				"## 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
-			newFeedbackSection += generalNewFeedback
-				.map(
-					(f) =>
-						`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
-				)
-				.join("\n");
+				"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
+			newFeedbackSection +=
+				generalNewFeedback
+					.map(
+						(f) =>
+							`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
+					)
+					.join("\n") + "\n";
 		}
 
 		const hasIssues = newFeedbacks.length > 0;
@@ -189,10 +190,20 @@ export async function runReReviewAgent(
 			? `\n**【次のステップ】**\n- [ ] \`🔴 must\` の指摘事項を修正する\n- [ ] \`🟡 want\` の指摘事項を修正する、または対応を見送る理由を返信する\n- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`
 			: "";
 
-		let improvementsSection = "";
-		if (result.improvements && result.improvements.length > 0) {
-			improvementsSection =
-				result.improvements.map((i) => `- ${i}`).join("\n") + "\n";
+		let summarySection = "### 📝 サマリ\n\nなし\n";
+		if (result.summary && result.summary.length > 0) {
+			summarySection =
+				"### 📝 サマリ\n\n" +
+				result.summary.map((s) => `- ${s}`).join("\n") +
+				"\n";
+		}
+
+		let resolvedAndHandoffSection = "### 💡 解決項目と申し送り\n\nなし\n";
+		if (result.resolvedAndHandoff && result.resolvedAndHandoff.length > 0) {
+			resolvedAndHandoffSection =
+				"### 💡 解決項目と申し送り\n\n" +
+				result.resolvedAndHandoff.map((i) => `- ${i}`).join("\n") +
+				"\n";
 		}
 
 		// Markdown生成
@@ -200,8 +211,8 @@ export async function runReReviewAgent(
 			.replaceAll("{{botName}}", botName)
 			.replaceAll("{{nextStepsSection}}", nextStepsSection)
 			.replaceAll("{{overallStatus}}", result.overallStatus)
-			.replaceAll("{{summary}}", result.summary)
-			.replaceAll("{{improvementsSection}}", improvementsSection)
+			.replaceAll("{{summarySection}}", summarySection)
+			.replaceAll("{{resolvedAndHandoffSection}}", resolvedAndHandoffSection)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
 
 		console.log(

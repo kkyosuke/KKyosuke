@@ -3,9 +3,9 @@
 > [!NOTE]
 > **Status: {{overallStatus}}**
 
-{{summary}}
+{{summarySection}}
 
-{{improvementsSection}}
+{{resolvedAndHandoffSection}}
 
 {{newFeedbackSection}}
 
