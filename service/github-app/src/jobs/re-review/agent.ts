@@ -8,8 +8,12 @@ import {
 	updateComment,
 } from "../../lib/github";
 import { generateReReview } from "../../lib/llm";
-import instruction from "../../prompts/re-review/instruction.md" with { type: "text" };
-import template from "../../prompts/re-review/template.md" with { type: "text" };
+import instruction from "../../prompts/re-review/instruction.md" with {
+	type: "text",
+};
+import template from "../../prompts/re-review/template.md" with {
+	type: "text",
+};
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -48,7 +52,7 @@ export async function runReReviewAgent(
 			repo,
 			pullNumber,
 		);
-		
+
 		// 過去のコメントの取得
 		const issueCommentsRaw = await getIssueComments(
 			env,
@@ -67,14 +71,26 @@ export async function runReReviewAgent(
 
 		// Bot自身のコメントを抽出
 		const botIssueComments = issueCommentsRaw
-			.filter(c => c.user?.type === "Bot" || c.user?.login?.toLowerCase().includes("bot") || c.user?.login?.includes("ai"))
-			.map(c => `[PR全体へのコメント]\n${c.body}`);
-			
-		const botReviewComments = reviewCommentsRaw
-			.filter(c => c.user?.type === "Bot" || c.user?.login?.toLowerCase().includes("bot") || c.user?.login?.includes("ai"))
-			.map(c => `[ファイル: ${c.path}, 行: ${c.line}]\n${c.body}`);
+			.filter(
+				(c) =>
+					c.user?.type === "Bot" ||
+					c.user?.login?.toLowerCase().includes("bot") ||
+					c.user?.login?.includes("ai"),
+			)
+			.map((c) => `[PR全体へのコメント]\n${c.body}`);
 
-		const previousComments = [...botIssueComments, ...botReviewComments].join("\n\n---\n\n");
+		const botReviewComments = reviewCommentsRaw
+			.filter(
+				(c) =>
+					c.user?.type === "Bot" ||
+					c.user?.login?.toLowerCase().includes("bot") ||
+					c.user?.login?.includes("ai"),
+			)
+			.map((c) => `[ファイル: ${c.path}, 行: ${c.line}]\n${c.body}`);
+
+		const previousComments = [...botIssueComments, ...botReviewComments].join(
+			"\n\n---\n\n",
+		);
 
 		console.log(
 			`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
@@ -89,11 +105,12 @@ export async function runReReviewAgent(
 		});
 
 		// 過去の指摘ステータステーブルの作成
-		const previousFeedbackTable = result.previousFeedbackStatus.length > 0
-			? result.previousFeedbackStatus
-					.map((f) => `| ${f.summary} | ${f.status} | ${f.comment} |`)
-					.join("\n")
-			: "| - | - | 過去の指摘事項が見つかりませんでした |";
+		const previousFeedbackTable =
+			result.previousFeedbackStatus.length > 0
+				? result.previousFeedbackStatus
+						.map((f) => `| ${f.summary} | ${f.status} | ${f.comment} |`)
+						.join("\n")
+				: "| - | - | 過去の指摘事項が見つかりませんでした |";
 
 		// 新規の指摘事項セクションの作成
 		const newFeedbacks = result.newFeedback.slice(0, 10);
@@ -103,9 +120,13 @@ export async function runReReviewAgent(
 
 		let newFeedbackSection = "";
 		if (generalNewFeedback.length > 0) {
-			newFeedbackSection = "## 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
+			newFeedbackSection =
+				"## 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
 			newFeedbackSection += generalNewFeedback
-				.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`)
+				.map(
+					(f) =>
+						`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
+				)
 				.join("\n");
 		}
 

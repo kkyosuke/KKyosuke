@@ -9,7 +9,9 @@ import {
 	updateComment,
 } from "../../lib/github";
 import { generateCodeReview } from "../../lib/llm";
-import instruction from "../../prompts/review/instruction.md" with { type: "text" };
+import instruction from "../../prompts/review/instruction.md" with {
+	type: "text",
+};
 import template from "../../prompts/review/template.md" with { type: "text" };
 
 export async function runReviewAgent(
@@ -170,8 +172,16 @@ export async function runReviewAgent(
 		);
 
 		if (placeholderCommentId) {
-			console.log(`[ReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`);
-			await deleteComment(env, installationId, owner, repo, placeholderCommentId);
+			console.log(
+				`[ReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`,
+			);
+			await deleteComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+			);
 		}
 
 		// 5. 該当行にインラインコメントを追加する

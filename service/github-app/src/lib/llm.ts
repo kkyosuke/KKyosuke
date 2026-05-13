@@ -32,9 +32,7 @@ export const reviewSchema = z.object({
 						"該当する行番号。全体に対する指摘など特定できない場合は 0 または -1",
 					),
 				reason: z.string().describe("指摘理由 (バグの可能性、可読性など)"),
-				severity: z
-					.enum(["🔴 must", "🟡 want"])
-					.describe("対応度"),
+				severity: z.enum(["🔴 must", "🟡 want"]).describe("対応度"),
 				summary: z.string().describe("指摘の具体的な内容を簡潔に記載"),
 			}),
 		)
@@ -126,14 +124,14 @@ export const reReviewSchema = z.object({
 	overallStatus: z
 		.string()
 		.describe("全体ステータス (例: 🌟 全て解決！ / ⚠️ 残件あり)"),
-	summary: z
-		.string()
-		.describe("再レビューの総評を簡潔に記載"),
+	summary: z.string().describe("再レビューの総評を簡潔に記載"),
 	previousFeedbackStatus: z
 		.array(
 			z.object({
 				summary: z.string().describe("前回の指摘の概要"),
-				status: z.enum(["✅ 解決済", "❌ 未対応", "⚠️ 部分的に解決"]).describe("ステータス"),
+				status: z
+					.enum(["✅ 解決済", "❌ 未対応", "⚠️ 部分的に解決"])
+					.describe("ステータス"),
 				comment: z.string().describe("判定理由のコメント"),
 			}),
 		)
@@ -141,8 +139,12 @@ export const reReviewSchema = z.object({
 	newFeedback: z
 		.array(
 			z.object({
-				path: z.string().describe("対象のファイルパス。全体に対する指摘の場合は '-'"),
-				line: z.number().describe("該当する行番号。特定できない場合は 0 または -1"),
+				path: z
+					.string()
+					.describe("対象のファイルパス。全体に対する指摘の場合は '-'"),
+				line: z
+					.number()
+					.describe("該当する行番号。特定できない場合は 0 または -1"),
 				reason: z.string().describe("指摘理由"),
 				severity: z.enum(["🔴 must", "🟡 want"]).describe("対応度"),
 				summary: z.string().describe("指摘の具体的な内容"),

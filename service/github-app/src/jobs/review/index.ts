@@ -1,7 +1,7 @@
-import { runReviewAgent } from "./agent";
-import { runReReviewAgent } from "../re-review/agent";
 import { getIssueComments, getReviewComments } from "../../lib/github";
+import { runReReviewAgent } from "../re-review/agent";
 import type { CommandContext, CommandJob } from "../types";
+import { runReviewAgent } from "./agent";
 
 export const reviewCommand: CommandJob = {
 	name: "review",
@@ -52,7 +52,10 @@ export const reviewCommand: CommandJob = {
 				return;
 			}
 		} catch (error) {
-			console.warn("[ReviewCommand] Failed to check previous comments. Proceeding with normal review.", error);
+			console.warn(
+				"[ReviewCommand] Failed to check previous comments. Proceeding with normal review.",
+				error,
+			);
 		}
 
 		await runReviewAgent(
