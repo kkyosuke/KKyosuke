@@ -110,23 +110,37 @@ export async function runReReviewAgent(
 							evalResult.action === "REPLY_AND_RESOLVE") &&
 						evalResult.replyBody
 					) {
-						await createReplyForReviewComment(
-							env,
-							installationId,
-							owner,
-							repo,
-							pullNumber,
-							comments[0].databaseId,
-							evalResult.replyBody,
-						);
+						try {
+							await createReplyForReviewComment(
+								env,
+								installationId,
+								owner,
+								repo,
+								pullNumber,
+								comments[0].databaseId,
+								evalResult.replyBody,
+							);
+						} catch (e: any) {
+							console.warn(
+								`[ReReviewAgent] Failed to reply to thread ${thread.id}:`,
+								e.message,
+							);
+						}
 					}
 
 					if (
 						evalResult.action === "RESOLVE" ||
 						evalResult.action === "REPLY_AND_RESOLVE"
 					) {
-						await resolveReviewThread(env, installationId, thread.id);
-						thread.isResolved = true; // Mark as resolved in memory
+						try {
+							await resolveReviewThread(env, installationId, thread.id);
+							thread.isResolved = true; // Mark as resolved in memory
+						} catch (e: any) {
+							console.warn(
+								`[ReReviewAgent] Failed to resolve thread ${thread.id}:`,
+								e.message,
+							);
+						}
 					}
 				}
 			}),
