@@ -30,3 +30,5 @@
 | Testing | {{score_testQuality}} / 5 | {{comment_testQuality}} |
 | Design / Architecture | {{score_architecture}} / 5 | {{comment_architecture}} |
 | PR Structure & Documentation | {{score_documentation}} / 5 | {{comment_documentation}} |
+
+{{nextStepsSection}}

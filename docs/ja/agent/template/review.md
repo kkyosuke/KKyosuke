@@ -32,7 +32,4 @@
 | 設計・アーキテクチャ | {{score_architecture}} / 5 | {{comment_architecture}} |
 | PR要件・ドキュメント | {{score_documentation}} / 5 | {{comment_documentation}} |
 
-**【次のステップ】**
-- [ ] `🔴 must` の指摘事項を修正する
-- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する
-- [ ] ※ 修正対応やコメントの返信が終わりましたら、`@{{botName}} 再レビューして` とメンションして再度レビューを依頼してください。
+{{nextStepsSection}}
