@@ -18,7 +18,7 @@
 - `🔴 must`: Issues that could lead to critical bugs, or negatively impact maintainability/availability. Please address and fix.
 - `🟡 want`: Recommended improvements. Please fix them or provide a reason if you decide to skip.
 
-* Once you have finished the fixes or replied to the comments, please request a re-review by mentioning `@kkyosuke.ai 再レビューして`.
+
 ## 📊 Evaluation Score Details
 
 | Perspective | Score (Out of 5) | Comments (Optional) |

@@ -1,1 +1,1 @@
-../../../../../docs/ja/agent/template/pull-request.md
+../../../../../docs/ja/agent/template/review.md

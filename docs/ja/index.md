@@ -24,5 +24,5 @@
 
 #### 詳細
 
-- **[Pull Requestレビュー 手順書](agent/instruction/pull-request.md)**
+- **[Pull Requestレビュー 手順書](agent/instruction/review.md)**
   - Pull Requestの自動コードレビューを行い、サマリと指摘点を出力するためのプロンプト指示書。

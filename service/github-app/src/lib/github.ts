@@ -180,3 +180,82 @@ export async function deleteComment(
 	});
 	return data;
 }
+
+export async function getReviewThreads(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const query = `
+		query($owner: String!, $repo: String!, $pullNumber: Int!) {
+			repository(owner: $owner, name: $repo) {
+				pullRequest(number: $pullNumber) {
+					reviewThreads(first: 100) {
+						nodes {
+							id
+							isResolved
+							path
+							line
+							comments(first: 50) {
+								nodes {
+									id
+									databaseId
+									body
+									author { login }
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	`;
+	const result = await octokit.graphql<any>(query, {
+		owner,
+		repo,
+		pullNumber,
+	});
+	return result.repository.pullRequest.reviewThreads.nodes;
+}
+
+export async function resolveReviewThread(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	threadId: string,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const mutation = `
+		mutation($threadId: ID!) {
+			resolveReviewThread(input: {threadId: $threadId}) {
+				thread { isResolved }
+			}
+		}
+	`;
+	await octokit.graphql(mutation, { threadId });
+}
+
+export async function createReplyForReviewComment(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+	commentId: number,
+	body: string,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.pulls.createReplyForReviewComment({
+		owner,
+		repo,
+		pull_number: pullNumber,
+		comment_id: commentId,
+		body,
+	});
+	return data;
+}

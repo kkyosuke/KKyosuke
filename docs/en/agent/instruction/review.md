@@ -21,10 +21,6 @@ Based on the team's PR creation policy ([`docs/en/code/pull-request.md`](../../c
 7. **PR Structure & Documentation**:
    - Is the PR granularity appropriate (not too large)? Are the title and description clear? Are necessary documents updated?
 
-## [Handling Re-reviews]
-If comment history is included (in the case of a re-review request), check the status of previously pointed-out issues.
-For past issues marked as `must` / `want`, if the code has already been fixed, or if a valid and convincing reason for not addressing it is provided in the comments, close the issue and exclude it from the new list of points.
-If you determine that all issues have been resolved, output an empty array for the list of points.
 
 ## [Output Format]
 Please output the following information in JSON format according to the provided schema.

@@ -1,17 +1,23 @@
 import {
 	createPlaceholderComment,
+	createReplyForReviewComment,
+	createReview,
 	createReviewComment,
-	getIssueComments,
+	deleteComment,
 	getPullRequest,
 	getPullRequestDiff,
-	getReviewComments,
+	getReviewThreads,
+	resolveReviewThread,
 	updateComment,
 } from "../../lib/github";
-import { generateReReview } from "../../lib/llm";
+import { evaluateReviewThread, generateReReview } from "../../lib/llm";
 import instruction from "../../prompts/re-review/instruction.md" with {
 	type: "text",
 };
 import template from "../../prompts/re-review/template.md" with {
+	type: "text",
+};
+import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
 
@@ -53,15 +59,8 @@ export async function runReReviewAgent(
 			pullNumber,
 		);
 
-		// 過去のコメントの取得
-		const issueCommentsRaw = await getIssueComments(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-		const reviewCommentsRaw = await getReviewComments(
+		// 過去のコメントスレッドの取得と処理
+		const reviewThreads = await getReviewThreads(
 			env,
 			installationId,
 			owner,
@@ -69,29 +68,72 @@ export async function runReReviewAgent(
 			pullNumber,
 		);
 
-		// Bot自身のコメントを抽出
-		const botIssueComments = issueCommentsRaw
-			.filter(
-				(c) =>
-					c.user?.type === "Bot" ||
-					c.user?.login?.toLowerCase().includes("bot") ||
-					c.user?.login?.includes("ai"),
-			)
-			.map((c) => `[PR全体へのコメント]\n${c.body}`);
+		for (const thread of reviewThreads) {
+			if (thread.isResolved || !thread.comments?.nodes?.length) continue;
 
-		const botReviewComments = reviewCommentsRaw
-			.filter(
-				(c) =>
-					c.user?.type === "Bot" ||
-					c.user?.login?.toLowerCase().includes("bot") ||
-					c.user?.login?.includes("ai"),
-			)
-			.map((c) => `[ファイル: ${c.path}, 行: ${c.line}]\n${c.body}`);
+			const comments = thread.comments.nodes;
+			const firstCommentAuthor = comments[0].author?.login?.toLowerCase() || "";
+			const isBotThread =
+				firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
 
-		const previousComments = [...botIssueComments, ...botReviewComments].join(
-			"\n\n---\n\n",
-		);
+			if (!isBotThread) continue;
 
+			const lastCommentAuthor =
+				comments[comments.length - 1].author?.login?.toLowerCase() || "";
+			const isLastCommentFromBot =
+				lastCommentAuthor.includes("bot") || lastCommentAuthor.includes("ai");
+
+			// 最後のコメントがBotでない場合（ユーザーからの返信がある場合）に対応
+			if (!isLastCommentFromBot) {
+				console.log(`[ReReviewAgent] Evaluating thread ${thread.id}`);
+				const threadCommentsText = comments
+					.map((c: any) => `@${c.author?.login}: ${c.body}`)
+					.join("\n\n---\n\n");
+
+				const evalResult = await evaluateReviewThread(env, {
+					threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
+					diff,
+					instruction: threadInstruction,
+				});
+
+				console.log(
+					`[ReReviewAgent] Thread ${thread.id} action: ${evalResult.action}`,
+				);
+
+				if (
+					(evalResult.action === "REPLY" ||
+						evalResult.action === "REPLY_AND_RESOLVE") &&
+					evalResult.replyBody
+				) {
+					await createReplyForReviewComment(
+						env,
+						installationId,
+						owner,
+						repo,
+						pullNumber,
+						comments[0].databaseId,
+						evalResult.replyBody,
+					);
+				}
+
+				if (
+					evalResult.action === "RESOLVE" ||
+					evalResult.action === "REPLY_AND_RESOLVE"
+				) {
+					await resolveReviewThread(env, installationId, thread.id);
+					thread.isResolved = true; // Mark as resolved in memory
+				}
+			}
+		}
+
+		// 未解決のBotスレッドが残っているかチェック
+		const remainingUnresolvedThreads = reviewThreads.filter((t: any) => {
+			if (t.isResolved || !t.comments?.nodes?.length) return false;
+			const author = t.comments.nodes[0].author?.login?.toLowerCase() || "";
+			return author.includes("bot") || author.includes("ai");
+		});
+
+		// 全体の再レビュー
 		console.log(
 			`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
@@ -99,18 +141,9 @@ export async function runReReviewAgent(
 			title: pr.title,
 			body: pr.body,
 			diff: diff,
-			previousComments: previousComments,
 			instruction: instruction,
 			template: template,
 		});
-
-		// 過去の指摘ステータステーブルの作成
-		const previousFeedbackTable =
-			result.previousFeedbackStatus.length > 0
-				? result.previousFeedbackStatus
-						.map((f) => `| ${f.summary} | ${f.status} | ${f.comment} |`)
-						.join("\n")
-				: "| - | - | 過去の指摘事項が見つかりませんでした |";
 
 		// 新規の指摘事項セクションの作成
 		const newFeedbacks = result.newFeedback.slice(0, 10);
@@ -134,20 +167,37 @@ export async function runReReviewAgent(
 		const markdownReport = template
 			.replaceAll("{{overallStatus}}", result.overallStatus)
 			.replaceAll("{{summary}}", result.summary)
-			.replaceAll("{{previousFeedbackTable}}", previousFeedbackTable)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
 
 		console.log(
-			`[ReReviewAgent] Updating comment for ${owner}/${repo}#${pullNumber}`,
+			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
-		await updateComment(
+
+		const hasIssues =
+			newFeedbacks.length > 0 || remainingUnresolvedThreads.length > 0;
+
+		await createReview(
 			env,
 			installationId,
 			owner,
 			repo,
-			placeholderCommentId,
+			pullNumber,
 			markdownReport,
+			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
+
+		if (placeholderCommentId) {
+			console.log(
+				`[ReReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`,
+			);
+			await deleteComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+			);
+		}
 
 		// 新規インラインコメントの投稿
 		for (const item of newFeedbacks) {
