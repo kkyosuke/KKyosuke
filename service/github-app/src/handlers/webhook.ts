@@ -1,6 +1,7 @@
 import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
+import { getBotName } from "../config/env";
 import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
@@ -62,12 +63,7 @@ export async function githubWebhookHandler(c: Context) {
 				return c.text("OK", 200);
 			}
 
-			// Cloudflare Workers環境では process グローバル変数が存在しない可能性があるため、
-			// 参照エラーを防ぐ目的で typeof process !== "undefined" を確認しています。
-			const isLocal =
-				typeof process !== "undefined" && process.env.NODE_ENV !== "production";
-			const botName =
-				e.BOT_NAME || (isLocal ? "test.kkyosuke.ai" : "kkyosuke.ai");
+			const botName = getBotName(e);
 
 			const commandCtx = {
 				env: e,
