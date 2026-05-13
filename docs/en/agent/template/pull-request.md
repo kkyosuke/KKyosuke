@@ -15,18 +15,18 @@
 {{feedbackTable}}
 
 **[Response Policy]**
-- `🔴 must` / `🟡 want`: Please address and fix.
-- `💬 Q`: Please provide an answer.
-- `🟢 nits`: Optional to address.
+- `🔴 must`: Issues that could lead to critical bugs, or negatively impact maintainability/availability. Please address and fix.
+- `🟡 want`: Recommended improvements. Please fix them or provide a reason if you decide to skip.
 
+* Once you have finished the fixes or replied to the comments, please request a re-review by mentioning `@kkyosuke.ai 再レビューして`.
 ## 📊 Evaluation Score Details
 
-| Perspective | Score (Out of 10) | Comments (Optional) |
+| Perspective | Score (Out of 5) | Comments (Optional) |
 | :--- | :--- | :--- |
-| Correctness / Bug Risk | {{score_functionality}} / 10 | {{comment_functionality}} |
-| Security | {{score_security}} / 10 | {{comment_security}} |
-| Maintainability / Readability | {{score_maintainability}} / 10 | {{comment_maintainability}} |
-| Performance | {{score_performance}} / 10 | {{comment_performance}} |
-| Testing | {{score_testQuality}} / 10 | {{comment_testQuality}} |
-| Design / Architecture | {{score_architecture}} / 10 | {{comment_architecture}} |
-| PR Structure & Documentation | {{score_documentation}} / 10 | {{comment_documentation}} |
+| Correctness / Bug Risk | {{score_functionality}} / 5 | {{comment_functionality}} |
+| Security | {{score_security}} / 5 | {{comment_security}} |
+| Maintainability / Readability | {{score_maintainability}} / 5 | {{comment_maintainability}} |
+| Performance | {{score_performance}} / 5 | {{comment_performance}} |
+| Testing | {{score_testQuality}} / 5 | {{comment_testQuality}} |
+| Design / Architecture | {{score_architecture}} / 5 | {{comment_architecture}} |
+| PR Structure & Documentation | {{score_documentation}} / 5 | {{comment_documentation}} |

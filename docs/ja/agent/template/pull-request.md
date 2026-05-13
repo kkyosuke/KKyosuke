@@ -15,18 +15,18 @@
 {{feedbackTable}}
 
 **【対応方針】**
-- `🔴 must` / `🟡 want`: 修正対応をお願いします。
-- `💬 Q`: 回答をお願いします。
-- `🟢 nits`: 対応は任意です。
+- `🔴 must`: 重大な不具合の恐れがあるものや、保守性・可用性に悪影響を及ぼす問題です。必ず修正対応をお願いします。
+- `🟡 want`: 改善が推奨される事項です。修正するか、あるいは対応を見送る場合はその理由を提示してください。
 
+※ 修正対応やコメントの返信が終わりましたら、`@kkyosuke.ai 再レビューして` とメンションして再度レビューを依頼してください。
 ## 📊 評価スコア詳細
 
-| 評価観点 | スコア (各10点満点) | コメント（任意） |
+| 評価観点 | スコア (各5点満点) | コメント（任意） |
 | :--- | :--- | :--- |
-| 機能の正確性・バグのリスク | {{score_functionality}} / 10 | {{comment_functionality}} |
-| セキュリティ | {{score_security}} / 10 | {{comment_security}} |
-| 保守性・可読性 | {{score_maintainability}} / 10 | {{comment_maintainability}} |
-| パフォーマンス | {{score_performance}} / 10 | {{comment_performance}} |
-| テスト品質 | {{score_testQuality}} / 10 | {{comment_testQuality}} |
-| 設計・アーキテクチャ | {{score_architecture}} / 10 | {{comment_architecture}} |
-| PR要件・ドキュメント | {{score_documentation}} / 10 | {{comment_documentation}} |
+| 機能の正確性・バグのリスク | {{score_functionality}} / 5 | {{comment_functionality}} |
+| セキュリティ | {{score_security}} / 5 | {{comment_security}} |
+| 保守性・可読性 | {{score_maintainability}} / 5 | {{comment_maintainability}} |
+| パフォーマンス | {{score_performance}} / 5 | {{comment_performance}} |
+| テスト品質 | {{score_testQuality}} / 5 | {{comment_testQuality}} |
+| 設計・アーキテクチャ | {{score_architecture}} / 5 | {{comment_architecture}} |
+| PR要件・ドキュメント | {{score_documentation}} / 5 | {{comment_documentation}} |

@@ -33,7 +33,7 @@ export const reviewSchema = z.object({
 					),
 				reason: z.string().describe("指摘理由 (バグの可能性、可読性など)"),
 				severity: z
-					.enum(["🔴 must", "🟡 want", "🟢 nits", "💬 Q"])
+					.enum(["🔴 must", "🟡 want"])
 					.describe("対応度"),
 				summary: z.string().describe("指摘の具体的な内容を簡潔に記載"),
 			}),
@@ -42,28 +42,28 @@ export const reviewSchema = z.object({
 	scores: z
 		.object({
 			functionality: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("機能の正確性・バグのリスク"),
 			security: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("セキュリティ"),
 			maintainability: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("保守性・可読性"),
 			performance: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("パフォーマンス"),
 			testQuality: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("テスト品質"),
 			architecture: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("設計・アーキテクチャ"),
 			documentation: z
-				.object({ score: z.number().min(0).max(10), comment: z.string() })
+				.object({ score: z.number().min(0).max(5), comment: z.string() })
 				.describe("PR要件・ドキュメント"),
 		})
-		.describe("評価スコア詳細 (各10点満点)"),
+		.describe("評価スコア詳細 (各5点満点)"),
 });
 
 export type ReviewResult = z.infer<typeof reviewSchema>;

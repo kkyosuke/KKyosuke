@@ -125,3 +125,41 @@ export async function createReviewComment(
 	});
 	return data;
 }
+
+export async function createReview(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+	body: string,
+	event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT",
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.pulls.createReview({
+		owner,
+		repo,
+		pull_number: pullNumber,
+		body,
+		event,
+	});
+	return data;
+}
+
+export async function deleteComment(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	commentId: number,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.issues.deleteComment({
+		owner,
+		repo,
+		comment_id: commentId,
+	});
+	return data;
+}

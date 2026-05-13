@@ -1,6 +1,8 @@
 import {
 	createPlaceholderComment,
+	createReview,
 	createReviewComment,
+	deleteComment,
 	getIssueComments,
 	getPullRequest,
 	getPullRequestDiff,
@@ -108,16 +110,24 @@ export async function runReviewAgent(
 
 		// 4. 結果の更新
 		console.log(
-			`[ReviewAgent] Updating comment for ${owner}/${repo}#${pullNumber}`,
+			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
-		await updateComment(
+
+		const hasIssues = feedbacks.length > 0;
+		await createReview(
 			env,
 			installationId,
 			owner,
 			repo,
-			placeholderCommentId,
+			pullNumber,
 			markdownReport,
+			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
+
+		if (placeholderCommentId) {
+			console.log(`[ReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`);
+			await deleteComment(env, installationId, owner, repo, placeholderCommentId);
+		}
 
 		// 5. 該当行にインラインコメントを追加する
 		for (const item of feedbacks) {
