@@ -19,5 +19,6 @@ Output the following information in JSON format according to the provided schema
 ### Format Details
 - **Overall Status**: Output a concise string such as "🌟 All Resolved!" if all important feedback is resolved, or "⚠️ Remaining Issues" if there are unresolved items or new critical problems (icon required).
 - **Summary**: Briefly summarize the overall assessment of this re-review (e.g., "Confirmed that 2 out of 3 previous feedback items have been fixed. Please double-check the remaining 1 item.").
+- **Improvements & Changes**: Output any points improved or new specifications/changes added in this modification as an array so they can be displayed clearly as a bulleted list.
 
 - **New Feedback List**: Output this if there are **new critical issues (must/want only)**. Output the target file path, line number, reason for the feedback, severity (`🔴 must` / `🟡 want`), and summary. If the specific line cannot be identified or it applies generally, set the line number to 0 or -1 and the file path to `-`. Follow the reference annotations for the severity criteria and always include the icon.

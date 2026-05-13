@@ -5,6 +5,7 @@
 
 {{summary}}
 
+{{improvementsSection}}
 
 {{newFeedbackSection}}
 

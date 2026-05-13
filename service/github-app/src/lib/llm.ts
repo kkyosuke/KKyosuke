@@ -125,6 +125,11 @@ export const reReviewSchema = z.object({
 		.string()
 		.describe("全体ステータス (例: 🌟 全て解決！ / ⚠️ 残件あり)"),
 	summary: z.string().describe("再レビューの総評を簡潔に記載"),
+	improvements: z
+		.array(z.string())
+		.describe(
+			"今回解決した点や、改善されたポイント。箇条書きのリストとして出力するため配列で記述してください。",
+		),
 	newFeedback: z
 		.array(
 			z.object({

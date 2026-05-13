@@ -146,7 +146,7 @@ export async function runReReviewAgent(
 			}),
 		);
 
-		// 未解決のBotスレッドが残っているかチェック
+		// 未解決のBotスレッドが残っているかチェック (スレッド対応は別エージェントに任せる方針のため、再レビューの全体ステータス判定には使用しない)
 		const remainingUnresolvedThreads = reviewThreads.filter((t: any) => {
 			if (t.isResolved || !t.comments?.nodes?.length) return false;
 			const author = t.comments.nodes[0].author?.login?.toLowerCase() || "";
@@ -183,12 +183,17 @@ export async function runReReviewAgent(
 				.join("\n");
 		}
 
-		const hasIssues =
-			newFeedbacks.length > 0 || remainingUnresolvedThreads.length > 0;
+		const hasIssues = newFeedbacks.length > 0;
 
 		const nextStepsSection = hasIssues
 			? `\n**【次のステップ】**\n- [ ] \`🔴 must\` の指摘事項を修正する\n- [ ] \`🟡 want\` の指摘事項を修正する、または対応を見送る理由を返信する\n- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`
 			: "";
+
+		let improvementsSection = "";
+		if (result.improvements && result.improvements.length > 0) {
+			improvementsSection =
+				result.improvements.map((i) => `- ${i}`).join("\n") + "\n";
+		}
 
 		// Markdown生成
 		const markdownReport = template
@@ -196,6 +201,7 @@ export async function runReReviewAgent(
 			.replaceAll("{{nextStepsSection}}", nextStepsSection)
 			.replaceAll("{{overallStatus}}", result.overallStatus)
 			.replaceAll("{{summary}}", result.summary)
+			.replaceAll("{{improvementsSection}}", improvementsSection)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
 
 		console.log(
