@@ -2,6 +2,8 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
+export const REVIEW_MODEL_NAME = "claude-haiku-4-5";
+
 export interface ReviewContext {
 	title: string;
 	body: string | null;
@@ -76,7 +78,7 @@ export async function generateCodeReview(
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic("claude-haiku-4-5");
+	const model = anthropic(REVIEW_MODEL_NAME);
 
 	const prompt = `
 ${context.instruction}
@@ -159,7 +161,7 @@ export async function generateReReview(
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic("claude-haiku-4-5");
+	const model = anthropic(REVIEW_MODEL_NAME);
 
 	const prompt = `
 ${context.instruction}
@@ -219,7 +221,7 @@ export async function evaluateReviewThread(
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic("claude-haiku-4-5");
+	const model = anthropic(REVIEW_MODEL_NAME);
 
 	const prompt = `
 ${context.instruction}

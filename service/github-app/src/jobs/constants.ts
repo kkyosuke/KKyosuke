@@ -5,7 +5,11 @@ export type ProgressStep = {
 	status: "pending" | "in_progress" | "done";
 };
 
-export const getInProgressComment = (title: string, steps: ProgressStep[]) => {
+export const getInProgressComment = (
+	title: string,
+	steps: ProgressStep[],
+	modelName?: string,
+) => {
 	const stepsText = steps
 		.map((s) => {
 			switch (s.status) {
@@ -22,7 +26,9 @@ export const getInProgressComment = (title: string, steps: ProgressStep[]) => {
 		.filter(Boolean)
 		.join("\n");
 
-	return `> [!NOTE]\n> 🔍 **${title}**\n> 現在処理を実行中です。完了まで少々お待ちください！\n> \n${stepsText}\n> \n> version: ${pkg.version}`;
+	const modelInfo = modelName ? `> model: ${modelName}\n` : "";
+
+	return `> [!NOTE]\n> 🔍 **${title}**\n> 現在処理を実行中です。完了まで少々お待ちください！\n> \n${stepsText}\n> \n${modelInfo}> version: ${pkg.version}`;
 };
 
 export const MAX_REVIEW_THREADS = 100;

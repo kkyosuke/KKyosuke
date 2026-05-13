@@ -8,7 +8,7 @@ import {
 	getPullRequestDiff,
 	updateComment,
 } from "../../lib/github";
-import { generateCodeReview } from "../../lib/llm";
+import { generateCodeReview, REVIEW_MODEL_NAME } from "../../lib/llm";
 import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
@@ -39,7 +39,7 @@ export async function runReviewAgent(
 				owner,
 				repo,
 				placeholderCommentId,
-				getInProgressComment("Review in Progress", steps),
+				getInProgressComment("Review in Progress", steps, REVIEW_MODEL_NAME),
 			).catch((e) => console.error("Failed to update progress:", e));
 		}
 	};
@@ -56,7 +56,7 @@ export async function runReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			getInProgressComment("Review in Progress", steps),
+			getInProgressComment("Review in Progress", steps, REVIEW_MODEL_NAME),
 		);
 		placeholderCommentId = placeholder.id;
 

@@ -10,7 +10,11 @@ import {
 	resolveReviewThread,
 	updateComment,
 } from "../../lib/github";
-import { evaluateReviewThread, generateReReview } from "../../lib/llm";
+import {
+	evaluateReviewThread,
+	generateReReview,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import instruction from "../../prompts/re-review/instruction.md" with {
 	type: "text",
 };
@@ -47,7 +51,7 @@ export async function runReReviewAgent(
 				owner,
 				repo,
 				placeholderCommentId,
-				getInProgressComment("Re-Review in Progress", steps),
+				getInProgressComment("Re-Review in Progress", steps, REVIEW_MODEL_NAME),
 			).catch((e) => console.error("Failed to update progress:", e));
 		}
 	};
@@ -63,7 +67,7 @@ export async function runReReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			getInProgressComment("Re-Review in Progress", steps),
+			getInProgressComment("Re-Review in Progress", steps, REVIEW_MODEL_NAME),
 		);
 		placeholderCommentId = placeholder.id;
 
