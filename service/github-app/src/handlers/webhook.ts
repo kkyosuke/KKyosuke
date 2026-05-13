@@ -1,7 +1,7 @@
 import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
-import { runReviewAgent } from "../jobs/reviewAgent";
+import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
 	const e = env<Record<string, string | undefined>>(c);
@@ -52,49 +52,38 @@ export async function githubWebhookHandler(c: Context) {
 		// PRへのコメントであることの確認
 		if (payload.issue && payload.issue.pull_request) {
 			const commentBody = payload.comment?.body || "";
+			const owner = payload.repository.owner.login;
+			const repo = payload.repository.name;
+			const pullNumber = payload.issue.number;
+			const installationId = payload.installation?.id;
 
-			const isLocal = typeof process !== "undefined" && process.env.NODE_ENV !== "production";
-			const triggerMention = isLocal ? "@test.kkyosuke.ai" : "@kkyosuke.ai";
+			if (!installationId) {
+				console.error("[Webhook] No installationId found in webhook payload");
+				return c.text("OK", 200);
+			}
 
-			// トリガー文字列の確認
-			if (
-				commentBody.includes(triggerMention) &&
-				commentBody.includes("レビューして")
-			) {
-				const owner = payload.repository.owner.login;
-				const repo = payload.repository.name;
-				const pullNumber = payload.issue.number;
-				const installationId = payload.installation?.id;
+			const commandCtx = {
+				env: e,
+				installationId,
+				owner,
+				repo,
+				issueNumber: pullNumber,
+				commentBody,
+			};
 
-				if (!installationId) {
-					console.error("[Webhook] No installationId found in webhook payload");
-					return c.text("OK", 200);
+			// 非同期でルーティングを実行 (Fire and forget / Background task)
+			const routingTask = routeCommentCommand(commandCtx).catch((err) =>
+				console.error("Router failed critically", err),
+			);
+
+			try {
+				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+					// Cloudflare Workers 等でのバックグラウンド実行
+					c.executionCtx.waitUntil(routingTask);
 				}
-
-				console.log(
-					`[Webhook] Triggering review for ${owner}/${repo}#${pullNumber} (Installation: ${installationId})`,
-				);
-
-				// 非同期でレビューを実行 (Fire and forget / Background task)
-				const reviewTask = Promise.resolve()
-					.then(() =>
-						runReviewAgent(e, installationId, owner, repo, pullNumber),
-					)
-					.catch((err) => console.error("Agent failed critically", err));
-
-				try {
-					if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
-						// Cloudflare Workers 等でのバックグラウンド実行
-						c.executionCtx.waitUntil(reviewTask);
-					}
-				} catch {
-					// ローカル Bun 環境などで c.executionCtx へのアクセスがエラーになる場合は無視
-					// fire and forget のまま
-				}
-			} else {
-				console.log(
-					`[Webhook] Ignored comment: does not include both '${triggerMention}' and 'レビューして'. Body: "${commentBody.slice(0, 20)}..."`,
-				);
+			} catch {
+				// ローカル Bun 環境などで c.executionCtx へのアクセスがエラーになる場合は無視
+				// fire and forget のまま
 			}
 		} else {
 			console.log(`[Webhook] Ignored comment: not a pull request issue`);

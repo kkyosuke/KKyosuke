@@ -5,10 +5,10 @@ import {
 	getPullRequest,
 	getPullRequestDiff,
 	updateComment,
-} from "../lib/github";
-import { generateCodeReview } from "../lib/llm";
-import instruction from "../prompts/instruction.md" with { type: "text" };
-import template from "../prompts/template.md" with { type: "text" };
+} from "../../lib/github";
+import { generateCodeReview } from "../../lib/llm";
+import instruction from "../../prompts/review/instruction.md" with { type: "text" };
+import template from "../../prompts/review/template.md" with { type: "text" };
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -83,28 +83,73 @@ export async function runReviewAgent(
 			(f) => !(f.path && f.path !== "-" && f.line > 0),
 		);
 
-		const feedbackTable = generalFeedback.length > 0
-			? generalFeedback.map((f) => `| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`).join("\n")
-			: "| - | - | - | - | 特に指摘事項はありません |";
+		const feedbackTable =
+			generalFeedback.length > 0
+				? generalFeedback
+						.map(
+							(f) =>
+								`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
+						)
+						.join("\n")
+				: "| - | - | - | - | 特に指摘事項はありません |";
 
 		const markdownReport = template
 			.replaceAll("{{overallEvaluation}}", reviewResult.overallEvaluation)
 			.replaceAll("{{summary}}", reviewResult.summary)
 			.replaceAll("{{feedbackTable}}", feedbackTable)
-			.replaceAll("{{score_functionality}}", String(reviewResult.scores.functionality.score))
-			.replaceAll("{{comment_functionality}}", reviewResult.scores.functionality.comment)
-			.replaceAll("{{score_security}}", String(reviewResult.scores.security.score))
+			.replaceAll(
+				"{{score_functionality}}",
+				String(reviewResult.scores.functionality.score),
+			)
+			.replaceAll(
+				"{{comment_functionality}}",
+				reviewResult.scores.functionality.comment,
+			)
+			.replaceAll(
+				"{{score_security}}",
+				String(reviewResult.scores.security.score),
+			)
 			.replaceAll("{{comment_security}}", reviewResult.scores.security.comment)
-			.replaceAll("{{score_maintainability}}", String(reviewResult.scores.maintainability.score))
-			.replaceAll("{{comment_maintainability}}", reviewResult.scores.maintainability.comment)
-			.replaceAll("{{score_performance}}", String(reviewResult.scores.performance.score))
-			.replaceAll("{{comment_performance}}", reviewResult.scores.performance.comment)
-			.replaceAll("{{score_testQuality}}", String(reviewResult.scores.testQuality.score))
-			.replaceAll("{{comment_testQuality}}", reviewResult.scores.testQuality.comment)
-			.replaceAll("{{score_architecture}}", String(reviewResult.scores.architecture.score))
-			.replaceAll("{{comment_architecture}}", reviewResult.scores.architecture.comment)
-			.replaceAll("{{score_documentation}}", String(reviewResult.scores.documentation.score))
-			.replaceAll("{{comment_documentation}}", reviewResult.scores.documentation.comment);
+			.replaceAll(
+				"{{score_maintainability}}",
+				String(reviewResult.scores.maintainability.score),
+			)
+			.replaceAll(
+				"{{comment_maintainability}}",
+				reviewResult.scores.maintainability.comment,
+			)
+			.replaceAll(
+				"{{score_performance}}",
+				String(reviewResult.scores.performance.score),
+			)
+			.replaceAll(
+				"{{comment_performance}}",
+				reviewResult.scores.performance.comment,
+			)
+			.replaceAll(
+				"{{score_testQuality}}",
+				String(reviewResult.scores.testQuality.score),
+			)
+			.replaceAll(
+				"{{comment_testQuality}}",
+				reviewResult.scores.testQuality.comment,
+			)
+			.replaceAll(
+				"{{score_architecture}}",
+				String(reviewResult.scores.architecture.score),
+			)
+			.replaceAll(
+				"{{comment_architecture}}",
+				reviewResult.scores.architecture.comment,
+			)
+			.replaceAll(
+				"{{score_documentation}}",
+				String(reviewResult.scores.documentation.score),
+			)
+			.replaceAll(
+				"{{comment_documentation}}",
+				reviewResult.scores.documentation.comment,
+			);
 
 		// 4. 結果の更新
 		console.log(

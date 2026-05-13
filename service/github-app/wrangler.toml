@@ -12,6 +12,9 @@ fallbacks = []
 enabled = true
 invocation_logs = false
 
+[observability.traces]
+enabled = false
+
 # Define standard variables (secrets must be uploaded via wrangler secret put)
 # [vars]
 # You can add non-sensitive environment variables here

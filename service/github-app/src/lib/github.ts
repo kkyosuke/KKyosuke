@@ -63,6 +63,23 @@ export async function getIssueComments(
 	return data;
 }
 
+export async function getReviewComments(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.pulls.listReviewComments({
+		owner,
+		repo,
+		pull_number: pullNumber,
+	});
+	return data;
+}
+
 export async function createPlaceholderComment(
 	env: Record<string, string | undefined>,
 	installationId: number,
