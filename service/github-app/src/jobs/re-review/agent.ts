@@ -20,7 +20,7 @@ import template from "../../prompts/re-review/template.md" with {
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
-import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
+import { getInProgressComment, type ProgressStep } from "../constants";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -32,17 +32,38 @@ export async function runReReviewAgent(
 ) {
 	let placeholderCommentId: number | null = null;
 
+	const steps: [ProgressStep, ProgressStep, ProgressStep, ProgressStep] = [
+		{ name: "PRの情報を取得中", status: "pending" },
+		{ name: "過去の指摘事項を確認中", status: "pending" },
+		{ name: "AIによる全体再レビューを生成中", status: "pending" },
+		{ name: "レビュー結果を投稿中", status: "pending" },
+	];
+
+	const updateProgress = async () => {
+		if (placeholderCommentId) {
+			await updateComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+				getInProgressComment("Re-Review in Progress", steps),
+			).catch((e) => console.error("Failed to update progress:", e));
+		}
+	};
+
 	try {
 		console.log(
 			`[ReReviewAgent] Starting re-review for ${owner}/${repo}#${pullNumber}`,
 		);
+		steps[0].status = "in_progress";
 		const placeholder = await createPlaceholderComment(
 			env,
 			installationId,
 			owner,
 			repo,
 			pullNumber,
-			IN_PROGRESS_PLACEHOLDER_COMMENT,
+			getInProgressComment("Re-Review in Progress", steps),
 		);
 		placeholderCommentId = placeholder.id;
 
@@ -62,6 +83,10 @@ export async function runReReviewAgent(
 		);
 
 		// 過去のコメントスレッドの取得と処理
+		steps[0].status = "done";
+		steps[1].status = "in_progress";
+		await updateProgress();
+
 		const reviewThreads = await getReviewThreads(
 			env,
 			installationId,
@@ -154,6 +179,10 @@ export async function runReReviewAgent(
 		});
 
 		// 全体の再レビュー
+		steps[1].status = "done";
+		steps[2].status = "in_progress";
+		await updateProgress();
+
 		console.log(
 			`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
@@ -207,6 +236,10 @@ export async function runReReviewAgent(
 		}
 
 		// Markdown生成
+		steps[2].status = "done";
+		steps[3].status = "in_progress";
+		await updateProgress();
+
 		const markdownReport = template
 			.replaceAll("{{botName}}", botName)
 			.replaceAll("{{nextStepsSection}}", nextStepsSection)

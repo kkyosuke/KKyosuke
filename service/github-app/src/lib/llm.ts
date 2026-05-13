@@ -1,5 +1,5 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
 export interface ReviewContext {
@@ -102,13 +102,13 @@ ${context.diff}
 \`\`\`
 `;
 
-	const { object } = await generateObject({
+	const { output } = await generateText({
 		model,
-		schema: reviewSchema,
 		prompt,
+		output: Output.object({ schema: reviewSchema }),
 	});
 
-	return object;
+	return output;
 }
 
 export interface ReReviewContext {
@@ -183,13 +183,13 @@ ${context.diff}
 \`\`\`
 `;
 
-	const { object } = await generateObject({
+	const { output } = await generateText({
 		model,
-		schema: reReviewSchema,
 		prompt,
+		output: Output.object({ schema: reReviewSchema }),
 	});
 
-	return object;
+	return output;
 }
 
 export interface ThreadEvaluationContext {
@@ -236,11 +236,11 @@ ${context.diff}
 \`\`\`
 `;
 
-	const { object } = await generateObject({
+	const { output } = await generateText({
 		model,
-		schema: threadReplySchema,
 		prompt,
+		output: Output.object({ schema: threadReplySchema }),
 	});
 
-	return object;
+	return output;
 }

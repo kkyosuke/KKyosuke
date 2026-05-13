@@ -13,7 +13,7 @@ import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
 import template from "../../prompts/review/template.md" with { type: "text" };
-import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
+import { getInProgressComment, type ProgressStep } from "../constants";
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -25,18 +25,38 @@ export async function runReviewAgent(
 ) {
 	let placeholderCommentId: number | null = null;
 
+	const steps: [ProgressStep, ProgressStep, ProgressStep] = [
+		{ name: "PRの情報を取得中", status: "pending" },
+		{ name: "AIによるレビューを生成中", status: "pending" },
+		{ name: "レビュー結果を投稿中", status: "pending" },
+	];
+
+	const updateProgress = async () => {
+		if (placeholderCommentId) {
+			await updateComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+				getInProgressComment("Review in Progress", steps),
+			).catch((e) => console.error("Failed to update progress:", e));
+		}
+	};
+
 	try {
 		// 1. プレースホルダーの投稿
 		console.log(
 			`[ReviewAgent] Starting review for ${owner}/${repo}#${pullNumber}`,
 		);
+		steps[0].status = "in_progress";
 		const placeholder = await createPlaceholderComment(
 			env,
 			installationId,
 			owner,
 			repo,
 			pullNumber,
-			IN_PROGRESS_PLACEHOLDER_COMMENT,
+			getInProgressComment("Review in Progress", steps),
 		);
 		placeholderCommentId = placeholder.id;
 
@@ -69,6 +89,10 @@ export async function runReviewAgent(
 			.join("\n\n");
 
 		// 3. レビュー結果の生成 (LLM)
+		steps[0].status = "done";
+		steps[1].status = "in_progress";
+		await updateProgress();
+
 		console.log(
 			`[ReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
@@ -166,6 +190,10 @@ export async function runReviewAgent(
 			);
 
 		// 4. 結果の更新
+		steps[1].status = "done";
+		steps[2].status = "in_progress";
+		await updateProgress();
+
 		console.log(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
