@@ -12,6 +12,7 @@ export const reReviewCommand: CommandJob = {
 			ctx.owner,
 			ctx.repo,
 			ctx.issueNumber,
+			ctx.botName,
 		);
 	},
 };

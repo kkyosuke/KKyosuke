@@ -27,6 +27,7 @@ export async function runReReviewAgent(
 	owner: string,
 	repo: string,
 	pullNumber: number,
+	botName: string,
 ) {
 	let placeholderCommentId: number | null = null;
 
@@ -165,6 +166,7 @@ export async function runReReviewAgent(
 
 		// Markdown生成
 		const markdownReport = template
+			.replaceAll("{{botName}}", botName)
 			.replaceAll("{{overallStatus}}", result.overallStatus)
 			.replaceAll("{{summary}}", result.summary)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);

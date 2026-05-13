@@ -62,6 +62,9 @@ export async function githubWebhookHandler(c: Context) {
 				return c.text("OK", 200);
 			}
 
+			const isLocal = typeof process !== "undefined" && process.env.NODE_ENV !== "production";
+			const botName = e.BOT_NAME || (isLocal ? "test.kkyosuke.ai" : "kkyosuke.ai");
+
 			const commandCtx = {
 				env: e,
 				installationId,
@@ -69,6 +72,7 @@ export async function githubWebhookHandler(c: Context) {
 				repo,
 				issueNumber: pullNumber,
 				commentBody,
+				botName,
 			};
 
 			// 非同期でルーティングを実行 (Fire and forget / Background task)

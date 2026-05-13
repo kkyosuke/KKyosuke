@@ -48,6 +48,7 @@ export const reviewCommand: CommandJob = {
 					ctx.owner,
 					ctx.repo,
 					ctx.issueNumber,
+					ctx.botName,
 				);
 				return;
 			}
@@ -64,6 +65,7 @@ export const reviewCommand: CommandJob = {
 			ctx.owner,
 			ctx.repo,
 			ctx.issueNumber,
+			ctx.botName,
 		);
 	},
 };

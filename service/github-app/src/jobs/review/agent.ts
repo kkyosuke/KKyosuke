@@ -20,6 +20,7 @@ export async function runReviewAgent(
 	owner: string,
 	repo: string,
 	pullNumber: number,
+	botName: string,
 ) {
 	let placeholderCommentId: number | null = null;
 
@@ -98,6 +99,7 @@ export async function runReviewAgent(
 				: "| - | - | - | - | 特に指摘事項はありません |";
 
 		const markdownReport = template
+			.replaceAll("{{botName}}", botName)
 			.replaceAll("{{overallEvaluation}}", reviewResult.overallEvaluation)
 			.replaceAll("{{summary}}", reviewResult.summary)
 			.replaceAll("{{feedbackTable}}", feedbackTable)
