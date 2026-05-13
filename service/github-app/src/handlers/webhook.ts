@@ -1,6 +1,7 @@
 import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
+import { getBotName } from "../config/env";
 import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
@@ -62,6 +63,8 @@ export async function githubWebhookHandler(c: Context) {
 				return c.text("OK", 200);
 			}
 
+			const botName = getBotName(e);
+
 			const commandCtx = {
 				env: e,
 				installationId,
@@ -69,6 +72,7 @@ export async function githubWebhookHandler(c: Context) {
 				repo,
 				issueNumber: pullNumber,
 				commentBody,
+				botName,
 			};
 
 			// 非同期でルーティングを実行 (Fire and forget / Background task)
@@ -88,6 +92,7 @@ export async function githubWebhookHandler(c: Context) {
 		} else {
 			console.log(`[Webhook] Ignored comment: not a pull request issue`);
 		}
+		console.log(`[Webhook] Finished processing issue_comment.created event`);
 	} else {
 		console.log(
 			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,

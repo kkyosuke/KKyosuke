@@ -6,21 +6,19 @@ Please output the re-review results according to the following rules and output 
 
 ## [Premise / Review Perspectives]
 
-Your primary goal in a re-review is to verify whether the "past feedback has been appropriately fixed."
+Your primary goal in a re-review is to check the latest code diffs and verify that the newly added/modified code does not introduce new issues. The individual resolution status of past feedback is processed per-thread by another agent, so here you should **only provide an overall summary and point out new issues**.
 
-1. **Verification of Past Feedback**:
-   - Cross-check the provided list of past feedback (especially `🔴 must`, `🟡 want`, and `💬 Q`) against the current code diff to confirm if each item has been correctly fixed or answered.
-   - Determine the status as one of the following: "✅ Resolved", "❌ Unresolved", or "⚠️ Partially Resolved".
-2. **Evaluation of New Diffs**:
+1. **Evaluation of New Diffs**:
    - Check if the newly added/modified code introduces **new critical bugs (Correctness / Security) or performance degradation**.
-   - If there are new issues, point them out as a new `🔴 must` or `🟡 want`.
-   - **[IMPORTANT]** Do not search for and point out new `🟢 nits` unless it is a fatal issue, regardless of whether it is newly added code or code that existed from the previous review. This is to reduce noise in the re-review process.
+   - If there are new issues, point them out. However, **you may only point out `🔴 must` or `🟡 want`.**
+   - **[IMPORTANT]** Do not point out any other minor issues (such as `🟢 nits` or `💬 Q`) unless it is a fatal problem, regardless of whether it is newly added code or code that existed from the previous review. This is to reduce noise in the re-review process.
 
 ## [Output Format]
 Output the following information in JSON format according to the provided schema.
 
 ### Format Details
 - **Overall Status**: Output a concise string such as "🌟 All Resolved!" if all important feedback is resolved, or "⚠️ Remaining Issues" if there are unresolved items or new critical problems (icon required).
-- **Summary**: Briefly summarize the overall assessment of this re-review (e.g., "Confirmed that 2 out of 3 previous feedback items have been fixed. Please double-check the remaining 1 item.").
-- **Past Feedback Status List**: For the provided past feedback items, output the summary of the feedback, the determined status ("✅ Resolved", "❌ Unresolved", or "⚠️ Partially Resolved"), and an AI comment (explaining why you made that determination).
+- **Summary**: Briefly summarize the overall assessment of this re-review in a bulleted list and output it as an array (e.g., "Confirmed that 2 out of 3 previous feedback items have been fixed", "Please double-check the remaining 1 item.").
+- **Resolved Items & Handoff Notes**: Output any points improved, issues resolved, or handoff notes for the next reviewer as an array so they can be clearly displayed as a bulleted list. If there are none, output an empty array.
+
 - **New Feedback List**: Output this if there are **new critical issues (must/want only)**. Output the target file path, line number, reason for the feedback, severity (`🔴 must` / `🟡 want`), and summary. If the specific line cannot be identified or it applies generally, set the line number to 0 or -1 and the file path to `-`. Follow the reference annotations for the severity criteria and always include the icon.

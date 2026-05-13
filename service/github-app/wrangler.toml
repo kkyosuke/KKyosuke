@@ -7,6 +7,7 @@ compatibility_date = "2024-04-01"
 type = "Text"
 globs = ["**/*.md"]
 fallbacks = []
+fallthrough = true
 
 [observability.logs]
 enabled = true

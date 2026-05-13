@@ -4,6 +4,6 @@
 
 ## 1. 手順書 (`instruction/`)
 
-- [**`instruction/pull-request.md`**](./instruction/pull-request.md)
+- [**`instruction/review.md`**](./instruction/review.md)
   - **用途**: Pull RequestのコードレビューをAIに自動実行させるためのプロンプトです。
   - **概要**: `docs/ja/code/pull-request.md` に記載されたPR作成方針を観点とし、適切に実装・ドキュメント作成が行われているかを診断・レビューします。

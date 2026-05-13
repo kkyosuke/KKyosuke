@@ -2,9 +2,7 @@ import type { CommandContext } from "../jobs";
 import { availableCommands } from "../jobs";
 
 export const routeCommentCommand = async (ctx: CommandContext) => {
-	const isLocal =
-		typeof process !== "undefined" && process.env.NODE_ENV !== "production";
-	const triggerMention = isLocal ? "@test.kkyosuke.ai" : "@kkyosuke.ai";
+	const triggerMention = `@${ctx.botName}`;
 
 	// メンションが含まれていない場合は無視
 	if (!ctx.commentBody.includes(triggerMention)) {

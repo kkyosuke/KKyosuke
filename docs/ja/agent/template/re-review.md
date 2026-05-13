@@ -3,12 +3,10 @@
 > [!NOTE]
 > **ステータス: {{overallStatus}}**
 
-{{summary}}
+{{summarySection}}
 
-## 📋 過去の指摘事項の確認状況
-
-| 前回の指摘概要 | ステータス | AIからのコメント |
-| :--- | :--- | :--- |
-{{previousFeedbackTable}}
+{{resolvedAndHandoffSection}}
 
 {{newFeedbackSection}}
+
+{{nextStepsSection}}

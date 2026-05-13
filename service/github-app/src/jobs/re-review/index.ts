@@ -1,5 +1,5 @@
-import { runReReviewAgent } from "./agent";
 import type { CommandContext, CommandJob } from "../types";
+import { runReReviewAgent } from "./agent";
 
 export const reReviewCommand: CommandJob = {
 	name: "re-review",
@@ -12,6 +12,7 @@ export const reReviewCommand: CommandJob = {
 			ctx.owner,
 			ctx.repo,
 			ctx.issueNumber,
+			ctx.botName,
 		);
 	},
 };

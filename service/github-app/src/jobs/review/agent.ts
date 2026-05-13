@@ -1,14 +1,19 @@
 import {
 	createPlaceholderComment,
+	createReview,
 	createReviewComment,
+	deleteComment,
 	getIssueComments,
 	getPullRequest,
 	getPullRequestDiff,
 	updateComment,
 } from "../../lib/github";
 import { generateCodeReview } from "../../lib/llm";
-import instruction from "../../prompts/review/instruction.md" with { type: "text" };
+import instruction from "../../prompts/review/instruction.md" with {
+	type: "text",
+};
 import template from "../../prompts/review/template.md" with { type: "text" };
+import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -16,6 +21,7 @@ export async function runReviewAgent(
 	owner: string,
 	repo: string,
 	pullNumber: number,
+	botName: string,
 ) {
 	let placeholderCommentId: number | null = null;
 
@@ -30,7 +36,7 @@ export async function runReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			"👀 コードを読み込んでいます... (LLM Review Agent 稼働中)",
+			IN_PROGRESS_PLACEHOLDER_COMMENT,
 		);
 		placeholderCommentId = placeholder.id;
 
@@ -93,7 +99,15 @@ export async function runReviewAgent(
 						.join("\n")
 				: "| - | - | - | - | 特に指摘事項はありません |";
 
+		const hasIssues = feedbacks.length > 0;
+
+		const nextStepsSection = hasIssues
+			? `\n**【次のステップ】**\n- [ ] \`🔴 must\` の指摘事項を修正する\n- [ ] \`🟡 want\` の指摘事項を修正する、または対応を見送る理由を返信する\n- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`
+			: "";
+
 		const markdownReport = template
+			.replaceAll("{{botName}}", botName)
+			.replaceAll("{{nextStepsSection}}", nextStepsSection)
 			.replaceAll("{{overallEvaluation}}", reviewResult.overallEvaluation)
 			.replaceAll("{{summary}}", reviewResult.summary)
 			.replaceAll("{{feedbackTable}}", feedbackTable)
@@ -153,16 +167,31 @@ export async function runReviewAgent(
 
 		// 4. 結果の更新
 		console.log(
-			`[ReviewAgent] Updating comment for ${owner}/${repo}#${pullNumber}`,
+			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
-		await updateComment(
+
+		await createReview(
 			env,
 			installationId,
 			owner,
 			repo,
-			placeholderCommentId,
+			pullNumber,
 			markdownReport,
+			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
+
+		if (placeholderCommentId) {
+			console.log(
+				`[ReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`,
+			);
+			await deleteComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+			);
+		}
 
 		// 5. 該当行にインラインコメントを追加する
 		for (const item of feedbacks) {

@@ -24,5 +24,5 @@ This directory contains documentation regarding the project's development proces
 
 #### Details
 
-- **[Pull Request Review Instruction](agent/instruction/pull-request.md)**
+- **[Pull Request Review Instruction](agent/instruction/review.md)**
   - An instruction prompt to perform automated Pull Request code reviews and output a specified summary and review points.

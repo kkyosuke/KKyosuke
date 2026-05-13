@@ -3,12 +3,10 @@
 > [!NOTE]
 > **Status: {{overallStatus}}**
 
-{{summary}}
+{{summarySection}}
 
-## 📋 Status of Past Feedback
-
-| Previous Feedback Summary | Status | AI Comment |
-| :--- | :--- | :--- |
-{{previousFeedbackTable}}
+{{resolvedAndHandoffSection}}
 
 {{newFeedbackSection}}
+
+{{nextStepsSection}}

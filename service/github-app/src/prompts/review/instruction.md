@@ -1,1 +1,1 @@
-../../../../../docs/ja/agent/instruction/pull-request.md
+../../../../../docs/ja/agent/instruction/review.md
