@@ -92,6 +92,7 @@ export async function githubWebhookHandler(c: Context) {
 		} else {
 			console.log(`[Webhook] Ignored comment: not a pull request issue`);
 		}
+		console.log(`[Webhook] Finished processing issue_comment.created event`);
 	} else {
 		console.log(
 			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,
