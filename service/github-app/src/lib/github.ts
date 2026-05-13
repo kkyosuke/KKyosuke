@@ -1,6 +1,8 @@
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
 
+import { MAX_COMMENTS_PER_THREAD, MAX_REVIEW_THREADS } from "../jobs/constants";
+
 export function getGithubApp(env: Record<string, string | undefined>) {
 	return new App({
 		appId: env.GITHUB_APP_ID || "",
@@ -194,13 +196,13 @@ export async function getReviewThreads(
 		query($owner: String!, $repo: String!, $pullNumber: Int!) {
 			repository(owner: $owner, name: $repo) {
 				pullRequest(number: $pullNumber) {
-					reviewThreads(first: 100) {
+					reviewThreads(first: ${MAX_REVIEW_THREADS}) {
 						nodes {
 							id
 							isResolved
 							path
 							line
-							comments(first: 50) {
+							comments(first: ${MAX_COMMENTS_PER_THREAD}) {
 								nodes {
 									id
 									databaseId

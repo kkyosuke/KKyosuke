@@ -62,8 +62,12 @@ export async function githubWebhookHandler(c: Context) {
 				return c.text("OK", 200);
 			}
 
-			const isLocal = typeof process !== "undefined" && process.env.NODE_ENV !== "production";
-			const botName = e.BOT_NAME || (isLocal ? "test.kkyosuke.ai" : "kkyosuke.ai");
+			// Cloudflare Workers環境では process グローバル変数が存在しない可能性があるため、
+			// 参照エラーを防ぐ目的で typeof process !== "undefined" を確認しています。
+			const isLocal =
+				typeof process !== "undefined" && process.env.NODE_ENV !== "production";
+			const botName =
+				e.BOT_NAME || (isLocal ? "test.kkyosuke.ai" : "kkyosuke.ai");
 
 			const commandCtx = {
 				env: e,

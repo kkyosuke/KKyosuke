@@ -70,63 +70,67 @@ export async function runReReviewAgent(
 			pullNumber,
 		);
 
-		for (const thread of reviewThreads) {
-			if (thread.isResolved || !thread.comments?.nodes?.length) continue;
+		await Promise.all(
+			reviewThreads.map(async (thread: any) => {
+				if (thread.isResolved || !thread.comments?.nodes?.length) return;
 
-			const comments = thread.comments.nodes;
-			const firstCommentAuthor = comments[0].author?.login?.toLowerCase() || "";
-			const isBotThread =
-				firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
+				const comments = thread.comments.nodes;
+				const firstCommentAuthor =
+					comments[0].author?.login?.toLowerCase() || "";
+				const isBotThread =
+					firstCommentAuthor.includes("bot") ||
+					firstCommentAuthor.includes("ai");
 
-			if (!isBotThread) continue;
+				if (!isBotThread) return;
 
-			const lastCommentAuthor =
-				comments[comments.length - 1].author?.login?.toLowerCase() || "";
-			const isLastCommentFromBot =
-				lastCommentAuthor.includes("bot") || lastCommentAuthor.includes("ai");
+				const lastCommentAuthor =
+					comments[comments.length - 1].author?.login?.toLowerCase() || "";
+				const isLastCommentFromBot =
+					lastCommentAuthor.includes("bot") || lastCommentAuthor.includes("ai");
 
-			// 最後のコメントがBotでない場合（ユーザーからの返信がある場合）に対応
-			if (!isLastCommentFromBot) {
-				console.log(`[ReReviewAgent] Evaluating thread ${thread.id}`);
-				const threadCommentsText = comments
-					.map((c: any) => `@${c.author?.login}: ${c.body}`)
-					.join("\n\n---\n\n");
+				// 最後のコメントがBotでない場合（ユーザーからの返信がある場合）に対応
+				if (!isLastCommentFromBot) {
+					console.log(`[ReReviewAgent] Evaluating thread ${thread.id}`);
+					const threadCommentsText = comments
+						.map((c: any) => `@${c.author?.login}: ${c.body}`)
+						.join("\n\n---\n\n");
 
-				const evalResult = await evaluateReviewThread(env, {
-					threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
-					diff,
-					instruction: threadInstruction,
-				});
+					const evalResult = await evaluateReviewThread(env, {
+						threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
+						diff,
+						instruction: threadInstruction,
+					});
 
-				console.log(
-					`[ReReviewAgent] Thread ${thread.id} action: ${evalResult.action}`,
-				);
-
-				if (
-					(evalResult.action === "REPLY" ||
-						evalResult.action === "REPLY_AND_RESOLVE") &&
-					evalResult.replyBody
-				) {
-					await createReplyForReviewComment(
-						env,
-						installationId,
-						owner,
-						repo,
-						pullNumber,
-						comments[0].databaseId,
-						evalResult.replyBody,
+					console.log(
+						`[ReReviewAgent] Thread ${thread.id} action: ${evalResult.action}`,
 					);
-				}
 
-				if (
-					evalResult.action === "RESOLVE" ||
-					evalResult.action === "REPLY_AND_RESOLVE"
-				) {
-					await resolveReviewThread(env, installationId, thread.id);
-					thread.isResolved = true; // Mark as resolved in memory
+					if (
+						(evalResult.action === "REPLY" ||
+							evalResult.action === "REPLY_AND_RESOLVE") &&
+						evalResult.replyBody
+					) {
+						await createReplyForReviewComment(
+							env,
+							installationId,
+							owner,
+							repo,
+							pullNumber,
+							comments[0].databaseId,
+							evalResult.replyBody,
+						);
+					}
+
+					if (
+						evalResult.action === "RESOLVE" ||
+						evalResult.action === "REPLY_AND_RESOLVE"
+					) {
+						await resolveReviewThread(env, installationId, thread.id);
+						thread.isResolved = true; // Mark as resolved in memory
+					}
 				}
-			}
-		}
+			}),
+		);
 
 		// 未解決のBotスレッドが残っているかチェック
 		const remainingUnresolvedThreads = reviewThreads.filter((t: any) => {
