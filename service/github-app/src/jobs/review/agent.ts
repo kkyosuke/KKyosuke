@@ -13,7 +13,7 @@ import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
 import template from "../../prompts/review/template.md" with { type: "text" };
-import pkg from "../../../package.json" with { type: "json" };
+import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -36,7 +36,7 @@ export async function runReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			`> [!NOTE]\n> 🔍 **Review in Progress**\n> 現在コードのレビュー中です。完了まで少々お待ちください！\n> version: ${pkg.version}`,
+			IN_PROGRESS_PLACEHOLDER_COMMENT,
 		);
 		placeholderCommentId = placeholder.id;
 

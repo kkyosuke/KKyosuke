@@ -20,7 +20,7 @@ import template from "../../prompts/re-review/template.md" with {
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
-import pkg from "../../../package.json" with { type: "json" };
+import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -42,7 +42,7 @@ export async function runReReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			`> [!NOTE]\n> 🔍 **Review in Progress**\n> 現在コードのレビュー中です。完了まで少々お待ちください！\n> version: ${pkg.version}`,
+			IN_PROGRESS_PLACEHOLDER_COMMENT,
 		);
 		placeholderCommentId = placeholder.id;
 
