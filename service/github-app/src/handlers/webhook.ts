@@ -63,6 +63,7 @@ export async function githubWebhookHandler(c: Context) {
 				return c.text("OK", 200);
 			}
 
+			const sender = payload.sender.login;
 			const botName = getBotName(e);
 
 			const commandCtx = {
@@ -73,6 +74,7 @@ export async function githubWebhookHandler(c: Context) {
 				issueNumber: pullNumber,
 				commentBody,
 				botName,
+				sender,
 			};
 
 			// 非同期でルーティングを実行 (Fire and forget / Background task)

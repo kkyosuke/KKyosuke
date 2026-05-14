@@ -26,6 +26,7 @@ export async function runReviewAgent(
 	repo: string,
 	pullNumber: number,
 	botName: string,
+	sender: string,
 ) {
 	let placeholderCommentId: number | null = null;
 
@@ -204,7 +205,9 @@ export async function runReviewAgent(
 
 		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
 		const finalReport =
-			markdownReport + `\n\n---\n💸 **LLM Cost**: $${cost.toFixed(5)}`;
+			`@${sender}\n\n` +
+			markdownReport +
+			`\n\n---\n💸 **LLM Cost**: $${cost.toFixed(5)}`;
 
 		await createReview(
 			env,

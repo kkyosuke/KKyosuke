@@ -12,6 +12,7 @@ export const reviewCommand: CommandJob = {
 			ctx.repo,
 			ctx.issueNumber,
 			ctx.botName,
+			ctx.sender,
 		);
 	},
 };

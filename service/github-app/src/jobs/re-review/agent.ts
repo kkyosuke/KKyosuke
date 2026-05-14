@@ -34,6 +34,7 @@ export async function runReReviewAgent(
 	repo: string,
 	pullNumber: number,
 	botName: string,
+	sender: string,
 ) {
 	let placeholderCommentId: number | null = null;
 
@@ -264,7 +265,9 @@ export async function runReReviewAgent(
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
 
 		const finalReport =
-			markdownReport + `\n\n---\n💸 **LLM Cost**: $${totalCost.toFixed(5)}`;
+			`@${sender}\n\n` +
+			markdownReport +
+			`\n\n---\n💸 **LLM Cost**: $${totalCost.toFixed(5)}`;
 
 		console.log(
 			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
