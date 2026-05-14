@@ -10,7 +10,12 @@ import {
 	resolveReviewThread,
 	updateComment,
 } from "../../lib/github";
-import { evaluateReviewThread, generateReReview } from "../../lib/llm";
+import {
+	calculateCost,
+	evaluateReviewThread,
+	generateReReview,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import instruction from "../../prompts/re-review/instruction.md" with {
 	type: "text",
 };
@@ -20,7 +25,7 @@ import template from "../../prompts/re-review/template.md" with {
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
-import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
+import { getInProgressComment, type ProgressStep } from "../constants";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -29,20 +34,42 @@ export async function runReReviewAgent(
 	repo: string,
 	pullNumber: number,
 	botName: string,
+	sender: string,
 ) {
 	let placeholderCommentId: number | null = null;
+
+	const steps: [ProgressStep, ProgressStep, ProgressStep, ProgressStep] = [
+		{ name: "PRの情報を取得中", status: "pending" },
+		{ name: "過去の指摘事項を確認中", status: "pending" },
+		{ name: "AIによる全体再レビューを生成中", status: "pending" },
+		{ name: "レビュー結果を投稿中", status: "pending" },
+	];
+
+	const updateProgress = async () => {
+		if (placeholderCommentId) {
+			await updateComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+				getInProgressComment("Re-Review in Progress", steps, REVIEW_MODEL_NAME),
+			).catch((e) => console.error("Failed to update progress:", e));
+		}
+	};
 
 	try {
 		console.log(
 			`[ReReviewAgent] Starting re-review for ${owner}/${repo}#${pullNumber}`,
 		);
+		steps[0].status = "in_progress";
 		const placeholder = await createPlaceholderComment(
 			env,
 			installationId,
 			owner,
 			repo,
 			pullNumber,
-			IN_PROGRESS_PLACEHOLDER_COMMENT,
+			getInProgressComment("Re-Review in Progress", steps, REVIEW_MODEL_NAME),
 		);
 		placeholderCommentId = placeholder.id;
 
@@ -62,6 +89,10 @@ export async function runReReviewAgent(
 		);
 
 		// 過去のコメントスレッドの取得と処理
+		steps[0].status = "done";
+		steps[1].status = "in_progress";
+		await updateProgress();
+
 		const reviewThreads = await getReviewThreads(
 			env,
 			installationId,
@@ -69,6 +100,8 @@ export async function runReReviewAgent(
 			repo,
 			pullNumber,
 		);
+
+		let totalCost = 0;
 
 		await Promise.all(
 			reviewThreads.map(async (thread: any) => {
@@ -95,11 +128,14 @@ export async function runReReviewAgent(
 						.map((c: any) => `@${c.author?.login}: ${c.body}`)
 						.join("\n\n---\n\n");
 
-					const evalResult = await evaluateReviewThread(env, {
-						threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
-						diff,
-						instruction: threadInstruction,
-					});
+					const { output: evalResult, usage: evalUsage } =
+						await evaluateReviewThread(env, {
+							threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
+							diff,
+							instruction: threadInstruction,
+						});
+
+					totalCost += calculateCost(evalUsage, REVIEW_MODEL_NAME);
 
 					console.log(
 						`[ReReviewAgent] Thread ${thread.id} action: ${evalResult.action}`,
@@ -154,16 +190,25 @@ export async function runReReviewAgent(
 		});
 
 		// 全体の再レビュー
+		steps[1].status = "done";
+		steps[2].status = "in_progress";
+		await updateProgress();
+
 		console.log(
 			`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
-		const result = await generateReReview(env, {
-			title: pr.title,
-			body: pr.body,
-			diff: diff,
-			instruction: instruction,
-			template: template,
-		});
+		const { output: result, usage: reReviewUsage } = await generateReReview(
+			env,
+			{
+				title: pr.title,
+				body: pr.body,
+				diff: diff,
+				instruction: instruction,
+				template: template,
+			},
+		);
+
+		totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
 
 		// 新規の指摘事項セクションの作成
 		const newFeedbacks = result.newFeedback.slice(0, 10);
@@ -207,6 +252,10 @@ export async function runReReviewAgent(
 		}
 
 		// Markdown生成
+		steps[2].status = "done";
+		steps[3].status = "in_progress";
+		await updateProgress();
+
 		const markdownReport = template
 			.replaceAll("{{botName}}", botName)
 			.replaceAll("{{nextStepsSection}}", nextStepsSection)
@@ -214,6 +263,11 @@ export async function runReReviewAgent(
 			.replaceAll("{{summarySection}}", summarySection)
 			.replaceAll("{{resolvedAndHandoffSection}}", resolvedAndHandoffSection)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
+
+		const finalReport =
+			`@${sender}\n\n` +
+			markdownReport +
+			`\n\n---\n💸 **LLM Cost**: $${totalCost.toFixed(5)}`;
 
 		console.log(
 			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -225,7 +279,7 @@ export async function runReReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			markdownReport,
+			finalReport,
 			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
 

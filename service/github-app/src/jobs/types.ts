@@ -6,6 +6,7 @@ export interface CommandContext {
 	issueNumber: number; // PR or Issue number
 	commentBody: string; // 実際のコメント全文
 	botName: string; // メンションに使用するBotの名前
+	sender: string; // コマンドを実行したユーザー名
 }
 
 export interface CommandJob {

@@ -8,12 +8,16 @@ import {
 	getPullRequestDiff,
 	updateComment,
 } from "../../lib/github";
-import { generateCodeReview } from "../../lib/llm";
+import {
+	calculateCost,
+	generateCodeReview,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
 import template from "../../prompts/review/template.md" with { type: "text" };
-import { IN_PROGRESS_PLACEHOLDER_COMMENT } from "../constants";
+import { getInProgressComment, type ProgressStep } from "../constants";
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -22,21 +26,42 @@ export async function runReviewAgent(
 	repo: string,
 	pullNumber: number,
 	botName: string,
+	sender: string,
 ) {
 	let placeholderCommentId: number | null = null;
+
+	const steps: [ProgressStep, ProgressStep, ProgressStep] = [
+		{ name: "PRの情報を取得中", status: "pending" },
+		{ name: "AIによるレビューを生成中", status: "pending" },
+		{ name: "レビュー結果を投稿中", status: "pending" },
+	];
+
+	const updateProgress = async () => {
+		if (placeholderCommentId) {
+			await updateComment(
+				env,
+				installationId,
+				owner,
+				repo,
+				placeholderCommentId,
+				getInProgressComment("Review in Progress", steps, REVIEW_MODEL_NAME),
+			).catch((e) => console.error("Failed to update progress:", e));
+		}
+	};
 
 	try {
 		// 1. プレースホルダーの投稿
 		console.log(
 			`[ReviewAgent] Starting review for ${owner}/${repo}#${pullNumber}`,
 		);
+		steps[0].status = "in_progress";
 		const placeholder = await createPlaceholderComment(
 			env,
 			installationId,
 			owner,
 			repo,
 			pullNumber,
-			IN_PROGRESS_PLACEHOLDER_COMMENT,
+			getInProgressComment("Review in Progress", steps, REVIEW_MODEL_NAME),
 		);
 		placeholderCommentId = placeholder.id;
 
@@ -69,10 +94,14 @@ export async function runReviewAgent(
 			.join("\n\n");
 
 		// 3. レビュー結果の生成 (LLM)
+		steps[0].status = "done";
+		steps[1].status = "in_progress";
+		await updateProgress();
+
 		console.log(
 			`[ReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
-		const reviewResult = await generateCodeReview(env, {
+		const { output: reviewResult, usage } = await generateCodeReview(env, {
 			title: pr.title,
 			body: pr.body,
 			diff: diff,
@@ -166,9 +195,19 @@ export async function runReviewAgent(
 			);
 
 		// 4. 結果の更新
+		steps[1].status = "done";
+		steps[2].status = "in_progress";
+		await updateProgress();
+
 		console.log(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
+
+		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
+		const finalReport =
+			`@${sender}\n\n` +
+			markdownReport +
+			`\n\n---\n💸 **LLM Cost**: $${cost.toFixed(5)}`;
 
 		await createReview(
 			env,
@@ -176,7 +215,7 @@ export async function runReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			markdownReport,
+			finalReport,
 			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
 
