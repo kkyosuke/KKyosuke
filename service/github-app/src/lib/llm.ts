@@ -1,8 +1,59 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateText, Output } from "ai";
+import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
 
 export const REVIEW_MODEL_NAME = "claude-haiku-4-5";
+
+type PricingRates = {
+	baseInput: number;
+	cacheWrites5m: number;
+	cacheReads: number;
+	output: number;
+};
+
+const MODEL_PRICING: Record<string, PricingRates> = {
+	"claude-haiku-4-5": {
+		baseInput: 1.0,
+		cacheWrites5m: 1.25,
+		cacheReads: 0.1,
+		output: 5.0,
+	},
+	"claude-sonnet-4-5": {
+		baseInput: 3.0,
+		cacheWrites5m: 3.75,
+		cacheReads: 0.3,
+		output: 15.0,
+	},
+	"claude-opus-4-6": {
+		baseInput: 5.0,
+		cacheWrites5m: 6.25,
+		cacheReads: 0.5,
+		output: 25.0,
+	},
+};
+
+export const calculateCost = (
+	usage: LanguageModelUsage,
+	modelName: string,
+): number => {
+	const fallback = MODEL_PRICING["claude-haiku-4-5"] as PricingRates;
+	const rates = MODEL_PRICING[modelName] ?? fallback; // Fallback to Haiku
+
+	const cacheWrites = usage.inputTokenDetails?.cacheWriteTokens || 0;
+	const cacheReads = usage.inputTokenDetails?.cacheReadTokens || 0;
+	const baseTokens =
+		usage.inputTokenDetails?.noCacheTokens ??
+		(usage.inputTokens || 0) - cacheWrites - cacheReads;
+	const outputTokens = usage.outputTokens || 0;
+
+	const cost =
+		(baseTokens / 1_000_000) * rates.baseInput +
+		(cacheWrites / 1_000_000) * rates.cacheWrites5m +
+		(cacheReads / 1_000_000) * rates.cacheReads +
+		(outputTokens / 1_000_000) * rates.output;
+
+	return cost;
+};
 
 export interface ReviewContext {
 	title: string;
@@ -73,7 +124,7 @@ export type ReviewResult = z.infer<typeof reviewSchema>;
 export async function generateCodeReview(
 	env: Record<string, string | undefined>,
 	context: ReviewContext,
-): Promise<ReviewResult> {
+): Promise<{ output: ReviewResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
@@ -104,13 +155,13 @@ ${context.diff}
 \`\`\`
 `;
 
-	const { output } = await generateText({
+	const { output, usage } = await generateText({
 		model,
 		prompt,
 		output: Output.object({ schema: reviewSchema }),
 	});
 
-	return output;
+	return { output, usage };
 }
 
 export interface ReReviewContext {
@@ -156,7 +207,7 @@ export type ReReviewResult = z.infer<typeof reReviewSchema>;
 export async function generateReReview(
 	env: Record<string, string | undefined>,
 	context: ReReviewContext,
-): Promise<ReReviewResult> {
+): Promise<{ output: ReReviewResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
@@ -185,13 +236,13 @@ ${context.diff}
 \`\`\`
 `;
 
-	const { output } = await generateText({
+	const { output, usage } = await generateText({
 		model,
 		prompt,
 		output: Output.object({ schema: reReviewSchema }),
 	});
 
-	return output;
+	return { output, usage };
 }
 
 export interface ThreadEvaluationContext {
@@ -216,7 +267,7 @@ export type ThreadReplyResult = z.infer<typeof threadReplySchema>;
 export async function evaluateReviewThread(
 	env: Record<string, string | undefined>,
 	context: ThreadEvaluationContext,
-): Promise<ThreadReplyResult> {
+): Promise<{ output: ThreadReplyResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
@@ -238,11 +289,11 @@ ${context.diff}
 \`\`\`
 `;
 
-	const { output } = await generateText({
+	const { output, usage } = await generateText({
 		model,
 		prompt,
 		output: Output.object({ schema: threadReplySchema }),
 	});
 
-	return output;
+	return { output, usage };
 }

@@ -8,7 +8,11 @@ import {
 	getPullRequestDiff,
 	updateComment,
 } from "../../lib/github";
-import { generateCodeReview, REVIEW_MODEL_NAME } from "../../lib/llm";
+import {
+	calculateCost,
+	generateCodeReview,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
@@ -96,7 +100,7 @@ export async function runReviewAgent(
 		console.log(
 			`[ReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
-		const reviewResult = await generateCodeReview(env, {
+		const { output: reviewResult, usage } = await generateCodeReview(env, {
 			title: pr.title,
 			body: pr.body,
 			diff: diff,
@@ -198,13 +202,17 @@ export async function runReviewAgent(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
 
+		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
+		const finalReport =
+			markdownReport + `\n\n---\n💸 **LLM Cost**: $${cost.toFixed(5)}`;
+
 		await createReview(
 			env,
 			installationId,
 			owner,
 			repo,
 			pullNumber,
-			markdownReport,
+			finalReport,
 			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
 

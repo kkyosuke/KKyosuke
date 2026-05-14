@@ -11,6 +11,7 @@ import {
 	updateComment,
 } from "../../lib/github";
 import {
+	calculateCost,
 	evaluateReviewThread,
 	generateReReview,
 	REVIEW_MODEL_NAME,
@@ -99,6 +100,8 @@ export async function runReReviewAgent(
 			pullNumber,
 		);
 
+		let totalCost = 0;
+
 		await Promise.all(
 			reviewThreads.map(async (thread: any) => {
 				if (thread.isResolved || !thread.comments?.nodes?.length) return;
@@ -124,11 +127,14 @@ export async function runReReviewAgent(
 						.map((c: any) => `@${c.author?.login}: ${c.body}`)
 						.join("\n\n---\n\n");
 
-					const evalResult = await evaluateReviewThread(env, {
-						threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
-						diff,
-						instruction: threadInstruction,
-					});
+					const { output: evalResult, usage: evalUsage } =
+						await evaluateReviewThread(env, {
+							threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
+							diff,
+							instruction: threadInstruction,
+						});
+
+					totalCost += calculateCost(evalUsage, REVIEW_MODEL_NAME);
 
 					console.log(
 						`[ReReviewAgent] Thread ${thread.id} action: ${evalResult.action}`,
@@ -190,13 +196,18 @@ export async function runReReviewAgent(
 		console.log(
 			`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
-		const result = await generateReReview(env, {
-			title: pr.title,
-			body: pr.body,
-			diff: diff,
-			instruction: instruction,
-			template: template,
-		});
+		const { output: result, usage: reReviewUsage } = await generateReReview(
+			env,
+			{
+				title: pr.title,
+				body: pr.body,
+				diff: diff,
+				instruction: instruction,
+				template: template,
+			},
+		);
+
+		totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
 
 		// 新規の指摘事項セクションの作成
 		const newFeedbacks = result.newFeedback.slice(0, 10);
@@ -252,6 +263,9 @@ export async function runReReviewAgent(
 			.replaceAll("{{resolvedAndHandoffSection}}", resolvedAndHandoffSection)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
 
+		const finalReport =
+			markdownReport + `\n\n---\n💸 **LLM Cost**: $${totalCost.toFixed(5)}`;
+
 		console.log(
 			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
@@ -262,7 +276,7 @@ export async function runReReviewAgent(
 			owner,
 			repo,
 			pullNumber,
-			markdownReport,
+			finalReport,
 			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
 		);
 
