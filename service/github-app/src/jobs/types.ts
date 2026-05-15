@@ -6,6 +6,7 @@ export interface CommandContext {
 	issueNumber: number; // PR or Issue number
 	commentBody: string; // 実際のコメント全文
 	commentId?: number; // トリガーとなったコメントのID
+	isReviewSummary?: boolean; // トリガーがレビューサマリ（pull_request_review）かどうか
 	botName: string; // メンションに使用するBotの名前
 	sender: string; // コマンドを実行したユーザー名
 }

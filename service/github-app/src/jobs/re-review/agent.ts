@@ -5,6 +5,7 @@ import {
 	getRepositoryFile,
 	getReviewThreads,
 	updateComment,
+	updateReview,
 } from "../../lib/github";
 import { REPOSITORY_GUIDELINES_PATH } from "../../config";
 import {
@@ -42,6 +43,7 @@ export async function runReReviewAgent(
 	sender: string,
 	triggerCommentId?: number,
 	triggerCommentBody?: string,
+	isReviewSummary?: boolean,
 ) {
 	const lockKey = `lock-rereview-${owner}-${repo}-${pullNumber}`;
 
@@ -268,14 +270,26 @@ export async function runReReviewAgent(
 				);
 				if (updatedBody !== triggerCommentBody) {
 					try {
-						await updateComment(
-							env,
-							installationId,
-							owner,
-							repo,
-							triggerCommentId,
-							updatedBody,
-						);
+						if (isReviewSummary) {
+							await updateReview(
+								env,
+								installationId,
+								owner,
+								repo,
+								pullNumber,
+								triggerCommentId,
+								updatedBody,
+							);
+						} else {
+							await updateComment(
+								env,
+								installationId,
+								owner,
+								repo,
+								triggerCommentId,
+								updatedBody,
+							);
+						}
 						console.log(
 							`[ReReviewAgent] Updated trigger comment ${triggerCommentId}`,
 						);
@@ -303,7 +317,11 @@ export async function runReReviewAgent(
 					);
 					if (revertedBody !== triggerCommentBody) {
 						try {
-							await updateComment(env, installationId, owner, repo, triggerCommentId, revertedBody);
+							if (isReviewSummary) {
+								await updateReview(env, installationId, owner, repo, pullNumber, triggerCommentId, revertedBody);
+							} else {
+								await updateComment(env, installationId, owner, repo, triggerCommentId, revertedBody);
+							}
 						} catch (err: any) {
 							console.warn("[ReReviewAgent] Failed to revert trigger comment:", err.message);
 						}
@@ -323,14 +341,26 @@ export async function runReReviewAgent(
 				);
 				if (revertedBody !== triggerCommentBody) {
 					try {
-						await updateComment(
-							env,
-							installationId,
-							owner,
-							repo,
-							triggerCommentId,
-							revertedBody,
-						);
+						if (isReviewSummary) {
+							await updateReview(
+								env,
+								installationId,
+								owner,
+								repo,
+								pullNumber,
+								triggerCommentId,
+								revertedBody,
+							);
+						} else {
+							await updateComment(
+								env,
+								installationId,
+								owner,
+								repo,
+								triggerCommentId,
+								revertedBody,
+							);
+						}
 					} catch (err: any) {
 						console.warn(
 							"[ReReviewAgent] Failed to revert trigger comment:",

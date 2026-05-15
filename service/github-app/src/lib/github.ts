@@ -120,6 +120,27 @@ export async function updateComment(
 	return data;
 }
 
+export async function updateReview(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+	reviewId: number,
+	body: string,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.pulls.updateReview({
+		owner,
+		repo,
+		pull_number: pullNumber,
+		review_id: reviewId,
+		body,
+	});
+	return data;
+}
+
 export async function createReviewComment(
 	env: Record<string, string | undefined>,
 	installationId: number,

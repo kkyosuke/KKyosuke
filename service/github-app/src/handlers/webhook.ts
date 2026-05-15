@@ -134,6 +134,62 @@ export async function githubWebhookHandler(c: Context) {
 			`[Webhook] Finished processing issue_comment.${payload.action} event`,
 		);
 	} else if (
+		eventName === "pull_request_review" &&
+		payload.action === "edited"
+	) {
+		console.log(`[Webhook] Processing pull_request_review.edited event`);
+		const owner = payload.repository.owner.login;
+		const repo = payload.repository.name;
+		const pullNumber = payload.pull_request.number;
+		const installationId = payload.installation?.id;
+
+		if (!installationId) {
+			console.error("[Webhook] No installationId found in webhook payload");
+			return c.text("OK", 200);
+		}
+
+		const fromBody = payload.changes?.body?.from || "";
+		const commentBody = payload.review?.body || "";
+		const uncheckedRegex = RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE;
+		const checkedRegex = RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE;
+
+		if (uncheckedRegex.test(fromBody) && checkedRegex.test(commentBody)) {
+			console.log(`[Webhook] Checkbox checked for re-review on PR ${pullNumber} (Review Summary)`);
+			
+			const sender = payload.sender.login;
+			const botName = getBotName(e);
+			
+			const commandCtx = {
+				env: e,
+				installationId,
+				owner,
+				repo,
+				issueNumber: pullNumber,
+				commentBody,
+				commentId: payload.review.id,
+				isReviewSummary: true,
+				botName,
+				sender,
+			};
+
+			const routingTask = reReviewCommand
+				.execute(commandCtx)
+				.catch((err) =>
+					console.error("Re-review command failed critically", err),
+				);
+
+			try {
+				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+					c.executionCtx.waitUntil(routingTask);
+				}
+			} catch {
+				// fire and forget
+			}
+		} else {
+			console.log(`[Webhook] Ignored edited review: checkbox not triggered`);
+		}
+		
+	} else if (
 		eventName === "pull_request_review_comment" &&
 		payload.action === "created"
 	) {
