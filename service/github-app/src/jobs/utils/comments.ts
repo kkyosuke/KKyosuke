@@ -1,5 +1,17 @@
 import { createReviewComment } from "../../lib/github";
 
+/**
+ * インラインコメントをGitHub PRに投稿します。
+ *
+ * @param env - 環境変数
+ * @param installationId - インストールID
+ * @param owner - オーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param sha - コミットSHA
+ * @param feedbacks - 投稿するフィードバックのリスト
+ * @param prefixMessage - コメントタイトルに追加するプレフィックス
+ */
 export async function postInlineComments(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -38,10 +50,10 @@ export async function postInlineComments(
 				);
 				// API制限を回避するために待機
 				await new Promise((resolve) => setTimeout(resolve, 500));
-			} catch (err: any) {
+			} catch (err: unknown) {
 				console.error(
 					`[InlineComment] Failed to create inline comment for ${item.path}:${item.line}:`,
-					err.message,
+					err instanceof Error ? err.message : String(err),
 				);
 			}
 		}

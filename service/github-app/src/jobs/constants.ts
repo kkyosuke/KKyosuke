@@ -1,5 +1,8 @@
 import pkg from "../../package.json" with { type: "json" };
 
+/**
+ * 進捗ステップの型定義
+ */
 export type ProgressStep = {
 	name: string;
 	status: "pending" | "in_progress" | "done";
@@ -9,11 +12,20 @@ export type ProgressStep = {
 export const RE_REVIEW_TRIGGER_TEXT = "再度レビューを依頼する";
 export const RE_REVIEW_CHECKBOX_UNCHECKED = `- [ ] ${RE_REVIEW_TRIGGER_TEXT}`;
 export const RE_REVIEW_CHECKBOX_COMPLETED = `- 再度レビュー依頼済み (完了)`;
-export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN = new RegExp(`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`, "g");
-export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE = new RegExp(`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`);
-export const RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE = new RegExp(`-\\s*\\[\\s*\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`);
+export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN = new RegExp(
+	`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`,
+	"g",
+);
+export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE = new RegExp(
+	`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`,
+);
+export const RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE = new RegExp(
+	`-\\s*\\[\\s*\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`,
+);
 
-
+/**
+ * 進行中コメントを生成します。
+ */
 export const getInProgressComment = (
 	title: string,
 	steps: ProgressStep[],
@@ -43,9 +55,11 @@ export const getInProgressComment = (
 export const MAX_REVIEW_THREADS = 100;
 export const MAX_COMMENTS_PER_THREAD = 50;
 
+/**
+ * 次のステップセクションを生成します。
+ */
 export const getNextStepsSection = (
 	feedbacks: Array<{ severity: string }>,
-	botName: string,
 	hasUnresolvedThreads: boolean = false,
 ) => {
 	const hasMust = feedbacks.some((f) => f.severity === "🔴 must");
@@ -58,6 +72,8 @@ export const getNextStepsSection = (
 	let nextStepsSection = "";
 	if (requiresAction) {
 		nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+		nextStepsSection +=
+			"> ※ 各項目に対応後、**実装者ご自身で**上から順にチェックを入れてください。\n";
 		if (hasUnresolvedThreads) {
 			nextStepsSection +=
 				"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
@@ -70,8 +86,7 @@ export const getNextStepsSection = (
 				"> - [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
 		}
 		if (hasQ) {
-			nextStepsSection +=
-				"> - [ ] `💬 Q` の質問に回答する\n";
+			nextStepsSection += "> - [ ] `💬 Q` の質問に回答する\n";
 		}
 		nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
 	}
@@ -79,8 +94,13 @@ export const getNextStepsSection = (
 	return { nextStepsSection, requiresAction };
 };
 
+/**
+ * 未解決スレッドによるスキップ時のレポートを生成します。
+ */
 export const getUnresolvedThreadsSkippedReport = () => {
 	let nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+	nextStepsSection +=
+		"> ※ 各項目に対応後、**実装者ご自身で**上から順にチェックを入れてください。\n";
 	nextStepsSection +=
 		"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
 	nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;

@@ -36,7 +36,7 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
 			smee.start();
 			console.log(`[Dev] Smee client started forwarding from ${smeeSourceUrl}`);
 		})
-		.catch((e) => {
+		.catch((_e) => {
 			console.warn("[Dev] smee-client is not installed or failed to start.");
 		});
 }

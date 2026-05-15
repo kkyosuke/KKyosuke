@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub App Webhook Event Routing</title>
+  
+  <!-- flowchart.js と 依存ライブラリの Raphael.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.17.1/flowchart.min.js"></script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .flowchart-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    .table-container {
+      overflow-x: auto;
+      margin: 2rem 0;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    th {
+      background-color: #f3f4f6;
+      font-weight: 600;
+      color: #374151;
+      white-space: nowrap;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 9999px;
+      background-color: #e0e7ff;
+      color: #3730a3;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>GitHub App Webhook Event Routing</h1>
+  <p>このドキュメントでは、<code>src/handlers/webhook.ts</code> に実装されている GitHub Webhook イベントのルーティングロジックについてまとめています。</p>
+
+  <h2>全体フロー図</h2>
+  <p>各イベントを受信した際の、大まかな条件分岐と呼び出されるジョブ（コマンド）のフローです。</p>
+  <div class="flowchart-container">
+    <div id="routing-flowchart"></div>
+  </div>
+
+  <h2>ルーティング詳細</h2>
+  <p>それぞれのイベントにおける詳細な発火条件と、実行される内容です。</p>
+  <div class="table-container">
+    <table>
+    <thead>
+      <tr>
+        <th>イベント</th>
+        <th>アクション</th>
+        <th>条件</th>
+        <th>ルーティング先 (処理内容)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td rowspan="2"><strong>issue_comment</strong></td>
+        <td><span class="badge">edited</span></td>
+        <td>Pull Requestへのコメント<br>＋ 編集により再レビューチェックボックスがONになった</td>
+        <td><strong>reReviewCommand</strong><br>再レビュー処理を開始します。</td>
+      </tr>
+      <tr>
+        <td><span class="badge">created</span></td>
+        <td>Pull Requestへの新規コメント</td>
+        <td><strong>routeCommentCommand</strong><br>コメント内容に応じたルーティング処理へ委譲します。</td>
+      </tr>
+      <tr>
+        <td><strong>pull_request_review_comment</strong></td>
+        <td><span class="badge">created</span></td>
+        <td>ボット以外のコメント<br>＋ (メンションが含まれる <strong>または</strong> 既存スレッドへの返信)</td>
+        <td><strong>replyCommand</strong><br>コード行に対するレビューコメントへの応答処理を行います。</td>
+      </tr>
+      <tr>
+        <td><strong>pull_request</strong></td>
+        <td><span class="badge">synchronize</span></td>
+        <td>Pull Requestへの新規コミットのプッシュ等</td>
+        <td><strong>Cloudflare KV 操作</strong><br>実行中の古いレビュー処理を停止するためのキャンセルシグナルフラグ（TTL付き）を保存します。</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="bg-note">
+    <strong>補足事項（バックグラウンド実行）</strong><br>
+    ルーティング先の各コマンド（<code>reReviewCommand</code>, <code>routeCommentCommand</code>, <code>replyCommand</code>）は、Cloudflare Workers 等の環境では <code>c.executionCtx.waitUntil()</code> を使用してバックグラウンドタスクとして非同期に実行されます。<br>
+    Webhook 自体のリクエストに対しては即座に HTTP <code>200 OK</code> を返し、GitHub 側でのタイムアウトを防ぐ設計になっています。
+  </div>
+
+  <script>
+    // flowchart.js 用のコード定義
+    var diagramCode = `
+st=>start: Webhook 受信
+isIssueComment=>condition: issue_comment?
+isPRReviewComment=>condition: pull_request_
+review_comment?
+isPRSync=>condition: pull_request
+(synchronize)?
+ignEvent=>end: 無視
+
+isActionEdited=>condition: action == edited?
+isReviewChecked=>condition: 再レビュー
+チェックON?
+cmdReReview=>operation: reReviewCommand
+ignIssueComment=>end: 無視
+cmdRoute=>operation: routeCommentCommand
+
+isBotOwn=>condition: ボット自身の
+コメント?
+ignBotOwn=>end: 無視
+isMention=>condition: メンション or
+返信?
+cmdReply=>operation: replyCommand
+ignPRReview=>end: 無視
+
+cmdCancel=>operation: キャンセル
+シグナルセット
+
+bgReReview=>end: バックグラウンド実行
+bgRoute=>end: バックグラウンド実行
+bgReply=>end: バックグラウンド実行
+
+st->isIssueComment
+isIssueComment(no)->isPRReviewComment
+isPRReviewComment(no)->isPRSync
+isPRSync(no)->ignEvent
+
+isIssueComment(yes, right)->isActionEdited
+isActionEdited(yes)->isReviewChecked
+isActionEdited(no, right)->cmdRoute
+cmdRoute(bottom)->bgRoute
+isReviewChecked(yes)->cmdReReview
+isReviewChecked(no, right)->ignIssueComment
+cmdReReview(bottom)->bgReReview
+
+isPRReviewComment(yes, right)->isBotOwn
+isBotOwn(no)->isMention
+isBotOwn(yes, right)->ignBotOwn
+isMention(yes)->cmdReply
+isMention(no, right)->ignPRReview
+cmdReply(bottom)->bgReply
+
+isPRSync(yes, right)->cmdCancel
+`;
+
+    // フローチャートの描画とスタイル設定
+    var diagram = flowchart.parse(diagramCode);
+    diagram.drawSVG('routing-flowchart', {
+      'x': 0,
+      'y': 0,
+      'line-width': 2,
+      'line-length': 50,
+      'text-margin': 10,
+      'font-size': 14,
+      'font-color': 'black',
+      'line-color': '#9CA3AF',
+      'element-color': 'black',
+      'fill': 'white',
+      'yes-text': 'Yes',
+      'no-text': 'No',
+      'arrow-end': 'block',
+      'scale': 1,
+      'symbols': {
+        'start': {
+          'font-color': 'white',
+          'element-color': '#10B981',
+          'fill': '#10B981'
+        },
+        'end': {
+          'font-color': 'white',
+          'element-color': '#6B7280',
+          'fill': '#6B7280'
+        },
+        'condition': {
+          'element-color': '#3B82F6',
+          'fill': '#EFF6FF',
+          'font-color': '#1E3A8A'
+        },
+        'operation': {
+          'element-color': '#8B5CF6',
+          'fill': '#F5F3FF',
+          'font-color': '#4C1D95'
+        }
+      }
+    });
+  </script>
+</body>
+</html>

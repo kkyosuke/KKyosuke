@@ -1,1 +1,12 @@
-../../../../../docs/ja/agent/template/re-review.md
+{{nextStepsSection}}
+## 🔄 再レビュー結果
+
+> [!NOTE]
+> **ステータス: {{overallStatus}}**
+
+{{summarySection}}
+
+{{resolvedAndHandoffSection}}
+
+{{newFeedbackSection}}
+

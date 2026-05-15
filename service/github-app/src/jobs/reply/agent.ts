@@ -1,17 +1,31 @@
 import {
 	createReplyForReviewComment,
-	getPullRequest,
-	getPullRequestDiff,
-	getRepositoryFile,
 	getReviewThreads,
 	resolveReviewThread,
 } from "../../lib/github";
-import { REPOSITORY_GUIDELINES_PATH } from "../../config";
-import { calculateCost, evaluateReviewThread, REVIEW_MODEL_NAME } from "../../lib/llm";
+import {
+	calculateCost,
+	evaluateReviewThread,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
+import {
+	buildInstructionWithGuidelines,
+	fetchReviewContext,
+} from "../utils/context";
 
+/**
+ * PRのコメントに対する返信処理をバックグラウンドで実行します。
+ *
+ * @param env - 環境変数
+ * @param installationId - GitHub AppのインストールID
+ * @param owner - リポジトリのオーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param commentId - 対象のコメントID
+ */
 export async function runReplyAgent(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -25,14 +39,7 @@ export async function runReplyAgent(
 			`[ReplyAgent] Starting reply for ${owner}/${repo}#${pullNumber} comment ${commentId}`,
 		);
 
-		const pr = await getPullRequest(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-		const diff = await getPullRequestDiff(
+		const { diff, guidelines } = await fetchReviewContext(
 			env,
 			installationId,
 			owner,
@@ -48,8 +55,8 @@ export async function runReplyAgent(
 		);
 
 		// 指定されたコメントIDが含まれるスレッドを検索
-		const thread = reviewThreads.find((t: any) =>
-			t.comments.nodes.some((c: any) => c.databaseId === commentId),
+		const thread = reviewThreads.find((t) =>
+			t.comments.nodes.some((c) => c.databaseId === commentId),
 		);
 
 		if (!thread) {
@@ -64,24 +71,18 @@ export async function runReplyAgent(
 
 		const comments = thread.comments.nodes;
 		const threadCommentsText = comments
-			.map((c: any) => `@${c.author?.login}: ${c.body}`)
+			.map((c) => `@${c.author?.login}: ${c.body}`)
 			.join("\n\n---\n\n");
 
 		console.log(`[ReplyAgent] Evaluating thread ${thread.id}`);
 
-		let finalInstruction = threadInstruction;
-		const guidelines = await getRepositoryFile(
-			env,
-			installationId,
-			owner,
-			repo,
-			REPOSITORY_GUIDELINES_PATH,
-			pr.head?.sha,
-		);
 		if (guidelines) {
 			console.log(`[ReplyAgent] Found repository guidelines`);
-			finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守って対応してください：\n\n${guidelines}`;
 		}
+		const finalInstruction = buildInstructionWithGuidelines(
+			threadInstruction,
+			guidelines,
+		);
 
 		const { output: evalResult, usage: evalUsage } = await evaluateReviewThread(
 			env,
@@ -109,13 +110,13 @@ export async function runReplyAgent(
 					owner,
 					repo,
 					pullNumber,
-					comments[0].databaseId, // スレッドの最初のコメントIDを指定して返信
+					comments[0]?.databaseId ?? 0, // スレッドの最初のコメントIDを指定して返信
 					evalResult.replyBody,
 				);
-			} catch (e: any) {
+			} catch (e: unknown) {
 				console.warn(
 					`[ReplyAgent] Failed to reply to thread ${thread.id}:`,
-					e.message,
+					e instanceof Error ? e.message : String(e),
 				);
 			}
 		}
@@ -126,16 +127,16 @@ export async function runReplyAgent(
 		) {
 			try {
 				await resolveReviewThread(env, installationId, thread.id);
-			} catch (e: any) {
+			} catch (e: unknown) {
 				console.warn(
 					`[ReplyAgent] Failed to resolve thread ${thread.id}:`,
-					e.message,
+					e instanceof Error ? e.message : String(e),
 				);
 			}
 		}
 
 		console.log(`[ReplyAgent] Completed reply for comment ${commentId}`);
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error(`[ReplyAgent] Error in reply process:`, error);
 	}
 }

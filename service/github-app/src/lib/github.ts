@@ -1,8 +1,27 @@
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
 
+import { getBotName } from "../config/env";
 import { MAX_COMMENTS_PER_THREAD, MAX_REVIEW_THREADS } from "../jobs/constants";
 
+export interface ReviewThread {
+	id: string;
+	isResolved: boolean;
+	path: string;
+	line: number;
+	comments: {
+		nodes: Array<{
+			id: string;
+			databaseId: number;
+			body: string;
+			author?: { login?: string };
+		}>;
+	};
+}
+
+/**
+ * GitHub Appのインスタンスを取得します。
+ */
 export function getGithubApp(env: Record<string, string | undefined>) {
 	return new App({
 		appId: env.GITHUB_APP_ID || "",
@@ -11,6 +30,9 @@ export function getGithubApp(env: Record<string, string | undefined>) {
 	});
 }
 
+/**
+ * PRの詳細情報を取得します。
+ */
 export async function getPullRequest(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -28,6 +50,9 @@ export async function getPullRequest(
 	return data;
 }
 
+/**
+ * PRの差分(diff)を取得します。
+ */
 export async function getPullRequestDiff(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -48,6 +73,9 @@ export async function getPullRequestDiff(
 	return data as unknown as string;
 }
 
+/**
+ * Issue（PR）のコメント一覧を取得します。
+ */
 export async function getIssueComments(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -65,6 +93,9 @@ export async function getIssueComments(
 	return data;
 }
 
+/**
+ * PRのレビューコメント一覧を取得します。
+ */
 export async function getReviewComments(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -82,6 +113,9 @@ export async function getReviewComments(
 	return data;
 }
 
+/**
+ * 進捗状況などを表示するためのプレースホルダーコメントを作成します。
+ */
 export async function createPlaceholderComment(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -101,6 +135,9 @@ export async function createPlaceholderComment(
 	return data;
 }
 
+/**
+ * 既存のコメントを更新します。
+ */
 export async function updateComment(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -120,6 +157,33 @@ export async function updateComment(
 	return data;
 }
 
+/**
+ * 既存のレビュー（サマリ）を更新します。
+ */
+export async function updateReview(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+	reviewId: number,
+	body: string,
+) {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	const { data } = await octokit.rest.pulls.updateReview({
+		owner,
+		repo,
+		pull_number: pullNumber,
+		review_id: reviewId,
+		body,
+	});
+	return data;
+}
+
+/**
+ * コードの特定の行に対するインラインコメント（レビューコメント）を作成します。
+ */
 export async function createReviewComment(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -145,6 +209,9 @@ export async function createReviewComment(
 	return data;
 }
 
+/**
+ * PRに対する全体レビュー（APPROVE, REQUEST_CHANGES等）を作成します。
+ */
 export async function createReview(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -166,6 +233,9 @@ export async function createReview(
 	return data;
 }
 
+/**
+ * コメントを削除します。
+ */
 export async function deleteComment(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -183,6 +253,9 @@ export async function deleteComment(
 	return data;
 }
 
+/**
+ * PRのレビュースレッド一覧を取得します（ボットが作成したもののみ）。
+ */
 export async function getReviewThreads(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -216,14 +289,29 @@ export async function getReviewThreads(
 			}
 		}
 	`;
-	const result = await octokit.graphql<any>(query, {
+	const result = await octokit.graphql<{
+		repository: {
+			pullRequest: { reviewThreads: { nodes: ReviewThread[] } };
+		};
+	}>(query, {
 		owner,
 		repo,
 		pullNumber,
 	});
-	return result.repository.pullRequest.reviewThreads.nodes;
+	const nodes = result.repository.pullRequest.reviewThreads.nodes;
+	const botName = getBotName(env);
+
+	return nodes.filter((thread) => {
+		const firstComment = thread.comments?.nodes?.[0];
+		if (!firstComment) return false;
+		const authorLogin = firstComment.author?.login || "";
+		return authorLogin === botName || authorLogin === `${botName}[bot]`;
+	});
 }
 
+/**
+ * レビュースレッドを解決済み（Resolved）にします。
+ */
 export async function resolveReviewThread(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -241,6 +329,9 @@ export async function resolveReviewThread(
 	await octokit.graphql(mutation, { threadId });
 }
 
+/**
+ * 既存のレビューコメントに対して返信を作成します。
+ */
 export async function createReplyForReviewComment(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -262,6 +353,9 @@ export async function createReplyForReviewComment(
 	return data;
 }
 
+/**
+ * リポジトリ内の特定ファイルの内容を取得します。
+ */
 export async function getRepositoryFile(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -283,8 +377,8 @@ export async function getRepositoryFile(
 			},
 		});
 		return data as unknown as string;
-	} catch (e: any) {
-		if (e.status === 404) {
+	} catch (e: unknown) {
+		if (e && typeof e === "object" && "status" in e && e.status === 404) {
 			return null; // ファイルが存在しない場合はnullを返す
 		}
 		throw e;

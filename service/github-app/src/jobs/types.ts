@@ -1,3 +1,6 @@
+/**
+ * コマンド実行時のコンテキスト
+ */
 export interface CommandContext {
 	env: Record<string, string | undefined>;
 	installationId: number;
@@ -6,13 +9,26 @@ export interface CommandContext {
 	issueNumber: number; // PR or Issue number
 	commentBody: string; // 実際のコメント全文
 	commentId?: number; // トリガーとなったコメントのID
+	isReviewSummary?: boolean; // トリガーがレビューサマリ（pull_request_review）かどうか
 	botName: string; // メンションに使用するBotの名前
 	sender: string; // コマンドを実行したユーザー名
 }
 
+/**
+ * コマンドの定義
+ */
 export interface CommandJob {
 	name: string;
 	triggerWords: string[]; // このコマンドが反応するキーワード
 	priority?: number; // 判定の優先順位（大きいほど優先）
 	execute: (ctx: CommandContext) => Promise<void>;
+}
+
+/**
+ * KVの名前空間のバインディング
+ */
+export interface KVBinding {
+	get(key: string): Promise<string | null>;
+	put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+	delete(key: string): Promise<void>;
 }

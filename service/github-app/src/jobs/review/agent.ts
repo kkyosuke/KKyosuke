@@ -1,11 +1,4 @@
-import {
-	createReview,
-	getIssueComments,
-	getPullRequest,
-	getPullRequestDiff,
-	getRepositoryFile,
-} from "../../lib/github";
-import { REPOSITORY_GUIDELINES_PATH } from "../../config";
+import { createReview, getIssueComments } from "../../lib/github";
 import {
 	calculateCost,
 	generateCodeReview,
@@ -17,9 +10,24 @@ import instruction from "../../prompts/review/instruction.md" with {
 import template from "../../prompts/review/template.md" with { type: "text" };
 import { getNextStepsSection, type ProgressStep } from "../constants";
 import { postInlineComments } from "../utils/comments";
+import {
+	buildInstructionWithGuidelines,
+	fetchReviewContext,
+} from "../utils/context";
 import { createFeedbackTable, formatTemplate } from "../utils/format";
 import { ReviewProgressManager } from "../utils/progress";
 
+/**
+ * PRのレビュー処理をバックグラウンドで実行します。
+ *
+ * @param env - 環境変数
+ * @param installationId - GitHub AppのインストールID
+ * @param owner - リポジトリのオーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param botName - ボット名
+ * @param sender - イベントをトリガーしたユーザー
+ */
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -53,14 +61,7 @@ export async function runReviewAgent(
 		await progress.start();
 
 		// 1. コンテキストの収集
-		const pr = await getPullRequest(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-		const diff = await getPullRequestDiff(
+		const { pr, diff, guidelines } = await fetchReviewContext(
 			env,
 			installationId,
 			owner,
@@ -79,19 +80,14 @@ export async function runReviewAgent(
 			.map((c) => `@${c.user?.login}: ${c.body}`)
 			.join("\n\n");
 
-		let finalInstruction = instruction;
-		const guidelines = await getRepositoryFile(
-			env,
-			installationId,
-			owner,
-			repo,
-			REPOSITORY_GUIDELINES_PATH,
-			pr.head?.sha,
-		);
 		if (guidelines) {
 			console.log(`[ReviewAgent] Found repository guidelines`);
-			finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
 		}
+		const finalInstruction = buildInstructionWithGuidelines(
+			instruction,
+			guidelines,
+			"以下のルールを必ず守ってレビューしてください：",
+		);
 
 		// 2. レビュー結果の生成 (LLM)
 		await progress.update(0, 1);
@@ -115,7 +111,6 @@ export async function runReviewAgent(
 
 		const { nextStepsSection, requiresAction } = getNextStepsSection(
 			feedbacks,
-			botName,
 		);
 
 		const markdownReport = formatTemplate(template, {
@@ -148,7 +143,7 @@ export async function runReviewAgent(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
 		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
-		const finalReport = `@${sender}\n\n` + markdownReport;
+		const finalReport = `@${sender}\n\n${markdownReport}`;
 
 		await createReview(
 			env,
@@ -178,13 +173,18 @@ export async function runReviewAgent(
 		console.log(
 			`[ReviewAgent] Completed review for ${owner}/${repo}#${pullNumber}`,
 		);
-	} catch (error: any) {
-		if (error.message === "CANCELLED") {
-			console.log(`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`);
+	} catch (error: unknown) {
+		if (error instanceof Error && error.message === "CANCELLED") {
+			console.log(
+				`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`,
+			);
 			await progress.cancel();
 		} else {
 			console.error(`[ReviewAgent] Error in review process:`, error);
-			await progress.error(error, "レビュー処理中にエラーが発生しました。");
+			await progress.error(
+				error instanceof Error ? error : new Error(String(error)),
+				"レビュー処理中にエラーが発生しました。",
+			);
 		}
 	}
 }
