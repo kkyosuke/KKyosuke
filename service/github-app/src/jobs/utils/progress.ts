@@ -104,7 +104,9 @@ export class ReviewProgressManager {
 		const cancelKey = `cancel-review-${this.owner}-${this.repo}-${this.pullNumber}`;
 		const isCancelled = await kv.get(cancelKey);
 		if (isCancelled) {
-			console.log(`[ProgressManager] Cancellation signal detected for ${cancelKey}`);
+			console.log(
+				`[ProgressManager] Cancellation signal detected for ${cancelKey}`,
+			);
 			throw new Error("CANCELLED");
 		}
 	}
@@ -128,7 +130,9 @@ export class ReviewProgressManager {
 				this.repo,
 				this.placeholderCommentId,
 				cancelledComment,
-			).catch((e) => console.error("Failed to update cancellation message:", e));
+			).catch((e) =>
+				console.error("Failed to update cancellation message:", e),
+			);
 		}
 	}
 }

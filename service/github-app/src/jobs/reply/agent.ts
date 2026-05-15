@@ -4,11 +4,18 @@ import {
 	getReviewThreads,
 	resolveReviewThread,
 } from "../../lib/github";
-import { calculateCost, evaluateReviewThread, REVIEW_MODEL_NAME } from "../../lib/llm";
-import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/context";
+import {
+	calculateCost,
+	evaluateReviewThread,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
+import {
+	buildInstructionWithGuidelines,
+	fetchReviewContext,
+} from "../utils/context";
 
 /**
  * PRのコメントに対する返信処理をバックグラウンドで実行します。

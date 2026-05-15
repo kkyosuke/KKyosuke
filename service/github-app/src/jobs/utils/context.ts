@@ -38,7 +38,7 @@ export async function fetchReviewContext(
 export function buildInstructionWithGuidelines(
 	baseInstruction: string,
 	guidelines: string | null | undefined,
-	customIntro: string = "以下のルールを必ず守って対応してください："
+	customIntro: string = "以下のルールを必ず守って対応してください：",
 ) {
 	let finalInstruction = baseInstruction;
 	if (guidelines) {

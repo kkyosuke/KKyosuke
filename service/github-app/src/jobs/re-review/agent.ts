@@ -1,7 +1,4 @@
-import {
-	createReview,
-	getReviewThreads,
-} from "../../lib/github";
+import { createReview, getReviewThreads } from "../../lib/github";
 import { REVIEW_MODEL_NAME } from "../../lib/llm";
 import instruction from "../../prompts/re-review/instruction.md" with {
 	type: "text",
@@ -14,7 +11,10 @@ import {
 	type ProgressStep,
 } from "../constants";
 import { postInlineComments } from "../utils/comments";
-import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/context";
+import {
+	buildInstructionWithGuidelines,
+	fetchReviewContext,
+} from "../utils/context";
 import { formatTemplate } from "../utils/format";
 import { withKvLock } from "../utils/lock";
 import { ReviewProgressManager } from "../utils/progress";
@@ -107,11 +107,18 @@ export async function runReReviewAgent(
 			);
 
 			// 未解決のBotスレッドがあるか確認
-			const unresolvedBotThreads = (reviewThreads || []).filter((thread: any) => {
-				if (thread.isResolved || !thread.comments?.nodes?.length) return false;
-				const firstCommentAuthor = thread.comments.nodes[0].author?.login?.toLowerCase() || "";
-				return firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
-			});
+			const unresolvedBotThreads = (reviewThreads || []).filter(
+				(thread: any) => {
+					if (thread.isResolved || !thread.comments?.nodes?.length)
+						return false;
+					const firstCommentAuthor =
+						thread.comments.nodes[0].author?.login?.toLowerCase() || "";
+					return (
+						firstCommentAuthor.includes("bot") ||
+						firstCommentAuthor.includes("ai")
+					);
+				},
+			);
 			const hasUnresolvedBotThreads = unresolvedBotThreads.length > 0;
 
 			let nextStepsSection = "";
@@ -124,13 +131,15 @@ export async function runReReviewAgent(
 
 			if (hasUnresolvedBotThreads) {
 				// 未解決がある場合は全体レビューをスキップ
-				console.log(`[ReReviewAgent] Skipping full re-review due to unresolved threads for ${owner}/${repo}#${pullNumber}`);
+				console.log(
+					`[ReReviewAgent] Skipping full re-review due to unresolved threads for ${owner}/${repo}#${pullNumber}`,
+				);
 				const skippedReport = getUnresolvedThreadsSkippedReport();
 				overallStatus = skippedReport.overallStatus;
 				summarySection = skippedReport.summarySection;
 				nextStepsSection = skippedReport.nextStepsSection;
 				requiresAction = skippedReport.requiresAction;
-				
+
 				await progress.update(2, 3);
 				await progress.checkCancellation();
 			} else {
@@ -148,7 +157,7 @@ export async function runReReviewAgent(
 				const finalInstruction = buildInstructionWithGuidelines(
 					instruction,
 					guidelines,
-					"以下のルールを必ず守ってレビューしてください："
+					"以下のルールを必ず守ってレビューしてください：",
 				);
 
 				const fullReviewResult = await performFullReReview(
@@ -158,7 +167,7 @@ export async function runReReviewAgent(
 					finalInstruction,
 					template,
 					botName,
-					hasUnresolvedBotThreads
+					hasUnresolvedBotThreads,
 				);
 
 				totalCost += fullReviewResult.cost;
@@ -227,7 +236,7 @@ export async function runReReviewAgent(
 				triggerCommentId,
 				triggerCommentBody,
 				isReviewSummary,
-				"completed"
+				"completed",
 			);
 
 			console.log(
@@ -235,7 +244,9 @@ export async function runReReviewAgent(
 			);
 		} catch (error: any) {
 			if (error.message === "CANCELLED") {
-				console.log(`[ReReviewAgent] Re-review cancelled for ${owner}/${repo}#${pullNumber}`);
+				console.log(
+					`[ReReviewAgent] Re-review cancelled for ${owner}/${repo}#${pullNumber}`,
+				);
 				await progress.cancel();
 				// キャンセル時はチェックボックスを元に戻す
 				await updateTriggerCommentState(
@@ -247,7 +258,7 @@ export async function runReReviewAgent(
 					triggerCommentId,
 					triggerCommentBody,
 					isReviewSummary,
-					"reverted"
+					"reverted",
 				);
 				return;
 			}
@@ -265,7 +276,7 @@ export async function runReReviewAgent(
 				triggerCommentId,
 				triggerCommentBody,
 				isReviewSummary,
-				"reverted"
+				"reverted",
 			);
 		}
 	});

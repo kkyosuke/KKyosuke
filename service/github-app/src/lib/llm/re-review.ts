@@ -1,8 +1,8 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
-import { REVIEW_MODEL_NAME } from "./cost";
 import { buildReReviewPrompt } from "../../prompts/re-review/prompt";
+import { REVIEW_MODEL_NAME } from "./cost";
 
 /**
  * 再レビュー生成時に必要なコンテキスト
@@ -29,7 +29,7 @@ export const reReviewSchema = z.object({
 	resolvedAndHandoff: z
 		.array(z.string())
 		.describe(
-			"今回解決した点や改善されたポイント、および次に確認する人への申し送りを箇条書きのリストとして出力するため配列で記述してください。"
+			"今回解決した点や改善されたポイント、および次に確認する人への申し送りを箇条書きのリストとして出力するため配列で記述してください。",
 		),
 	newFeedback: z
 		.array(

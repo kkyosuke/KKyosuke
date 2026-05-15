@@ -2,7 +2,11 @@ import {
 	createReplyForReviewComment,
 	resolveReviewThread,
 } from "../../lib/github";
-import { calculateCost, evaluateReviewThread, REVIEW_MODEL_NAME } from "../../lib/llm";
+import {
+	calculateCost,
+	evaluateReviewThread,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
@@ -39,8 +43,7 @@ export async function processReviewThreads(
 			const comments = thread.comments.nodes;
 			const firstCommentAuthor = comments[0].author?.login?.toLowerCase() || "";
 			const isBotThread =
-				firstCommentAuthor.includes("bot") ||
-				firstCommentAuthor.includes("ai");
+				firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
 
 			if (!isBotThread) return;
 

@@ -1,6 +1,7 @@
 import type { ReviewContext } from "../../lib/llm/review";
 
-export const buildReviewPrompt = (context: ReviewContext): string => `
+export const buildReviewPrompt = (context: ReviewContext): string =>
+	`
 ${context.instruction}
 
 ## 【出力テンプレートの参考情報】

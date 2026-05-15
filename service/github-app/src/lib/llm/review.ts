@@ -1,8 +1,8 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
-import { REVIEW_MODEL_NAME } from "./cost";
 import { buildReviewPrompt } from "../../prompts/review/prompt";
+import { REVIEW_MODEL_NAME } from "./cost";
 
 /**
  * レビュー生成時に必要なコンテキスト
@@ -32,12 +32,12 @@ export const reviewSchema = z.object({
 				path: z
 					.string()
 					.describe(
-						"対象のファイルパス (例: src/index.ts) 全体に対する指摘の場合は '-'"
+						"対象のファイルパス (例: src/index.ts) 全体に対する指摘の場合は '-'",
 					),
 				line: z
 					.number()
 					.describe(
-						"該当する行番号。全体に対する指摘など特定できない場合は 0 または -1"
+						"該当する行番号。全体に対する指摘など特定できない場合は 0 または -1",
 					),
 				reason: z.string().describe("指摘理由 (バグの可能性、可読性など)"),
 				severity: z.enum(["🔴 must", "🟡 want"]).describe("対応度"),
@@ -45,7 +45,7 @@ export const reviewSchema = z.object({
 			}),
 		)
 		.describe(
-			"指摘点一覧。重要度が高い順に最大10個まで出力してください。指摘がない場合は空配列。"
+			"指摘点一覧。重要度が高い順に最大10個まで出力してください。指摘がない場合は空配列。",
 		),
 	scores: z
 		.object({

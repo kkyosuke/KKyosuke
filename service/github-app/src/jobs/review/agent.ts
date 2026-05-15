@@ -1,7 +1,4 @@
-import {
-	createReview,
-	getIssueComments,
-} from "../../lib/github";
+import { createReview, getIssueComments } from "../../lib/github";
 import {
 	calculateCost,
 	generateCodeReview,
@@ -13,7 +10,10 @@ import instruction from "../../prompts/review/instruction.md" with {
 import template from "../../prompts/review/template.md" with { type: "text" };
 import { getNextStepsSection, type ProgressStep } from "../constants";
 import { postInlineComments } from "../utils/comments";
-import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/context";
+import {
+	buildInstructionWithGuidelines,
+	fetchReviewContext,
+} from "../utils/context";
 import { createFeedbackTable, formatTemplate } from "../utils/format";
 import { ReviewProgressManager } from "../utils/progress";
 
@@ -86,7 +86,7 @@ export async function runReviewAgent(
 		const finalInstruction = buildInstructionWithGuidelines(
 			instruction,
 			guidelines,
-			"以下のルールを必ず守ってレビューしてください："
+			"以下のルールを必ず守ってレビューしてください：",
 		);
 
 		// 2. レビュー結果の生成 (LLM)
@@ -176,7 +176,9 @@ export async function runReviewAgent(
 		);
 	} catch (error: any) {
 		if (error.message === "CANCELLED") {
-			console.log(`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`);
+			console.log(
+				`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`,
+			);
 			await progress.cancel();
 		} else {
 			console.error(`[ReviewAgent] Error in review process:`, error);

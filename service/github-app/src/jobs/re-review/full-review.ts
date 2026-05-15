@@ -1,4 +1,8 @@
-import { calculateCost, generateReReview, REVIEW_MODEL_NAME } from "../../lib/llm";
+import {
+	calculateCost,
+	generateReReview,
+	REVIEW_MODEL_NAME,
+} from "../../lib/llm";
 import { getNextStepsSection } from "../constants";
 
 /**
@@ -61,7 +65,9 @@ export async function performFullReReview(
 	let summarySection = "### 📝 サマリ\n\nなし\n";
 	if (result.summary && result.summary.length > 0) {
 		summarySection =
-			"### 📝 サマリ\n\n" + result.summary.map((s) => `- ${s}`).join("\n") + "\n";
+			"### 📝 サマリ\n\n" +
+			result.summary.map((s) => `- ${s}`).join("\n") +
+			"\n";
 	}
 
 	let resolvedAndHandoffSection = "### 💡 解決項目と申し送り\n\nなし\n";

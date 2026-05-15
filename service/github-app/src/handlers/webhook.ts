@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { env } from "hono/adapter";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import { getBotName } from "../config/env";
-import { reReviewCommand, replyCommand } from "../jobs";
+import { replyCommand, reReviewCommand } from "../jobs";
 import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
 	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,

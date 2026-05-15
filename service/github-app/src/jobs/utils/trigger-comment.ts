@@ -1,8 +1,8 @@
 import { updateComment, updateReview } from "../../lib/github";
 import {
-	RE_REVIEW_CHECKBOX_UNCHECKED,
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
 	RE_REVIEW_CHECKBOX_COMPLETED,
+	RE_REVIEW_CHECKBOX_UNCHECKED,
 } from "../constants";
 
 /**

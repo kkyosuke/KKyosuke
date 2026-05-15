@@ -12,10 +12,16 @@ export type ProgressStep = {
 export const RE_REVIEW_TRIGGER_TEXT = "再度レビューを依頼する";
 export const RE_REVIEW_CHECKBOX_UNCHECKED = `- [ ] ${RE_REVIEW_TRIGGER_TEXT}`;
 export const RE_REVIEW_CHECKBOX_COMPLETED = `- 再度レビュー依頼済み (完了)`;
-export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN = new RegExp(`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`, "g");
-export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE = new RegExp(`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`);
-export const RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE = new RegExp(`-\\s*\\[\\s*\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`);
-
+export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN = new RegExp(
+	`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`,
+	"g",
+);
+export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE = new RegExp(
+	`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`,
+);
+export const RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE = new RegExp(
+	`-\\s*\\[\\s*\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`,
+);
 
 /**
  * 進行中コメントを生成します。
@@ -81,8 +87,7 @@ export const getNextStepsSection = (
 				"> - [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
 		}
 		if (hasQ) {
-			nextStepsSection +=
-				"> - [ ] `💬 Q` の質問に回答する\n";
+			nextStepsSection += "> - [ ] `💬 Q` の質問に回答する\n";
 		}
 		nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
 	}
