@@ -67,6 +67,8 @@ export const getNextStepsSection = (
 	let nextStepsSection = "";
 	if (requiresAction) {
 		nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+		nextStepsSection +=
+			"> ※ 各項目に対応後、**実装者ご自身で**上から順にチェックを入れてください。\n";
 		if (hasUnresolvedThreads) {
 			nextStepsSection +=
 				"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
@@ -93,6 +95,8 @@ export const getNextStepsSection = (
  */
 export const getUnresolvedThreadsSkippedReport = () => {
 	let nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+	nextStepsSection +=
+		"> ※ 各項目に対応後、**実装者ご自身で**上から順にチェックを入れてください。\n";
 	nextStepsSection +=
 		"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
 	nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
