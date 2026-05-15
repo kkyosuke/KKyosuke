@@ -1,18 +1,8 @@
 import {
 	createReview,
-	getPullRequest,
-	getPullRequestDiff,
-	getRepositoryFile,
 	getReviewThreads,
-	updateComment,
-	updateReview,
 } from "../../lib/github";
-import { REPOSITORY_GUIDELINES_PATH } from "../../config";
-import {
-	calculateCost,
-	generateReReview,
-	REVIEW_MODEL_NAME,
-} from "../../lib/llm";
+import { REVIEW_MODEL_NAME } from "../../lib/llm";
 import instruction from "../../prompts/re-review/instruction.md" with {
 	type: "text",
 };
@@ -20,18 +10,17 @@ import template from "../../prompts/re-review/template.md" with {
 	type: "text",
 };
 import {
-	getNextStepsSection,
 	getUnresolvedThreadsSkippedReport,
 	type ProgressStep,
-	RE_REVIEW_CHECKBOX_UNCHECKED,
-	RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
-	RE_REVIEW_CHECKBOX_COMPLETED,
 } from "../constants";
-import { ReviewProgressManager } from "../utils/progress";
-import { withKvLock } from "../utils/lock";
-import { processReviewThreads } from "./threads";
-import { formatTemplate } from "../utils/format";
 import { postInlineComments } from "../utils/comments";
+import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/context";
+import { formatTemplate } from "../utils/format";
+import { withKvLock } from "../utils/lock";
+import { ReviewProgressManager } from "../utils/progress";
+import { updateTriggerCommentState } from "../utils/trigger-comment";
+import { performFullReReview } from "./full-review";
+import { processReviewThreads } from "./threads";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -73,14 +62,7 @@ export async function runReReviewAgent(
 
 			await progress.start();
 
-			const pr = await getPullRequest(
-				env,
-				installationId,
-				owner,
-				repo,
-				pullNumber,
-			);
-			const diff = await getPullRequestDiff(
+			const { pr, diff, guidelines } = await fetchReviewContext(
 				env,
 				installationId,
 				owner,
@@ -97,15 +79,6 @@ export async function runReReviewAgent(
 				owner,
 				repo,
 				pullNumber,
-			);
-
-			const guidelines = await getRepositoryFile(
-				env,
-				installationId,
-				owner,
-				repo,
-				REPOSITORY_GUIDELINES_PATH,
-				pr.head?.sha,
 			);
 
 			let totalCost = await processReviewThreads(
@@ -155,65 +128,33 @@ export async function runReReviewAgent(
 					`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 				);
 
-				let finalInstruction = instruction;
 				if (guidelines) {
 					console.log(`[ReReviewAgent] Found repository guidelines`);
-					finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
 				}
+				const finalInstruction = buildInstructionWithGuidelines(
+					instruction,
+					guidelines,
+					"以下のルールを必ず守ってレビューしてください："
+				);
 
-				const { output: result, usage: reReviewUsage } = await generateReReview(
+				const fullReviewResult = await performFullReReview(
 					env,
-					{
-						title: pr.title,
-						body: pr.body,
-						diff: diff,
-						instruction: finalInstruction,
-						template: template,
-					},
-				);
-
-				totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
-
-				// 新規の指摘事項セクションの作成
-				newFeedbacks = result.newFeedback.slice(0, 10);
-				const generalNewFeedback = newFeedbacks.filter(
-					(f) => !(f.path && f.path !== "-" && f.line > 0),
-				);
-
-				if (generalNewFeedback.length > 0) {
-					newFeedbackSection =
-						"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
-					newFeedbackSection +=
-						generalNewFeedback
-							.map(
-								(f) =>
-									`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
-							)
-							.join("\n") + "\n";
-				}
-
-				const nextSteps = getNextStepsSection(
-					newFeedbacks,
+					pr,
+					diff,
+					finalInstruction,
+					template,
 					botName,
-					hasUnresolvedBotThreads,
+					hasUnresolvedBotThreads
 				);
-				nextStepsSection = nextSteps.nextStepsSection;
-				requiresAction = nextSteps.requiresAction;
 
-				if (result.summary && result.summary.length > 0) {
-					summarySection =
-						"### 📝 サマリ\n\n" +
-						result.summary.map((s) => `- ${s}`).join("\n") +
-						"\n";
-				}
-
-				if (result.resolvedAndHandoff && result.resolvedAndHandoff.length > 0) {
-					resolvedAndHandoffSection =
-						"### 💡 解決項目と申し送り\n\n" +
-						result.resolvedAndHandoff.map((i) => `- ${i}`).join("\n") +
-						"\n";
-				}
-				overallStatus = result.overallStatus;
+				totalCost += fullReviewResult.cost;
+				newFeedbacks = fullReviewResult.newFeedbacks;
+				nextStepsSection = fullReviewResult.nextStepsSection;
+				requiresAction = fullReviewResult.requiresAction;
+				summarySection = fullReviewResult.summarySection;
+				resolvedAndHandoffSection = fullReviewResult.resolvedAndHandoffSection;
+				newFeedbackSection = fullReviewResult.newFeedbackSection;
+				overallStatus = fullReviewResult.overallStatus;
 
 				await progress.update(2, 3);
 				await progress.checkCancellation();
@@ -263,44 +204,17 @@ export async function runReReviewAgent(
 			}
 
 			// トリガーとなったコメントの更新（チェックボックスを押せないようにする）
-			if (triggerCommentId && triggerCommentBody) {
-				const updatedBody = triggerCommentBody.replace(
-					RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
-					RE_REVIEW_CHECKBOX_COMPLETED,
-				);
-				if (updatedBody !== triggerCommentBody) {
-					try {
-						if (isReviewSummary) {
-							await updateReview(
-								env,
-								installationId,
-								owner,
-								repo,
-								pullNumber,
-								triggerCommentId,
-								updatedBody,
-							);
-						} else {
-							await updateComment(
-								env,
-								installationId,
-								owner,
-								repo,
-								triggerCommentId,
-								updatedBody,
-							);
-						}
-						console.log(
-							`[ReReviewAgent] Updated trigger comment ${triggerCommentId}`,
-						);
-					} catch (err: any) {
-						console.warn(
-							`[ReReviewAgent] Failed to update trigger comment ${triggerCommentId}:`,
-							err.message,
-						);
-					}
-				}
-			}
+			await updateTriggerCommentState(
+				env,
+				installationId,
+				owner,
+				repo,
+				pullNumber,
+				triggerCommentId,
+				triggerCommentBody,
+				isReviewSummary,
+				"completed"
+			);
 
 			console.log(
 				`[ReReviewAgent] Completed re-review for ${owner}/${repo}#${pullNumber}`,
@@ -310,23 +224,17 @@ export async function runReReviewAgent(
 				console.log(`[ReReviewAgent] Re-review cancelled for ${owner}/${repo}#${pullNumber}`);
 				await progress.cancel();
 				// キャンセル時はチェックボックスを元に戻す
-				if (triggerCommentId && triggerCommentBody) {
-					const revertedBody = triggerCommentBody.replace(
-						RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
-						RE_REVIEW_CHECKBOX_UNCHECKED,
-					);
-					if (revertedBody !== triggerCommentBody) {
-						try {
-							if (isReviewSummary) {
-								await updateReview(env, installationId, owner, repo, pullNumber, triggerCommentId, revertedBody);
-							} else {
-								await updateComment(env, installationId, owner, repo, triggerCommentId, revertedBody);
-							}
-						} catch (err: any) {
-							console.warn("[ReReviewAgent] Failed to revert trigger comment:", err.message);
-						}
-					}
-				}
+				await updateTriggerCommentState(
+					env,
+					installationId,
+					owner,
+					repo,
+					pullNumber,
+					triggerCommentId,
+					triggerCommentBody,
+					isReviewSummary,
+					"reverted"
+				);
 				return;
 			}
 
@@ -334,41 +242,17 @@ export async function runReReviewAgent(
 			await progress.error(error, "再レビュー処理中にエラーが発生しました。");
 
 			// エラー時はチェックボックスを元に戻し、再試行できるようにする
-			if (triggerCommentId && triggerCommentBody) {
-				const revertedBody = triggerCommentBody.replace(
-					RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
-					RE_REVIEW_CHECKBOX_UNCHECKED,
-				);
-				if (revertedBody !== triggerCommentBody) {
-					try {
-						if (isReviewSummary) {
-							await updateReview(
-								env,
-								installationId,
-								owner,
-								repo,
-								pullNumber,
-								triggerCommentId,
-								revertedBody,
-							);
-						} else {
-							await updateComment(
-								env,
-								installationId,
-								owner,
-								repo,
-								triggerCommentId,
-								revertedBody,
-							);
-						}
-					} catch (err: any) {
-						console.warn(
-							"[ReReviewAgent] Failed to revert trigger comment:",
-							err.message,
-						);
-					}
-				}
-			}
+			await updateTriggerCommentState(
+				env,
+				installationId,
+				owner,
+				repo,
+				pullNumber,
+				triggerCommentId,
+				triggerCommentBody,
+				isReviewSummary,
+				"reverted"
+			);
 		}
 	});
 }

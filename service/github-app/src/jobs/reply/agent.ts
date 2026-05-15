@@ -1,13 +1,11 @@
 import {
 	createReplyForReviewComment,
-	getPullRequest,
 	getPullRequestDiff,
-	getRepositoryFile,
 	getReviewThreads,
 	resolveReviewThread,
 } from "../../lib/github";
-import { REPOSITORY_GUIDELINES_PATH } from "../../config";
 import { calculateCost, evaluateReviewThread, REVIEW_MODEL_NAME } from "../../lib/llm";
+import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/context";
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
@@ -25,14 +23,7 @@ export async function runReplyAgent(
 			`[ReplyAgent] Starting reply for ${owner}/${repo}#${pullNumber} comment ${commentId}`,
 		);
 
-		const pr = await getPullRequest(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-		const diff = await getPullRequestDiff(
+		const { diff, guidelines } = await fetchReviewContext(
 			env,
 			installationId,
 			owner,
@@ -69,19 +60,13 @@ export async function runReplyAgent(
 
 		console.log(`[ReplyAgent] Evaluating thread ${thread.id}`);
 
-		let finalInstruction = threadInstruction;
-		const guidelines = await getRepositoryFile(
-			env,
-			installationId,
-			owner,
-			repo,
-			REPOSITORY_GUIDELINES_PATH,
-			pr.head?.sha,
-		);
 		if (guidelines) {
 			console.log(`[ReplyAgent] Found repository guidelines`);
-			finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守って対応してください：\n\n${guidelines}`;
 		}
+		const finalInstruction = buildInstructionWithGuidelines(
+			threadInstruction,
+			guidelines,
+		);
 
 		const { output: evalResult, usage: evalUsage } = await evaluateReviewThread(
 			env,

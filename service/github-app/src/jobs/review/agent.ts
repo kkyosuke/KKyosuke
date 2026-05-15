@@ -1,11 +1,7 @@
 import {
 	createReview,
 	getIssueComments,
-	getPullRequest,
-	getPullRequestDiff,
-	getRepositoryFile,
 } from "../../lib/github";
-import { REPOSITORY_GUIDELINES_PATH } from "../../config";
 import {
 	calculateCost,
 	generateCodeReview,
@@ -17,6 +13,7 @@ import instruction from "../../prompts/review/instruction.md" with {
 import template from "../../prompts/review/template.md" with { type: "text" };
 import { getNextStepsSection, type ProgressStep } from "../constants";
 import { postInlineComments } from "../utils/comments";
+import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/context";
 import { createFeedbackTable, formatTemplate } from "../utils/format";
 import { ReviewProgressManager } from "../utils/progress";
 
@@ -53,14 +50,7 @@ export async function runReviewAgent(
 		await progress.start();
 
 		// 1. コンテキストの収集
-		const pr = await getPullRequest(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-		const diff = await getPullRequestDiff(
+		const { pr, diff, guidelines } = await fetchReviewContext(
 			env,
 			installationId,
 			owner,
@@ -79,19 +69,14 @@ export async function runReviewAgent(
 			.map((c) => `@${c.user?.login}: ${c.body}`)
 			.join("\n\n");
 
-		let finalInstruction = instruction;
-		const guidelines = await getRepositoryFile(
-			env,
-			installationId,
-			owner,
-			repo,
-			REPOSITORY_GUIDELINES_PATH,
-			pr.head?.sha,
-		);
 		if (guidelines) {
 			console.log(`[ReviewAgent] Found repository guidelines`);
-			finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
 		}
+		const finalInstruction = buildInstructionWithGuidelines(
+			instruction,
+			guidelines,
+			"以下のルールを必ず守ってレビューしてください："
+		);
 
 		// 2. レビュー結果の生成 (LLM)
 		await progress.update(0, 1);
