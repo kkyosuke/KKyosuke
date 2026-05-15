@@ -40,10 +40,11 @@ export const getNextStepsSection = (
 ) => {
 	const hasMust = feedbacks.some((f) => f.severity === "🔴 must");
 	const hasWant = feedbacks.some((f) => f.severity === "🟡 want");
-	const hasMustOrWant = hasMust || hasWant;
+	const hasQ = feedbacks.some((f) => f.severity === "💬 Q");
+	const hasMustOrWantOrQ = hasMust || hasWant || hasQ;
 
 	let nextStepsSection = "";
-	if (hasMustOrWant) {
+	if (hasMustOrWantOrQ) {
 		nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
 		if (hasMust) {
 			nextStepsSection += "> - [ ] `🔴 must` の指摘事項を修正する\n";
@@ -52,8 +53,12 @@ export const getNextStepsSection = (
 			nextStepsSection +=
 				"> - [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
 		}
+		if (hasQ) {
+			nextStepsSection +=
+				"> - [ ] `💬 Q` の質問に回答する\n";
+		}
 		nextStepsSection += `> - [ ] 再度レビューを依頼する\n\n`;
 	}
 
-	return { nextStepsSection, hasMustOrWant };
+	return { nextStepsSection, hasMustOrWant: hasMustOrWantOrQ };
 };
