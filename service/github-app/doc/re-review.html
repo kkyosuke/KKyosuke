@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub機能を用いた再レビューの設計</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.17.1/flowchart.min.js"></script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .flowchart-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .code-block {
+      background: #1f2937;
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-size: 0.875rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>再レビュー時の未解決チェック設計 (GitHub機能依存)</h1>
+  <p>このドキュメントでは、コードの再レビュー (Re-Review) を行う際に、GitHubのネイティブなスレッド管理機能（GraphQL API等）を用いて効率的かつ正確にスレッドの解決状態を判定する仕組みについてまとめています。</p>
+
+  <h2>1. アーキテクチャ方針</h2>
+  <p>複数回のレビューサイクルが回った場合でも、過去の指摘を含めて「AIボットが指摘した項目がすべて解決されているか」を担保する必要があります。</p>
+  <p><strong>解決策:</strong> 独自のID管理を行わず、GitHubのGraphQL APIを使用してPull Request上のすべてのReview Threadを取得します。その中から「AIボットが作成したスレッド」を抽出し、そのうちの1つでも <code>isResolved: false</code> の状態であれば、再レビューをブロックして修正を促すようにします。</p>
+
+  <h2>2. 処理フロー図</h2>
+  <div class="flowchart-container">
+    <div id="rereview-flowchart"></div>
+  </div>
+
+  <h2>3. スレッド状態の取得と判定</h2>
+  <p>再レビューのトリガー後、GraphQLの <code>pullRequest.reviewThreads</code> を用いてデータを取得し、以下のように判定します。</p>
+
+  <div class="code-block">
+// GitHub GraphQL API で全スレッドを取得済みとする (reviewThreads)
+const unresolvedBotThreads = (reviewThreads || []).filter(thread => {
+  // すでに解決済み、あるいはコメントがないスレッドはスキップ
+  if (thread.isResolved || !thread.comments?.nodes?.length) return false;
+  
+  // スレッドの最初のコメントの作成者を取得
+  const firstCommentAuthor = thread.comments.nodes[0].author?.login?.toLowerCase() || "";
+  
+  // 作成者がボット(AI)である未解決スレッドのみを抽出
+  return firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
+});
+
+const hasUnresolvedBotThreads = unresolvedBotThreads.length > 0;
+  </div>
+
+  <div class="bg-note">
+    <strong>実装のポイント (src/jobs/re-review/agent.ts)</strong><br>
+    <ul>
+      <li><code>hasUnresolvedBotThreads</code> が <code>true</code> の場合、LLMを利用した全体の再レビュー処理（コスト大）をスキップします。</li>
+      <li>「未解決のコメントが残っています」という警告コメントを投稿し、開発者にResolveを促します。</li>
+      <li>過去のどのレビューサイクルの指摘であっても、未解決である限りは再レビューを行わず、漏れを防ぐことができます。</li>
+    </ul>
+  </div>
+
+  <script>
+    var diagramCode = `
+st=>start: 再レビュー開始
+(チェックボックスON)
+opFetchThreads=>operation: GitHub APIで
+PRの全スレッドを取得
+opFilter=>operation: ボット作成の
+スレッドのみを抽出
+condUnresolved=>condition: isResolved: false
+のスレッドがある？
+opSkip=>operation: 全体再レビューを
+スキップし警告コメント
+opReReview=>operation: LLMによる
+全体再レビュー実行
+e=>end: 完了
+
+st->opFetchThreads->opFilter->condUnresolved
+condUnresolved(yes, right)->opSkip->e
+condUnresolved(no, bottom)->opReReview->e
+`;
+
+    var diagram = flowchart.parse(diagramCode);
+    diagram.drawSVG('rereview-flowchart', {
+      'x': 0, 'y': 0, 'line-width': 2, 'line-length': 50, 'text-margin': 10, 'font-size': 14,
+      'font-color': 'black', 'line-color': '#9CA3AF', 'element-color': '#8B5CF6', 'fill': '#F5F3FF',
+      'symbols': {
+        'start': { 'font-color': 'white', 'element-color': '#10B981', 'fill': '#10B981' },
+        'end': { 'font-color': 'white', 'element-color': '#6B7280', 'fill': '#6B7280' },
+        'condition': { 'element-color': '#3B82F6', 'fill': '#EFF6FF', 'font-color': '#1E3A8A' }
+      }
+    });
+  </script>
+</body>
+</html>

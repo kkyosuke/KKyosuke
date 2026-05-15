@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スレッド返信時の自動対応フロー</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.17.1/flowchart.min.js"></script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .flowchart-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .code-block {
+      background: #1f2937;
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-size: 0.875rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>インラインコメント（スレッド）返信時の処理フロー</h1>
+  <p>このドキュメントでは、AIが投稿したインラインコメント（レビューのスレッド）に対して、開発者が返信を行った際の自動対応処理（<code>ReplyAgent</code>）についてまとめています。</p>
+
+  <h2>1. 概要</h2>
+  <p>開発者からの「対応しました」「質問があります」といった返信をトリガーとし、ボットがスレッドの会話内容（質問と回答のやり取り）と該当コードの差分を読み取ります。LLMがその内容を評価し、追加の返信が必要か、スレッドを解決（Resolve）してよいかを自律的に判断してアクションを実行します。</p>
+
+  <h2>2. 処理フロー図</h2>
+  <div class="flowchart-container">
+    <div id="reply-flowchart"></div>
+  </div>
+
+  <h2>3. 処理の詳細ステップ</h2>
+  
+  <h3>Step 1: スレッド内容の取得</h3>
+  <p>Webhookで受け取った <code>commentId</code> を元に、Pull Requestの全スレッド情報から該当するスレッドを特定します。そのスレッド内に含まれる全てのコメント（これまでのやり取り）を時系列で取得し、結合してひとつの文脈データを作成します。</p>
+
+  <h3>Step 2: LLMによる評価 (質問と回答の解析)</h3>
+  <p>以下の情報をLLMに渡し、スレッドの現在の状態を評価させます：</p>
+  <ul>
+    <li><strong>スレッドの会話履歴:</strong> AIの初期指摘と、それに対する開発者の返信内容</li>
+    <li><strong>対象コードの差分:</strong> 指摘箇所周辺の最新のコード状態</li>
+    <li><strong>リポジトリガイドライン:</strong> 存在する場合、プロジェクト固有のルール</li>
+  </ul>
+
+  <h3>Step 3: アクションの決定と反映</h3>
+  <p>LLMは評価結果として、以下のアクションのいずれかを返します。ボットはこれに従い GitHub 上に反映させます。</p>
+  <ul>
+    <li><code>REPLY</code>: 開発者からの質問に対する回答や、修正が不十分な場合の追加指摘を返信します。</li>
+    <li><code>RESOLVE</code>: 指摘事項が正しく修正されている、あるいは妥当な理由が説明されたと判断した場合、スレッドを「解決済み (Resolved)」にします。</li>
+    <li><code>REPLY_AND_RESOLVE</code>: 最後に「確認しました、ありがとうございます」などの軽い返信を行いつつ、スレッドを「解決済み」にします。</li>
+    <li><code>IGNORE</code>: ボットが返信する必要がない（開発者同士の会話など）と判断した場合は、何もしません（そのままにする）。</li>
+  </ul>
+
+  <div class="bg-note">
+    <strong>実装箇所 (src/jobs/reply/agent.ts)</strong><br>
+    <code>evaluateReviewThread</code> 関数を通じてLLMを呼び出し、<code>evalResult.action</code> の値に基づいて <code>createReplyForReviewComment</code> や <code>resolveReviewThread</code> を実行しています。
+  </div>
+
+  <script>
+    var diagramCode = `
+st=>start: 開発者が
+スレッドに返信
+opFetch=>operation: スレッドの全コメント
+(質問と回答)を取得
+opLLM=>operation: LLMで会話内容と
+コード差分を評価
+condAction=>condition: LLMの判定
+(Action)
+opReply=>operation: 追加の返信を投稿
+(REPLY)
+opResolve=>operation: スレッドを解決
+(RESOLVE)
+opReplyRes=>operation: 返信して解決
+(REPLY_AND_RESOLVE)
+opIgnore=>operation: 何もしない
+(IGNORE)
+e=>end: 完了
+
+st->opFetch->opLLM->condAction
+condAction(yes, right)->opReply->e
+condAction(no, bottom)->opResolve->e
+condAction(yes, bottom)->opReplyRes->e
+condAction(no, left)->opIgnore->e
+`;
+
+    // フローチャートの描画処理（条件分岐が4つあるため見せ方を工夫）
+    var diagramCode = `
+st=>start: 開発者が
+スレッドに返信
+opFetch=>operation: スレッドの全コメント
+(質問と回答)を取得
+opLLM=>operation: LLMで会話内容と
+コード差分を評価
+opSwitch=>operation: アクションの決定
+opReply=>operation: 返信を投稿
+opResolve=>operation: スレッドを解決
+(Resolve)
+e=>end: 完了
+
+st->opFetch->opLLM->opSwitch
+opSwitch->opReply
+opSwitch->opResolve
+opReply->e
+opResolve->e
+`;
+
+    var diagram = flowchart.parse(diagramCode);
+    diagram.drawSVG('reply-flowchart', {
+      'x': 0, 'y': 0, 'line-width': 2, 'line-length': 50, 'text-margin': 10, 'font-size': 14,
+      'font-color': 'black', 'line-color': '#9CA3AF', 'element-color': '#10B981', 'fill': '#ECFDF5',
+      'symbols': {
+        'start': { 'font-color': 'white', 'element-color': '#3B82F6', 'fill': '#3B82F6' },
+        'end': { 'font-color': 'white', 'element-color': '#6B7280', 'fill': '#6B7280' }
+      }
+    });
+  </script>
+</body>
+</html>
