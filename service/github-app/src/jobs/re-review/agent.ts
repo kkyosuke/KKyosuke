@@ -39,6 +39,8 @@ export async function runReReviewAgent(
 	pullNumber: number,
 	botName: string,
 	sender: string,
+	triggerCommentId?: number,
+	triggerCommentBody?: string,
 ) {
 	let placeholderCommentId: number | null = null;
 
@@ -341,6 +343,34 @@ export async function runReReviewAgent(
 			}
 		}
 
+		// トリガーとなったコメントの更新（チェックボックスを押せないようにする）
+		if (triggerCommentId && triggerCommentBody) {
+			const updatedBody = triggerCommentBody.replace(
+				/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
+				"- 再度レビュー依頼済み (完了)",
+			);
+			if (updatedBody !== triggerCommentBody) {
+				try {
+					await updateComment(
+						env,
+						installationId,
+						owner,
+						repo,
+						triggerCommentId,
+						updatedBody,
+					);
+					console.log(
+						`[ReReviewAgent] Updated trigger comment ${triggerCommentId}`,
+					);
+				} catch (err: any) {
+					console.warn(
+						`[ReReviewAgent] Failed to update trigger comment ${triggerCommentId}:`,
+						err.message,
+					);
+				}
+			}
+		}
+
 		console.log(
 			`[ReReviewAgent] Completed re-review for ${owner}/${repo}#${pullNumber}`,
 		);
@@ -356,6 +386,31 @@ export async function runReReviewAgent(
 				placeholderCommentId,
 				errorMessage,
 			).catch((e) => console.error("Failed to update error message:", e));
+		}
+
+		// エラー時はチェックボックスを元に戻し、再試行できるようにする
+		if (triggerCommentId && triggerCommentBody) {
+			const revertedBody = triggerCommentBody.replace(
+				/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
+				"- [ ] 再度レビューを依頼する",
+			);
+			if (revertedBody !== triggerCommentBody) {
+				try {
+					await updateComment(
+						env,
+						installationId,
+						owner,
+						repo,
+						triggerCommentId,
+						revertedBody,
+					);
+				} catch (err: any) {
+					console.warn(
+						"[ReReviewAgent] Failed to revert trigger comment:",
+						err.message,
+					);
+				}
+			}
 		}
 	} finally {
 		const kv = (env as any).KKYOSUKE_GITHUB_APP_KV;

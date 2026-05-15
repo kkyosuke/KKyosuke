@@ -77,6 +77,7 @@ export async function githubWebhookHandler(c: Context) {
 				repo,
 				issueNumber: pullNumber,
 				commentBody,
+				commentId: payload.comment.id,
 				botName,
 				sender,
 			};

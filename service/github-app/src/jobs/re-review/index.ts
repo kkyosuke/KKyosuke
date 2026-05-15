@@ -14,6 +14,8 @@ export const reReviewCommand: CommandJob = {
 			ctx.issueNumber,
 			ctx.botName,
 			ctx.sender,
+			ctx.commentId,
+			ctx.commentBody,
 		);
 	},
 };
