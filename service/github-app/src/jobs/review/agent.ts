@@ -95,6 +95,7 @@ export async function runReviewAgent(
 
 		// 2. レビュー結果の生成 (LLM)
 		await progress.update(0, 1);
+		await progress.checkCancellation();
 
 		console.log(
 			`[ReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
@@ -141,6 +142,7 @@ export async function runReviewAgent(
 
 		// 3. 結果の投稿
 		await progress.update(1, 2);
+		await progress.checkCancellation();
 
 		console.log(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -177,7 +179,12 @@ export async function runReviewAgent(
 			`[ReviewAgent] Completed review for ${owner}/${repo}#${pullNumber}`,
 		);
 	} catch (error: any) {
-		console.error(`[ReviewAgent] Error in review process:`, error);
-		await progress.error(error, "レビュー処理中にエラーが発生しました。");
+		if (error.message === "CANCELLED") {
+			console.log(`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`);
+			await progress.cancel();
+		} else {
+			console.error(`[ReviewAgent] Error in review process:`, error);
+			await progress.error(error, "レビュー処理中にエラーが発生しました。");
+		}
 	}
 }

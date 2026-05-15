@@ -112,6 +112,7 @@ export async function runReReviewAgent(
 
 			// 全体の再レビュー
 			await progress.update(1, 2);
+			await progress.checkCancellation();
 
 			console.log(
 				`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
@@ -178,6 +179,7 @@ export async function runReReviewAgent(
 
 			// Markdown生成
 			await progress.update(2, 3);
+			await progress.checkCancellation();
 
 			const markdownReport = formatTemplate(template, {
 				botName,
@@ -252,6 +254,26 @@ export async function runReReviewAgent(
 				`[ReReviewAgent] Completed re-review for ${owner}/${repo}#${pullNumber}`,
 			);
 		} catch (error: any) {
+			if (error.message === "CANCELLED") {
+				console.log(`[ReReviewAgent] Re-review cancelled for ${owner}/${repo}#${pullNumber}`);
+				await progress.cancel();
+				// キャンセル時はチェックボックスを元に戻す
+				if (triggerCommentId && triggerCommentBody) {
+					const revertedBody = triggerCommentBody.replace(
+						/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
+						"- [ ] 再度レビューを依頼する",
+					);
+					if (revertedBody !== triggerCommentBody) {
+						try {
+							await updateComment(env, installationId, owner, repo, triggerCommentId, revertedBody);
+						} catch (err: any) {
+							console.warn("[ReReviewAgent] Failed to revert trigger comment:", err.message);
+						}
+					}
+				}
+				return;
+			}
+
 			console.error(`[ReReviewAgent] Error in re-review process:`, error);
 			await progress.error(error, "再レビュー処理中にエラーが発生しました。");
 

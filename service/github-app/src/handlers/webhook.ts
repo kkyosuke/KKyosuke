@@ -2,6 +2,7 @@ import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
 import { getBotName } from "../config/env";
+import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import { reReviewCommand, replyCommand } from "../jobs";
 import { routeCommentCommand } from "../routers/commentRouter";
 
@@ -186,6 +187,26 @@ export async function githubWebhookHandler(c: Context) {
 			}
 		}
 		console.log(`[Webhook] Finished processing pull_request_review_comment.created event`);
+	} else if (
+		eventName === "pull_request" &&
+		payload.action === "synchronize"
+	) {
+		console.log(`[Webhook] Processing pull_request.synchronize event`);
+		const owner = payload.repository.owner.login;
+		const repo = payload.repository.name;
+		const pullNumber = payload.pull_request.number;
+
+		const kv = (e as any).KKYOSUKE_GITHUB_APP_KV;
+		if (kv) {
+			const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
+			console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);
+			// 指定された時間(秒)間有効なキャンセルシグナルをセット
+			await kv.put(cancelKey, "1", { expirationTtl: CANCEL_SIGNAL_TTL_SECONDS }).catch((err: any) => {
+				console.error(`[Webhook] Failed to set cancellation flag:`, err);
+			});
+		} else {
+			console.warn(`[Webhook] KV not found, cannot set cancellation flag`);
+		}
 	} else {
 		console.log(
 			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,
