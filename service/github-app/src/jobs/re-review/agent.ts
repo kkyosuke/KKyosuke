@@ -20,6 +20,7 @@ import template from "../../prompts/re-review/template.md" with {
 };
 import {
 	getNextStepsSection,
+	getUnresolvedThreadsSkippedReport,
 	type ProgressStep,
 	RE_REVIEW_CHECKBOX_UNCHECKED,
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
@@ -135,14 +136,11 @@ export async function runReReviewAgent(
 			if (hasUnresolvedBotThreads) {
 				// 未解決がある場合は全体レビューをスキップ
 				console.log(`[ReReviewAgent] Skipping full re-review due to unresolved threads for ${owner}/${repo}#${pullNumber}`);
-				overallStatus = "⚠️ 未解決のコメントがあります";
-				summarySection = "### 📝 サマリ\n\n- 未解決のコメント（スレッド）が残っています。各コメントに対応（コード修正とスレッドへの返信）してから、再度レビューを依頼してください。\n";
-				
-				nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
-				nextStepsSection += "> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
-				nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
-				
-				requiresAction = true;
+				const skippedReport = getUnresolvedThreadsSkippedReport();
+				overallStatus = skippedReport.overallStatus;
+				summarySection = skippedReport.summarySection;
+				nextStepsSection = skippedReport.nextStepsSection;
+				requiresAction = skippedReport.requiresAction;
 				
 				await progress.update(2, 3);
 				await progress.checkCancellation();

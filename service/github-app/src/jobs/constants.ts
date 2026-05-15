@@ -78,3 +78,18 @@ export const getNextStepsSection = (
 
 	return { nextStepsSection, requiresAction };
 };
+
+export const getUnresolvedThreadsSkippedReport = () => {
+	let nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+	nextStepsSection +=
+		"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
+	nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
+
+	return {
+		overallStatus: "⚠️ 未解決のコメントがあります",
+		summarySection:
+			"### 📝 サマリ\n\n- 未解決のコメント（スレッド）が残っています。各コメントに対応（コード修正とスレッドへの返信）してから、再度レビューを依頼してください。\n",
+		nextStepsSection,
+		requiresAction: true,
+	};
+};
