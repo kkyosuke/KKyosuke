@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
 import { REVIEW_MODEL_NAME } from "./cost";
+import { buildReReviewPrompt } from "../../prompts/re-review/prompt";
 
 /**
  * 再レビュー生成時に必要なコンテキスト
@@ -65,27 +66,7 @@ export async function generateReReview(
 
 	const model = anthropic(REVIEW_MODEL_NAME);
 
-	const prompt = `
-${context.instruction}
-
-## 【出力テンプレートの参考情報】
-${context.template}
-
----
-以下が対象の Pull Request の情報です。
-
-## PR タイトル
-${context.title}
-
-## PR 概要
-${context.body || "なし"}
-
-
-## 最新の変更差分 (Diff)
-\`\`\`diff
-${context.diff}
-\`\`\`
-`;
+	const prompt = buildReReviewPrompt(context);
 
 	const { output, usage } = await generateText({
 		model,

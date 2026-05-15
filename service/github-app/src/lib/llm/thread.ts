@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
 import { REVIEW_MODEL_NAME } from "./cost";
+import { buildThreadPrompt } from "../../prompts/thread/prompt";
 
 /**
  * レビュースレッド評価時に必要なコンテキスト
@@ -44,20 +45,7 @@ export async function evaluateReviewThread(
 
 	const model = anthropic(REVIEW_MODEL_NAME);
 
-	const prompt = `
-${context.instruction}
-
----
-以下が対象のコメントスレッドと最新のコード差分です。
-
-## コメントスレッド
-${context.threadComments}
-
-## 最新のコード差分 (Diff)
-\`\`\`diff
-${context.diff}
-\`\`\`
-`;
+	const prompt = buildThreadPrompt(context);
 
 	const { output, usage } = await generateText({
 		model,
