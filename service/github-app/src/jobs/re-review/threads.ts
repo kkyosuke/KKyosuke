@@ -1,0 +1,100 @@
+import {
+	createReplyForReviewComment,
+	resolveReviewThread,
+} from "../../lib/github";
+import { calculateCost, evaluateReviewThread, REVIEW_MODEL_NAME } from "../../lib/llm";
+import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
+	type: "text",
+};
+
+export async function processReviewThreads(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	pullNumber: number,
+	diff: string,
+	reviewThreads: any[],
+): Promise<number> {
+	let totalCost = 0;
+
+	await Promise.all(
+		reviewThreads.map(async (thread: any) => {
+			if (thread.isResolved || !thread.comments?.nodes?.length) return;
+
+			const comments = thread.comments.nodes;
+			const firstCommentAuthor = comments[0].author?.login?.toLowerCase() || "";
+			const isBotThread =
+				firstCommentAuthor.includes("bot") ||
+				firstCommentAuthor.includes("ai");
+
+			if (!isBotThread) return;
+
+			const lastCommentAuthor =
+				comments[comments.length - 1].author?.login?.toLowerCase() || "";
+			const isLastCommentFromBot =
+				lastCommentAuthor.includes("bot") || lastCommentAuthor.includes("ai");
+
+			// 最後のコメントがBotでない場合（ユーザーからの返信がある場合）に対応
+			if (!isLastCommentFromBot) {
+				console.log(`[ReReviewThreads] Evaluating thread ${thread.id}`);
+				const threadCommentsText = comments
+					.map((c: any) => `@${c.author?.login}: ${c.body}`)
+					.join("\n\n---\n\n");
+
+				const { output: evalResult, usage: evalUsage } =
+					await evaluateReviewThread(env, {
+						threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
+						diff,
+						instruction: threadInstruction,
+					});
+
+				totalCost += calculateCost(evalUsage, REVIEW_MODEL_NAME);
+
+				console.log(
+					`[ReReviewThreads] Thread ${thread.id} action: ${evalResult.action}`,
+				);
+
+				if (
+					(evalResult.action === "REPLY" ||
+						evalResult.action === "REPLY_AND_RESOLVE") &&
+					evalResult.replyBody
+				) {
+					try {
+						await createReplyForReviewComment(
+							env,
+							installationId,
+							owner,
+							repo,
+							pullNumber,
+							comments[0].databaseId,
+							evalResult.replyBody,
+						);
+					} catch (e: any) {
+						console.warn(
+							`[ReReviewThreads] Failed to reply to thread ${thread.id}:`,
+							e.message,
+						);
+					}
+				}
+
+				if (
+					evalResult.action === "RESOLVE" ||
+					evalResult.action === "REPLY_AND_RESOLVE"
+				) {
+					try {
+						await resolveReviewThread(env, installationId, thread.id);
+						thread.isResolved = true; // Mark as resolved in memory
+					} catch (e: any) {
+						console.warn(
+							`[ReReviewThreads] Failed to resolve thread ${thread.id}:`,
+							e.message,
+						);
+					}
+				}
+			}
+		}),
+	);
+
+	return totalCost;
+}
