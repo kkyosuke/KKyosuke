@@ -25,7 +25,11 @@ import template from "../../prompts/re-review/template.md" with {
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
-import { getInProgressComment, getNextStepsSection, type ProgressStep } from "../constants";
+import {
+	getInProgressComment,
+	getNextStepsSection,
+	type ProgressStep,
+} from "../constants";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -62,6 +66,20 @@ export async function runReReviewAgent(
 		console.log(
 			`[ReReviewAgent] Starting re-review for ${owner}/${repo}#${pullNumber}`,
 		);
+
+		const kv = (env as any).KKYOSUKE_GITHUB_APP_KV;
+		const lockKey = `lock-rereview-${owner}-${repo}-${pullNumber}`;
+		if (kv) {
+			const isLocked = await kv.get(lockKey);
+			if (isLocked) {
+				console.log(
+					`[ReReviewAgent] Re-review is already running for ${owner}/${repo}#${pullNumber} (KV locked). Skipping.`,
+				);
+				return;
+			}
+			await kv.put(lockKey, "1", { expirationTtl: 600 }); // Lock for 10 minutes
+		}
+
 		steps[0].status = "in_progress";
 		const placeholder = await createPlaceholderComment(
 			env,
@@ -229,7 +247,10 @@ export async function runReReviewAgent(
 					.join("\n") + "\n";
 		}
 
-		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(newFeedbacks, botName);
+		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(
+			newFeedbacks,
+			botName,
+		);
 
 		let summarySection = "### 📝 サマリ\n\nなし\n";
 		if (result.summary && result.summary.length > 0) {
@@ -260,9 +281,7 @@ export async function runReReviewAgent(
 			.replaceAll("{{resolvedAndHandoffSection}}", resolvedAndHandoffSection)
 			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
 
-		const finalReport =
-			`@${sender}\n\n` +
-			markdownReport;
+		const finalReport = `@${sender}\n\n` + markdownReport;
 
 		console.log(
 			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -288,7 +307,7 @@ export async function runReReviewAgent(
 				owner,
 				repo,
 				placeholderCommentId,
-				`💸 **LLM Cost**: $${totalCost.toFixed(5)}`
+				`💸 **LLM Cost**: $${totalCost.toFixed(5)}`,
 			);
 		}
 
@@ -337,6 +356,16 @@ export async function runReReviewAgent(
 				placeholderCommentId,
 				errorMessage,
 			).catch((e) => console.error("Failed to update error message:", e));
+		}
+	} finally {
+		const kv = (env as any).KKYOSUKE_GITHUB_APP_KV;
+		if (kv) {
+			const lockKey = `lock-rereview-${owner}-${repo}-${pullNumber}`;
+			await kv
+				.delete(lockKey)
+				.catch((e: any) =>
+					console.error("[ReReviewAgent] Failed to delete KV lock:", e),
+				);
 		}
 	}
 }

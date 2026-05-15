@@ -49,9 +49,10 @@ export const getNextStepsSection = (
 			nextStepsSection += "- [ ] `🔴 must` の指摘事項を修正する\n";
 		}
 		if (hasWant) {
-			nextStepsSection += "- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
+			nextStepsSection +=
+				"- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
 		}
-		nextStepsSection += `- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`;
+		nextStepsSection += `- [ ] 再度レビューを依頼する`;
 	}
 
 	return { nextStepsSection, hasMustOrWant };

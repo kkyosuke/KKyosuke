@@ -17,7 +17,11 @@ import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
 import template from "../../prompts/review/template.md" with { type: "text" };
-import { getInProgressComment, getNextStepsSection, type ProgressStep } from "../constants";
+import {
+	getInProgressComment,
+	getNextStepsSection,
+	type ProgressStep,
+} from "../constants";
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -128,7 +132,10 @@ export async function runReviewAgent(
 						.join("\n")
 				: "| - | - | - | - | 特に指摘事項はありません |";
 
-		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(feedbacks, botName);
+		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(
+			feedbacks,
+			botName,
+		);
 
 		const markdownReport = template
 			.replaceAll("{{botName}}", botName)
@@ -200,9 +207,7 @@ export async function runReviewAgent(
 		);
 
 		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
-		const finalReport =
-			`@${sender}\n\n` +
-			markdownReport;
+		const finalReport = `@${sender}\n\n` + markdownReport;
 
 		await createReview(
 			env,
@@ -224,7 +229,7 @@ export async function runReviewAgent(
 				owner,
 				repo,
 				placeholderCommentId,
-				`💸 **LLM Cost**: $${cost.toFixed(5)}`
+				`💸 **LLM Cost**: $${cost.toFixed(5)}`,
 			);
 		}
 
