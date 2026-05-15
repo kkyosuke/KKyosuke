@@ -1,6 +1,9 @@
 import { createPlaceholderComment, updateComment } from "../../lib/github";
 import { getInProgressComment, type ProgressStep } from "../constants";
 
+/**
+ * レビューの進捗状況をコメントで管理します。
+ */
 export class ReviewProgressManager {
 	private placeholderCommentId: number | null = null;
 

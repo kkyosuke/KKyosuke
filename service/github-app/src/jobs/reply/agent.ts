@@ -10,6 +10,16 @@ import threadInstruction from "../../prompts/re-review/thread-instruction.md" wi
 	type: "text",
 };
 
+/**
+ * PRのコメントに対する返信処理をバックグラウンドで実行します。
+ *
+ * @param env - 環境変数
+ * @param installationId - GitHub AppのインストールID
+ * @param owner - リポジトリのオーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param commentId - 対象のコメントID
+ */
 export async function runReplyAgent(
 	env: Record<string, string | undefined>,
 	installationId: number,

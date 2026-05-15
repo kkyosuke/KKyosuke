@@ -7,6 +7,19 @@ import threadInstruction from "../../prompts/re-review/thread-instruction.md" wi
 	type: "text",
 };
 
+/**
+ * 未解決のレビュースレッドを評価し、必要に応じて返信や解決を行います。
+ *
+ * @param env - 環境変数
+ * @param installationId - GitHub AppのインストールID
+ * @param owner - リポジトリのオーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param diff - 差分情報
+ * @param reviewThreads - レビュースレッド一覧
+ * @param guidelines - リポジトリ固有のガイドライン
+ * @returns LLMの消費コスト
+ */
 export async function processReviewThreads(
 	env: Record<string, string | undefined>,
 	installationId: number,

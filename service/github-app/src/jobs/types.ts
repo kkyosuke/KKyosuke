@@ -1,3 +1,6 @@
+/**
+ * コマンド実行時のコンテキスト
+ */
 export interface CommandContext {
 	env: Record<string, string | undefined>;
 	installationId: number;
@@ -11,6 +14,9 @@ export interface CommandContext {
 	sender: string; // コマンドを実行したユーザー名
 }
 
+/**
+ * コマンドの定義
+ */
 export interface CommandJob {
 	name: string;
 	triggerWords: string[]; // このコマンドが反応するキーワード

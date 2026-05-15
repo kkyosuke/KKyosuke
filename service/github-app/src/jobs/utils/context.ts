@@ -5,6 +5,9 @@ import {
 	getRepositoryFile,
 } from "../../lib/github";
 
+/**
+ * PRの情報や差分、ガイドラインを取得します。
+ */
 export async function fetchReviewContext(
 	env: Record<string, string | undefined>,
 	installationId: number,
@@ -29,6 +32,9 @@ export async function fetchReviewContext(
 	return { pr, diff, guidelines };
 }
 
+/**
+ * 基本の指示にガイドラインを結合して返します。
+ */
 export function buildInstructionWithGuidelines(
 	baseInstruction: string,
 	guidelines: string | null | undefined,

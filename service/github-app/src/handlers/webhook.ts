@@ -11,7 +11,14 @@ import {
 import type { CommandContext } from "../jobs/types";
 import { routeCommentCommand } from "../routers/commentRouter";
 
-// Helper: コンテキストの生成
+/**
+ * Webhookのペイロードからコマンド実行用のコンテキストを構築します。
+ *
+ * @param e - 環境変数
+ * @param payload - Webhookのペイロード
+ * @param commentInfo - コメント情報
+ * @returns コマンドコンテキスト、または失敗時にnull
+ */
 function buildCommandContext(
 	e: Record<string, string | undefined>,
 	payload: any,
@@ -37,7 +44,13 @@ function buildCommandContext(
 	};
 }
 
-// Helper: バックグラウンド実行
+/**
+ * 非同期タスクをバックグラウンドで実行します。
+ *
+ * @param c - Honoコンテキスト
+ * @param task - 実行する非同期タスク
+ * @param taskName - ログ出力用のタスク名
+ */
 function dispatchBackgroundTask(
 	c: Context,
 	task: Promise<void>,
@@ -55,6 +68,12 @@ function dispatchBackgroundTask(
 	}
 }
 
+/**
+ * GitHub Webhookのリクエストを受け取り、適切なジョブにルーティングします。
+ *
+ * @param c - Honoコンテキスト
+ * @returns レスポンス
+ */
 export async function githubWebhookHandler(c: Context) {
 	const e = env<Record<string, string | undefined>>(c);
 	const webhooks = new Webhooks({

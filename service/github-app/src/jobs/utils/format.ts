@@ -1,3 +1,6 @@
+/**
+ * テンプレート内の変数を置換してフォーマットします。
+ */
 export function formatTemplate(
 	template: string,
 	values: Record<string, string>,
@@ -9,6 +12,9 @@ export function formatTemplate(
 	return result;
 }
 
+/**
+ * フィードバックの配列からMarkdownのテーブル文字列を生成します。
+ */
 export function createFeedbackTable(
 	feedbacks: Array<{
 		path?: string;

@@ -1,3 +1,6 @@
+/**
+ * KVを使用した排他制御を行います。
+ */
 export async function withKvLock(
 	env: Record<string, string | undefined>,
 	key: string,

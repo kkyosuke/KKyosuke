@@ -17,6 +17,17 @@ import { buildInstructionWithGuidelines, fetchReviewContext } from "../utils/con
 import { createFeedbackTable, formatTemplate } from "../utils/format";
 import { ReviewProgressManager } from "../utils/progress";
 
+/**
+ * PRのレビュー処理をバックグラウンドで実行します。
+ *
+ * @param env - 環境変数
+ * @param installationId - GitHub AppのインストールID
+ * @param owner - リポジトリのオーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param botName - ボット名
+ * @param sender - イベントをトリガーしたユーザー
+ */
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
 	installationId: number,

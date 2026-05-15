@@ -8,5 +8,7 @@ import { reviewCommand } from "./review";
 import { replyCommand } from "./reply";
 import type { CommandJob } from "./types";
 
-// 登録されている全てのコマンドのリスト
+/**
+ * 利用可能なコマンドのリスト
+ */
 export const availableCommands: CommandJob[] = [reviewCommand, reReviewCommand, replyCommand];

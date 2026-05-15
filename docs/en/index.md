@@ -15,14 +15,3 @@ This directory contains documentation regarding the project's development proces
 - **[Code Review Perspectives](code/review.md)**
   - Checklist for code reviews, items to verify in PR descriptions, and prefixes for review comments.
 
----
-
-### Agent Instructions (`agent/`)
-
-- **[Instruction List](agent/list.md)**
-  - An index of instructions (prompts) tailored for AI agents (e.g., GitHub Copilot).
-
-#### Details
-
-- **[Pull Request Review Instruction](agent/instruction/review.md)**
-  - An instruction prompt to perform automated Pull Request code reviews and output a specified summary and review points.

@@ -22,6 +22,20 @@ import { updateTriggerCommentState } from "../utils/trigger-comment";
 import { performFullReReview } from "./full-review";
 import { processReviewThreads } from "./threads";
 
+/**
+ * PRの再レビュー処理をバックグラウンドで実行します。
+ *
+ * @param env - 環境変数
+ * @param installationId - GitHub AppのインストールID
+ * @param owner - リポジトリのオーナー名
+ * @param repo - リポジトリ名
+ * @param pullNumber - PR番号
+ * @param botName - ボット名
+ * @param sender - イベントをトリガーしたユーザー
+ * @param triggerCommentId - トリガーとなったコメントID
+ * @param triggerCommentBody - トリガーとなったコメントの本文
+ * @param isReviewSummary - レビューサマリからのトリガーかどうか
+ */
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
 	installationId: number,

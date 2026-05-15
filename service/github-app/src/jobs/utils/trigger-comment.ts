@@ -5,6 +5,9 @@ import {
 	RE_REVIEW_CHECKBOX_COMPLETED,
 } from "../constants";
 
+/**
+ * トリガーとなったコメントのチェックボックス状態を更新します。
+ */
 export async function updateTriggerCommentState(
 	env: Record<string, string | undefined>,
 	installationId: number,

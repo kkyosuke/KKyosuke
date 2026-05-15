@@ -1,6 +1,18 @@
 import { calculateCost, generateReReview, REVIEW_MODEL_NAME } from "../../lib/llm";
 import { getNextStepsSection } from "../constants";
 
+/**
+ * LLMを使用してPR全体の再レビューを実行します。
+ *
+ * @param env - 環境変数
+ * @param pr - PR情報
+ * @param diff - 差分情報
+ * @param finalInstruction - レビュー用のプロンプト指示
+ * @param template - レポートのテンプレート
+ * @param botName - ボット名
+ * @param hasUnresolvedBotThreads - 未解決のボットスレッドがあるかどうか
+ * @returns 再レビューの結果とコスト
+ */
 export async function performFullReReview(
 	env: Record<string, string | undefined>,
 	pr: any,
