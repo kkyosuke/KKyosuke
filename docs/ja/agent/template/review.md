@@ -1,3 +1,4 @@
+{{nextStepsSection}}
 ※ [コードレビューの観点](https://kyosuke.dev/ja/code/review.html) を参考にしています。
 
 ## 📝 サマリ
@@ -32,4 +33,3 @@
 | 設計・アーキテクチャ | {{score_architecture}} / 5 | {{comment_architecture}} |
 | PR要件・ドキュメント | {{score_documentation}} / 5 | {{comment_documentation}} |
 
-{{nextStepsSection}}

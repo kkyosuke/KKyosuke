@@ -19,3 +19,7 @@ enabled = false
 # Define standard variables (secrets must be uploaded via wrangler secret put)
 # [vars]
 # You can add non-sensitive environment variables here
+
+[[kv_namespaces]]
+binding = "KKYOSUKE_GITHUB_APP_KV"
+id = "6074644670544a80a9805a8814aeeed9"

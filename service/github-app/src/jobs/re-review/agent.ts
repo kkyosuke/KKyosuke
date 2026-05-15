@@ -1,18 +1,12 @@
 import {
-	createPlaceholderComment,
-	createReplyForReviewComment,
 	createReview,
-	createReviewComment,
-	deleteComment,
 	getPullRequest,
 	getPullRequestDiff,
 	getReviewThreads,
-	resolveReviewThread,
 	updateComment,
 } from "../../lib/github";
 import {
 	calculateCost,
-	evaluateReviewThread,
 	generateReReview,
 	REVIEW_MODEL_NAME,
 } from "../../lib/llm";
@@ -22,10 +16,12 @@ import instruction from "../../prompts/re-review/instruction.md" with {
 import template from "../../prompts/re-review/template.md" with {
 	type: "text",
 };
-import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
-	type: "text",
-};
-import { getInProgressComment, getNextStepsSection, type ProgressStep } from "../constants";
+import { getNextStepsSection, type ProgressStep } from "../constants";
+import { ReviewProgressManager } from "../utils/progress";
+import { withKvLock } from "../utils/lock";
+import { processReviewThreads } from "./threads";
+import { formatTemplate } from "../utils/format";
+import { postInlineComments } from "../utils/comments";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -35,308 +31,235 @@ export async function runReReviewAgent(
 	pullNumber: number,
 	botName: string,
 	sender: string,
+	triggerCommentId?: number,
+	triggerCommentBody?: string,
 ) {
-	let placeholderCommentId: number | null = null;
+	const lockKey = `lock-rereview-${owner}-${repo}-${pullNumber}`;
 
-	const steps: [ProgressStep, ProgressStep, ProgressStep, ProgressStep] = [
-		{ name: "PRの情報を取得中", status: "pending" },
-		{ name: "過去の指摘事項を確認中", status: "pending" },
-		{ name: "AIによる全体再レビューを生成中", status: "pending" },
-		{ name: "レビュー結果を投稿中", status: "pending" },
-	];
+	await withKvLock(env, lockKey, 600, async () => {
+		const steps: ProgressStep[] = [
+			{ name: "PRの情報を取得中", status: "pending" },
+			{ name: "過去の指摘事項を確認中", status: "pending" },
+			{ name: "AIによる全体再レビューを生成中", status: "pending" },
+			{ name: "レビュー結果を投稿中", status: "pending" },
+		];
 
-	const updateProgress = async () => {
-		if (placeholderCommentId) {
-			await updateComment(
-				env,
-				installationId,
-				owner,
-				repo,
-				placeholderCommentId,
-				getInProgressComment("Re-Review in Progress", steps, REVIEW_MODEL_NAME),
-			).catch((e) => console.error("Failed to update progress:", e));
-		}
-	};
-
-	try {
-		console.log(
-			`[ReReviewAgent] Starting re-review for ${owner}/${repo}#${pullNumber}`,
-		);
-		steps[0].status = "in_progress";
-		const placeholder = await createPlaceholderComment(
+		const progress = new ReviewProgressManager(
 			env,
 			installationId,
 			owner,
 			repo,
 			pullNumber,
-			getInProgressComment("Re-Review in Progress", steps, REVIEW_MODEL_NAME),
-		);
-		placeholderCommentId = placeholder.id;
-
-		const pr = await getPullRequest(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-		const diff = await getPullRequestDiff(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
+			"Re-Review in Progress",
+			steps,
+			REVIEW_MODEL_NAME,
 		);
 
-		// 過去のコメントスレッドの取得と処理
-		steps[0].status = "done";
-		steps[1].status = "in_progress";
-		await updateProgress();
-
-		const reviewThreads = await getReviewThreads(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-		);
-
-		let totalCost = 0;
-
-		await Promise.all(
-			reviewThreads.map(async (thread: any) => {
-				if (thread.isResolved || !thread.comments?.nodes?.length) return;
-
-				const comments = thread.comments.nodes;
-				const firstCommentAuthor =
-					comments[0].author?.login?.toLowerCase() || "";
-				const isBotThread =
-					firstCommentAuthor.includes("bot") ||
-					firstCommentAuthor.includes("ai");
-
-				if (!isBotThread) return;
-
-				const lastCommentAuthor =
-					comments[comments.length - 1].author?.login?.toLowerCase() || "";
-				const isLastCommentFromBot =
-					lastCommentAuthor.includes("bot") || lastCommentAuthor.includes("ai");
-
-				// 最後のコメントがBotでない場合（ユーザーからの返信がある場合）に対応
-				if (!isLastCommentFromBot) {
-					console.log(`[ReReviewAgent] Evaluating thread ${thread.id}`);
-					const threadCommentsText = comments
-						.map((c: any) => `@${c.author?.login}: ${c.body}`)
-						.join("\n\n---\n\n");
-
-					const { output: evalResult, usage: evalUsage } =
-						await evaluateReviewThread(env, {
-							threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
-							diff,
-							instruction: threadInstruction,
-						});
-
-					totalCost += calculateCost(evalUsage, REVIEW_MODEL_NAME);
-
-					console.log(
-						`[ReReviewAgent] Thread ${thread.id} action: ${evalResult.action}`,
-					);
-
-					if (
-						(evalResult.action === "REPLY" ||
-							evalResult.action === "REPLY_AND_RESOLVE") &&
-						evalResult.replyBody
-					) {
-						try {
-							await createReplyForReviewComment(
-								env,
-								installationId,
-								owner,
-								repo,
-								pullNumber,
-								comments[0].databaseId,
-								evalResult.replyBody,
-							);
-						} catch (e: any) {
-							console.warn(
-								`[ReReviewAgent] Failed to reply to thread ${thread.id}:`,
-								e.message,
-							);
-						}
-					}
-
-					if (
-						evalResult.action === "RESOLVE" ||
-						evalResult.action === "REPLY_AND_RESOLVE"
-					) {
-						try {
-							await resolveReviewThread(env, installationId, thread.id);
-							thread.isResolved = true; // Mark as resolved in memory
-						} catch (e: any) {
-							console.warn(
-								`[ReReviewAgent] Failed to resolve thread ${thread.id}:`,
-								e.message,
-							);
-						}
-					}
-				}
-			}),
-		);
-
-		// 未解決のBotスレッドが残っているかチェック (スレッド対応は別エージェントに任せる方針のため、再レビューの全体ステータス判定には使用しない)
-		const remainingUnresolvedThreads = reviewThreads.filter((t: any) => {
-			if (t.isResolved || !t.comments?.nodes?.length) return false;
-			const author = t.comments.nodes[0].author?.login?.toLowerCase() || "";
-			return author.includes("bot") || author.includes("ai");
-		});
-
-		// 全体の再レビュー
-		steps[1].status = "done";
-		steps[2].status = "in_progress";
-		await updateProgress();
-
-		console.log(
-			`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
-		);
-		const { output: result, usage: reReviewUsage } = await generateReReview(
-			env,
-			{
-				title: pr.title,
-				body: pr.body,
-				diff: diff,
-				instruction: instruction,
-				template: template,
-			},
-		);
-
-		totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
-
-		// 新規の指摘事項セクションの作成
-		const newFeedbacks = result.newFeedback.slice(0, 10);
-		const generalNewFeedback = newFeedbacks.filter(
-			(f) => !(f.path && f.path !== "-" && f.line > 0),
-		);
-
-		let newFeedbackSection = "### 🚨 新たな懸念点\n\nなし\n";
-		if (generalNewFeedback.length > 0) {
-			newFeedbackSection =
-				"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
-			newFeedbackSection +=
-				generalNewFeedback
-					.map(
-						(f) =>
-							`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
-					)
-					.join("\n") + "\n";
-		}
-
-		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(newFeedbacks, botName);
-
-		let summarySection = "### 📝 サマリ\n\nなし\n";
-		if (result.summary && result.summary.length > 0) {
-			summarySection =
-				"### 📝 サマリ\n\n" +
-				result.summary.map((s) => `- ${s}`).join("\n") +
-				"\n";
-		}
-
-		let resolvedAndHandoffSection = "### 💡 解決項目と申し送り\n\nなし\n";
-		if (result.resolvedAndHandoff && result.resolvedAndHandoff.length > 0) {
-			resolvedAndHandoffSection =
-				"### 💡 解決項目と申し送り\n\n" +
-				result.resolvedAndHandoff.map((i) => `- ${i}`).join("\n") +
-				"\n";
-		}
-
-		// Markdown生成
-		steps[2].status = "done";
-		steps[3].status = "in_progress";
-		await updateProgress();
-
-		const markdownReport = template
-			.replaceAll("{{botName}}", botName)
-			.replaceAll("{{nextStepsSection}}", nextStepsSection)
-			.replaceAll("{{overallStatus}}", result.overallStatus)
-			.replaceAll("{{summarySection}}", summarySection)
-			.replaceAll("{{resolvedAndHandoffSection}}", resolvedAndHandoffSection)
-			.replaceAll("{{newFeedbackSection}}", newFeedbackSection);
-
-		const finalReport =
-			`@${sender}\n\n` +
-			markdownReport;
-
-		console.log(
-			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
-		);
-
-		await createReview(
-			env,
-			installationId,
-			owner,
-			repo,
-			pullNumber,
-			finalReport,
-			hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
-		);
-
-		if (placeholderCommentId) {
+		try {
 			console.log(
-				`[ReReviewAgent] Updating placeholder comment for ${owner}/${repo}#${pullNumber}`,
+				`[ReReviewAgent] Starting re-review for ${owner}/${repo}#${pullNumber}`,
 			);
-			await updateComment(
+
+			await progress.start();
+
+			const pr = await getPullRequest(
 				env,
 				installationId,
 				owner,
 				repo,
-				placeholderCommentId,
-				`💸 **LLM Cost**: $${totalCost.toFixed(5)}`
+				pullNumber,
 			);
-		}
+			const diff = await getPullRequestDiff(
+				env,
+				installationId,
+				owner,
+				repo,
+				pullNumber,
+			);
 
-		// 新規インラインコメントの投稿
-		for (const item of newFeedbacks) {
-			if (item.path && item.path !== "-" && item.line > 0) {
-				if (pr.head?.sha) {
+			// 過去のコメントスレッドの取得と処理
+			await progress.update(0, 1);
+
+			const reviewThreads = await getReviewThreads(
+				env,
+				installationId,
+				owner,
+				repo,
+				pullNumber,
+			);
+
+			let totalCost = await processReviewThreads(
+				env,
+				installationId,
+				owner,
+				repo,
+				pullNumber,
+				diff,
+				reviewThreads,
+			);
+
+			// 全体の再レビュー
+			await progress.update(1, 2);
+
+			console.log(
+				`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
+			);
+			const { output: result, usage: reReviewUsage } = await generateReReview(
+				env,
+				{
+					title: pr.title,
+					body: pr.body,
+					diff: diff,
+					instruction: instruction,
+					template: template,
+				},
+			);
+
+			totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
+
+			// 新規の指摘事項セクションの作成
+			const newFeedbacks = result.newFeedback.slice(0, 10);
+			const generalNewFeedback = newFeedbacks.filter(
+				(f) => !(f.path && f.path !== "-" && f.line > 0),
+			);
+
+			let newFeedbackSection = "### 🚨 新たな懸念点\n\nなし\n";
+			if (generalNewFeedback.length > 0) {
+				newFeedbackSection =
+					"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
+				newFeedbackSection +=
+					generalNewFeedback
+						.map(
+							(f) =>
+								`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
+						)
+						.join("\n") + "\n";
+			}
+
+			const { nextStepsSection, hasMustOrWant } = getNextStepsSection(
+				newFeedbacks,
+				botName,
+			);
+
+			let summarySection = "### 📝 サマリ\n\nなし\n";
+			if (result.summary && result.summary.length > 0) {
+				summarySection =
+					"### 📝 サマリ\n\n" +
+					result.summary.map((s) => `- ${s}`).join("\n") +
+					"\n";
+			}
+
+			let resolvedAndHandoffSection = "### 💡 解決項目と申し送り\n\nなし\n";
+			if (result.resolvedAndHandoff && result.resolvedAndHandoff.length > 0) {
+				resolvedAndHandoffSection =
+					"### 💡 解決項目と申し送り\n\n" +
+					result.resolvedAndHandoff.map((i) => `- ${i}`).join("\n") +
+					"\n";
+			}
+
+			// Markdown生成
+			await progress.update(2, 3);
+
+			const markdownReport = formatTemplate(template, {
+				botName,
+				nextStepsSection,
+				overallStatus: result.overallStatus,
+				summarySection,
+				resolvedAndHandoffSection,
+				newFeedbackSection,
+			});
+
+			const finalReport = `@${sender}\n\n` + markdownReport;
+
+			console.log(
+				`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
+			);
+
+			await createReview(
+				env,
+				installationId,
+				owner,
+				repo,
+				pullNumber,
+				finalReport,
+				hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
+			);
+
+			await progress.finish(totalCost);
+
+			// 新規インラインコメントの投稿
+			if (pr.head?.sha) {
+				await postInlineComments(
+					env,
+					installationId,
+					owner,
+					repo,
+					pullNumber,
+					pr.head.sha,
+					newFeedbacks,
+					"再レビューでの新規指摘",
+				);
+			}
+
+			// トリガーとなったコメントの更新（チェックボックスを押せないようにする）
+			if (triggerCommentId && triggerCommentBody) {
+				const updatedBody = triggerCommentBody.replace(
+					/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
+					"- 再度レビュー依頼済み (完了)",
+				);
+				if (updatedBody !== triggerCommentBody) {
 					try {
-						await createReviewComment(
+						await updateComment(
 							env,
 							installationId,
 							owner,
 							repo,
-							pullNumber,
-							pr.head.sha,
-							item.path,
-							item.line,
-							`**${item.severity} (再レビューでの新規指摘)**\n\n**概要:** ${item.summary}\n\n**指摘理由:** ${item.reason}`,
+							triggerCommentId,
+							updatedBody,
 						);
 						console.log(
-							`[ReReviewAgent] Created inline comment for ${item.path}:${item.line}`,
+							`[ReReviewAgent] Updated trigger comment ${triggerCommentId}`,
 						);
-						await new Promise((resolve) => setTimeout(resolve, 500));
 					} catch (err: any) {
-						console.error(
-							`[ReReviewAgent] Failed to create inline comment for ${item.path}:${item.line}:`,
+						console.warn(
+							`[ReReviewAgent] Failed to update trigger comment ${triggerCommentId}:`,
+							err.message,
+						);
+					}
+				}
+			}
+
+			console.log(
+				`[ReReviewAgent] Completed re-review for ${owner}/${repo}#${pullNumber}`,
+			);
+		} catch (error: any) {
+			console.error(`[ReReviewAgent] Error in re-review process:`, error);
+			await progress.error(error, "再レビュー処理中にエラーが発生しました。");
+
+			// エラー時はチェックボックスを元に戻し、再試行できるようにする
+			if (triggerCommentId && triggerCommentBody) {
+				const revertedBody = triggerCommentBody.replace(
+					/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
+					"- [ ] 再度レビューを依頼する",
+				);
+				if (revertedBody !== triggerCommentBody) {
+					try {
+						await updateComment(
+							env,
+							installationId,
+							owner,
+							repo,
+							triggerCommentId,
+							revertedBody,
+						);
+					} catch (err: any) {
+						console.warn(
+							"[ReReviewAgent] Failed to revert trigger comment:",
 							err.message,
 						);
 					}
 				}
 			}
 		}
-
-		console.log(
-			`[ReReviewAgent] Completed re-review for ${owner}/${repo}#${pullNumber}`,
-		);
-	} catch (error: any) {
-		console.error(`[ReReviewAgent] Error in re-review process:`, error);
-		if (placeholderCommentId) {
-			const errorMessage = `⚠️ 再レビュー処理中にエラーが発生しました。\n\`\`\`\n${error.message}\n\`\`\``;
-			await updateComment(
-				env,
-				installationId,
-				owner,
-				repo,
-				placeholderCommentId,
-				errorMessage,
-			).catch((e) => console.error("Failed to update error message:", e));
-		}
-	}
+	});
 }

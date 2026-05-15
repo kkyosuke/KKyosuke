@@ -1,3 +1,4 @@
+{{nextStepsSection}}
 ## 🔄 再レビュー結果
 
 > [!NOTE]
@@ -9,4 +10,3 @@
 
 {{newFeedbackSection}}
 
-{{nextStepsSection}}

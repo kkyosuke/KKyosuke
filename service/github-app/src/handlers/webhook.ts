@@ -2,6 +2,7 @@ import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
 import { getBotName } from "../config/env";
+import { reReviewCommand } from "../jobs";
 import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
@@ -47,9 +48,12 @@ export async function githubWebhookHandler(c: Context) {
 		return c.text("Invalid JSON", 400);
 	}
 
-	// 条件判定: issue_comment (PR含む) かつ action === 'created'
-	if (eventName === "issue_comment" && payload.action === "created") {
-		console.log(`[Webhook] Processing issue_comment.created event`);
+	// 条件判定: issue_comment (PR含む) かつ action === 'created' または 'edited'
+	if (
+		eventName === "issue_comment" &&
+		(payload.action === "created" || payload.action === "edited")
+	) {
+		console.log(`[Webhook] Processing issue_comment.${payload.action} event`);
 		// PRへのコメントであることの確認
 		if (payload.issue && payload.issue.pull_request) {
 			const commentBody = payload.comment?.body || "";
@@ -73,14 +77,41 @@ export async function githubWebhookHandler(c: Context) {
 				repo,
 				issueNumber: pullNumber,
 				commentBody,
+				commentId: payload.comment.id,
 				botName,
 				sender,
 			};
 
-			// 非同期でルーティングを実行 (Fire and forget / Background task)
-			const routingTask = routeCommentCommand(commandCtx).catch((err) =>
-				console.error("Router failed critically", err),
-			);
+			let routingTask: Promise<void>;
+
+			// edited の場合、チェックボックスのONを検知する
+			if (payload.action === "edited") {
+				const fromBody = payload.changes?.body?.from || "";
+				// 前のコメントにはチェックなしの項目があり、現在のコメントにはチェックありの項目があるか
+				const uncheckedRegex = /-\s*\[\s*\]\s*再度レビューを依頼する/;
+				const checkedRegex = /-\s*\[[xX]\]\s*再度レビューを依頼する/;
+
+				if (uncheckedRegex.test(fromBody) && checkedRegex.test(commentBody)) {
+					console.log(
+						`[Webhook] Checkbox checked for re-review on PR ${pullNumber}`,
+					);
+					routingTask = reReviewCommand
+						.execute(commandCtx)
+						.catch((err) =>
+							console.error("Re-review command failed critically", err),
+						);
+				} else {
+					console.log(
+						`[Webhook] Ignored edited comment: checkbox not triggered`,
+					);
+					return c.text("OK", 200);
+				}
+			} else {
+				// created の場合は通常のメンションルーティング
+				routingTask = routeCommentCommand(commandCtx).catch((err) =>
+					console.error("Router failed critically", err),
+				);
+			}
 
 			try {
 				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
@@ -94,7 +125,9 @@ export async function githubWebhookHandler(c: Context) {
 		} else {
 			console.log(`[Webhook] Ignored comment: not a pull request issue`);
 		}
-		console.log(`[Webhook] Finished processing issue_comment.created event`);
+		console.log(
+			`[Webhook] Finished processing issue_comment.${payload.action} event`,
+		);
 	} else {
 		console.log(
 			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,
