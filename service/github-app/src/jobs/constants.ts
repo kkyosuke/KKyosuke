@@ -33,3 +33,26 @@ export const getInProgressComment = (
 
 export const MAX_REVIEW_THREADS = 100;
 export const MAX_COMMENTS_PER_THREAD = 50;
+
+export const getNextStepsSection = (
+	feedbacks: Array<{ severity: string }>,
+	botName: string,
+) => {
+	const hasMust = feedbacks.some((f) => f.severity === "🔴 must");
+	const hasWant = feedbacks.some((f) => f.severity === "🟡 want");
+	const hasMustOrWant = hasMust || hasWant;
+
+	let nextStepsSection = "";
+	if (hasMustOrWant) {
+		nextStepsSection = "\n**【次のステップ】**\n";
+		if (hasMust) {
+			nextStepsSection += "- [ ] `🔴 must` の指摘事項を修正する\n";
+		}
+		if (hasWant) {
+			nextStepsSection += "- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
+		}
+		nextStepsSection += `- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`;
+	}
+
+	return { nextStepsSection, hasMustOrWant };
+};

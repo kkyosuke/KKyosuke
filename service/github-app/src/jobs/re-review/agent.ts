@@ -25,7 +25,7 @@ import template from "../../prompts/re-review/template.md" with {
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
-import { getInProgressComment, type ProgressStep } from "../constants";
+import { getInProgressComment, getNextStepsSection, type ProgressStep } from "../constants";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -229,11 +229,7 @@ export async function runReReviewAgent(
 					.join("\n") + "\n";
 		}
 
-		const hasIssues = newFeedbacks.length > 0;
-
-		const nextStepsSection = hasIssues
-			? `\n**【次のステップ】**\n- [ ] \`🔴 must\` の指摘事項を修正する\n- [ ] \`🟡 want\` の指摘事項を修正する、または対応を見送る理由を返信する\n- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`
-			: "";
+		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(newFeedbacks, botName);
 
 		let summarySection = "### 📝 サマリ\n\nなし\n";
 		if (result.summary && result.summary.length > 0) {
@@ -266,8 +262,7 @@ export async function runReReviewAgent(
 
 		const finalReport =
 			`@${sender}\n\n` +
-			markdownReport +
-			`\n\n---\n💸 **LLM Cost**: $${totalCost.toFixed(5)}`;
+			markdownReport;
 
 		console.log(
 			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -280,19 +275,20 @@ export async function runReReviewAgent(
 			repo,
 			pullNumber,
 			finalReport,
-			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
+			hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
 		);
 
 		if (placeholderCommentId) {
 			console.log(
-				`[ReReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`,
+				`[ReReviewAgent] Updating placeholder comment for ${owner}/${repo}#${pullNumber}`,
 			);
-			await deleteComment(
+			await updateComment(
 				env,
 				installationId,
 				owner,
 				repo,
 				placeholderCommentId,
+				`💸 **LLM Cost**: $${totalCost.toFixed(5)}`
 			);
 		}
 
