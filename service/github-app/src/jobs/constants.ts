@@ -37,15 +37,22 @@ export const MAX_COMMENTS_PER_THREAD = 50;
 export const getNextStepsSection = (
 	feedbacks: Array<{ severity: string }>,
 	botName: string,
+	hasUnresolvedThreads: boolean = false,
 ) => {
 	const hasMust = feedbacks.some((f) => f.severity === "🔴 must");
 	const hasWant = feedbacks.some((f) => f.severity === "🟡 want");
 	const hasQ = feedbacks.some((f) => f.severity === "💬 Q");
 	const hasMustOrWantOrQ = hasMust || hasWant || hasQ;
 
+	const requiresAction = hasMustOrWantOrQ || hasUnresolvedThreads;
+
 	let nextStepsSection = "";
-	if (hasMustOrWantOrQ) {
+	if (requiresAction) {
 		nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+		if (hasUnresolvedThreads) {
+			nextStepsSection +=
+				"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
+		}
 		if (hasMust) {
 			nextStepsSection += "> - [ ] `🔴 must` の指摘事項を修正する\n";
 		}
@@ -60,5 +67,5 @@ export const getNextStepsSection = (
 		nextStepsSection += `> - [ ] 再度レビューを依頼する\n\n`;
 	}
 
-	return { nextStepsSection, hasMustOrWant: hasMustOrWantOrQ };
+	return { nextStepsSection, requiresAction };
 };

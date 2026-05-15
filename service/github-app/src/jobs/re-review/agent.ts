@@ -110,81 +110,115 @@ export async function runReReviewAgent(
 				guidelines,
 			);
 
-			// 全体の再レビュー
-			await progress.update(1, 2);
-			await progress.checkCancellation();
+			// 未解決のBotスレッドがあるか確認
+			const unresolvedBotThreads = (reviewThreads || []).filter((thread: any) => {
+				if (thread.isResolved || !thread.comments?.nodes?.length) return false;
+				const firstCommentAuthor = thread.comments.nodes[0].author?.login?.toLowerCase() || "";
+				return firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
+			});
+			const hasUnresolvedBotThreads = unresolvedBotThreads.length > 0;
 
-			console.log(
-				`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
-			);
-
-			let finalInstruction = instruction;
-			if (guidelines) {
-				console.log(`[ReReviewAgent] Found repository guidelines`);
-				finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
-			}
-
-			const { output: result, usage: reReviewUsage } = await generateReReview(
-				env,
-				{
-					title: pr.title,
-					body: pr.body,
-					diff: diff,
-					instruction: finalInstruction,
-					template: template,
-				},
-			);
-
-			totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
-
-			// 新規の指摘事項セクションの作成
-			const newFeedbacks = result.newFeedback.slice(0, 10);
-			const generalNewFeedback = newFeedbacks.filter(
-				(f) => !(f.path && f.path !== "-" && f.line > 0),
-			);
-
-			let newFeedbackSection = "### 🚨 新たな懸念点\n\nなし\n";
-			if (generalNewFeedback.length > 0) {
-				newFeedbackSection =
-					"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
-				newFeedbackSection +=
-					generalNewFeedback
-						.map(
-							(f) =>
-								`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
-						)
-						.join("\n") + "\n";
-			}
-
-			const { nextStepsSection, hasMustOrWant } = getNextStepsSection(
-				newFeedbacks,
-				botName,
-			);
-
+			let nextStepsSection = "";
+			let overallStatus = "";
 			let summarySection = "### 📝 サマリ\n\nなし\n";
-			if (result.summary && result.summary.length > 0) {
-				summarySection =
-					"### 📝 サマリ\n\n" +
-					result.summary.map((s) => `- ${s}`).join("\n") +
-					"\n";
-			}
-
 			let resolvedAndHandoffSection = "### 💡 解決項目と申し送り\n\nなし\n";
-			if (result.resolvedAndHandoff && result.resolvedAndHandoff.length > 0) {
-				resolvedAndHandoffSection =
-					"### 💡 解決項目と申し送り\n\n" +
-					result.resolvedAndHandoff.map((i) => `- ${i}`).join("\n") +
-					"\n";
+			let newFeedbackSection = "### 🚨 新たな懸念点\n\nなし\n";
+			let requiresAction = false;
+			let newFeedbacks: any[] = [];
+
+			if (hasUnresolvedBotThreads) {
+				// 未解決がある場合は全体レビューをスキップ
+				console.log(`[ReReviewAgent] Skipping full re-review due to unresolved threads for ${owner}/${repo}#${pullNumber}`);
+				overallStatus = "⚠️ 未解決のコメントがあります";
+				summarySection = "### 📝 サマリ\n\n- 未解決のコメント（スレッド）が残っています。各コメントに対応（コード修正とスレッドへの返信）してから、再度レビューを依頼してください。\n";
+				
+				nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
+				nextStepsSection += "> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
+				nextStepsSection += `> - [ ] 再度レビューを依頼する\n\n`;
+				
+				requiresAction = true;
+				
+				await progress.update(2, 3);
+				await progress.checkCancellation();
+			} else {
+				// 全体の再レビュー
+				await progress.update(1, 2);
+				await progress.checkCancellation();
+
+				console.log(
+					`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
+				);
+
+				let finalInstruction = instruction;
+				if (guidelines) {
+					console.log(`[ReReviewAgent] Found repository guidelines`);
+					finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
+				}
+
+				const { output: result, usage: reReviewUsage } = await generateReReview(
+					env,
+					{
+						title: pr.title,
+						body: pr.body,
+						diff: diff,
+						instruction: finalInstruction,
+						template: template,
+					},
+				);
+
+				totalCost += calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
+
+				// 新規の指摘事項セクションの作成
+				newFeedbacks = result.newFeedback.slice(0, 10);
+				const generalNewFeedback = newFeedbacks.filter(
+					(f) => !(f.path && f.path !== "-" && f.line > 0),
+				);
+
+				if (generalNewFeedback.length > 0) {
+					newFeedbackSection =
+						"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
+					newFeedbackSection +=
+						generalNewFeedback
+							.map(
+								(f) =>
+									`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
+							)
+							.join("\n") + "\n";
+				}
+
+				const nextSteps = getNextStepsSection(
+					newFeedbacks,
+					botName,
+					hasUnresolvedBotThreads,
+				);
+				nextStepsSection = nextSteps.nextStepsSection;
+				requiresAction = nextSteps.requiresAction;
+
+				if (result.summary && result.summary.length > 0) {
+					summarySection =
+						"### 📝 サマリ\n\n" +
+						result.summary.map((s) => `- ${s}`).join("\n") +
+						"\n";
+				}
+
+				if (result.resolvedAndHandoff && result.resolvedAndHandoff.length > 0) {
+					resolvedAndHandoffSection =
+						"### 💡 解決項目と申し送り\n\n" +
+						result.resolvedAndHandoff.map((i) => `- ${i}`).join("\n") +
+						"\n";
+				}
+				overallStatus = result.overallStatus;
+
+				await progress.update(2, 3);
+				await progress.checkCancellation();
 			}
 
 			// Markdown生成
-			await progress.update(2, 3);
-			await progress.checkCancellation();
 
 			const markdownReport = formatTemplate(template, {
 				botName,
 				nextStepsSection,
-				overallStatus: result.overallStatus,
+				overallStatus: overallStatus,
 				summarySection,
 				resolvedAndHandoffSection,
 				newFeedbackSection,
@@ -203,7 +237,7 @@ export async function runReReviewAgent(
 				repo,
 				pullNumber,
 				finalReport,
-				hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
+				requiresAction ? "REQUEST_CHANGES" : "APPROVE",
 			);
 
 			await progress.finish(totalCost);

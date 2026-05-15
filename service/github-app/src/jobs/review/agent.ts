@@ -113,7 +113,7 @@ export async function runReviewAgent(
 		const feedbacks = reviewResult.feedback.slice(0, 10);
 		const feedbackTable = createFeedbackTable(feedbacks);
 
-		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(
+		const { nextStepsSection, requiresAction } = getNextStepsSection(
 			feedbacks,
 			botName,
 		);
@@ -157,7 +157,7 @@ export async function runReviewAgent(
 			repo,
 			pullNumber,
 			finalReport,
-			hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
+			requiresAction ? "REQUEST_CHANGES" : "APPROVE",
 		);
 
 		await progress.finish(cost);
