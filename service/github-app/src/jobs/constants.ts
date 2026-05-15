@@ -44,15 +44,15 @@ export const getNextStepsSection = (
 
 	let nextStepsSection = "";
 	if (hasMustOrWant) {
-		nextStepsSection = "\n**【次のステップ】**\n";
+		nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
 		if (hasMust) {
-			nextStepsSection += "- [ ] `🔴 must` の指摘事項を修正する\n";
+			nextStepsSection += "> - [ ] `🔴 must` の指摘事項を修正する\n";
 		}
 		if (hasWant) {
 			nextStepsSection +=
-				"- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
+				"> - [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
 		}
-		nextStepsSection += `- [ ] 再度レビューを依頼する`;
+		nextStepsSection += `> - [ ] 再度レビューを依頼する\n\n`;
 	}
 
 	return { nextStepsSection, hasMustOrWant };
