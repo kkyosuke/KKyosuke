@@ -17,7 +17,7 @@ import instruction from "../../prompts/review/instruction.md" with {
 	type: "text",
 };
 import template from "../../prompts/review/template.md" with { type: "text" };
-import { getInProgressComment, type ProgressStep } from "../constants";
+import { getInProgressComment, getNextStepsSection, type ProgressStep } from "../constants";
 
 export async function runReviewAgent(
 	env: Record<string, string | undefined>,
@@ -128,21 +128,7 @@ export async function runReviewAgent(
 						.join("\n")
 				: "| - | - | - | - | 特に指摘事項はありません |";
 
-		const hasMust = feedbacks.some((f) => f.severity === "🔴 must");
-		const hasWant = feedbacks.some((f) => f.severity === "🟡 want");
-		const hasMustOrWant = hasMust || hasWant;
-
-		let nextStepsSection = "";
-		if (hasMustOrWant) {
-			nextStepsSection = "\n**【次のステップ】**\n";
-			if (hasMust) {
-				nextStepsSection += "- [ ] `🔴 must` の指摘事項を修正する\n";
-			}
-			if (hasWant) {
-				nextStepsSection += "- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
-			}
-			nextStepsSection += `- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`;
-		}
+		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(feedbacks, botName);
 
 		const markdownReport = template
 			.replaceAll("{{botName}}", botName)

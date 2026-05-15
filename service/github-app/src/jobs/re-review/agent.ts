@@ -25,7 +25,7 @@ import template from "../../prompts/re-review/template.md" with {
 import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
-import { getInProgressComment, type ProgressStep } from "../constants";
+import { getInProgressComment, getNextStepsSection, type ProgressStep } from "../constants";
 
 export async function runReReviewAgent(
 	env: Record<string, string | undefined>,
@@ -229,21 +229,7 @@ export async function runReReviewAgent(
 					.join("\n") + "\n";
 		}
 
-		const hasMust = newFeedbacks.some((f) => f.severity === "🔴 must");
-		const hasWant = newFeedbacks.some((f) => f.severity === "🟡 want");
-		const hasMustOrWant = hasMust || hasWant;
-
-		let nextStepsSection = "";
-		if (hasMustOrWant) {
-			nextStepsSection = "\n**【次のステップ】**\n";
-			if (hasMust) {
-				nextStepsSection += "- [ ] `🔴 must` の指摘事項を修正する\n";
-			}
-			if (hasWant) {
-				nextStepsSection += "- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
-			}
-			nextStepsSection += `- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`;
-		}
+		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(newFeedbacks, botName);
 
 		let summarySection = "### 📝 サマリ\n\nなし\n";
 		if (result.summary && result.summary.length > 0) {
