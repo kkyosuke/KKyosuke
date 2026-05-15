@@ -5,6 +5,15 @@ export type ProgressStep = {
 	status: "pending" | "in_progress" | "done";
 };
 
+// 再度レビュー依頼のトリガー条件（特殊条件）
+export const RE_REVIEW_TRIGGER_TEXT = "再度レビューを依頼する";
+export const RE_REVIEW_CHECKBOX_UNCHECKED = `- [ ] ${RE_REVIEW_TRIGGER_TEXT}`;
+export const RE_REVIEW_CHECKBOX_COMPLETED = `- 再度レビュー依頼済み (完了)`;
+export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN = new RegExp(`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`, "g");
+export const RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE = new RegExp(`-\\s*\\[[xX]\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`);
+export const RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE = new RegExp(`-\\s*\\[\\s*\\]\\s*${RE_REVIEW_TRIGGER_TEXT}`);
+
+
 export const getInProgressComment = (
 	title: string,
 	steps: ProgressStep[],
@@ -64,7 +73,7 @@ export const getNextStepsSection = (
 			nextStepsSection +=
 				"> - [ ] `💬 Q` の質問に回答する\n";
 		}
-		nextStepsSection += `> - [ ] 再度レビューを依頼する\n\n`;
+		nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
 	}
 
 	return { nextStepsSection, requiresAction };

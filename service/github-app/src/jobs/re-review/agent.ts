@@ -18,7 +18,13 @@ import instruction from "../../prompts/re-review/instruction.md" with {
 import template from "../../prompts/re-review/template.md" with {
 	type: "text",
 };
-import { getNextStepsSection, type ProgressStep } from "../constants";
+import {
+	getNextStepsSection,
+	type ProgressStep,
+	RE_REVIEW_CHECKBOX_UNCHECKED,
+	RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
+	RE_REVIEW_CHECKBOX_COMPLETED,
+} from "../constants";
 import { ReviewProgressManager } from "../utils/progress";
 import { withKvLock } from "../utils/lock";
 import { processReviewThreads } from "./threads";
@@ -134,7 +140,7 @@ export async function runReReviewAgent(
 				
 				nextStepsSection = "> [!IMPORTANT]\n> **【次のステップ】**\n";
 				nextStepsSection += "> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
-				nextStepsSection += `> - [ ] 再度レビューを依頼する\n\n`;
+				nextStepsSection += `> ${RE_REVIEW_CHECKBOX_UNCHECKED}\n\n`;
 				
 				requiresAction = true;
 				
@@ -259,8 +265,8 @@ export async function runReReviewAgent(
 			// トリガーとなったコメントの更新（チェックボックスを押せないようにする）
 			if (triggerCommentId && triggerCommentBody) {
 				const updatedBody = triggerCommentBody.replace(
-					/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
-					"- 再度レビュー依頼済み (完了)",
+					RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
+					RE_REVIEW_CHECKBOX_COMPLETED,
 				);
 				if (updatedBody !== triggerCommentBody) {
 					try {
@@ -294,8 +300,8 @@ export async function runReReviewAgent(
 				// キャンセル時はチェックボックスを元に戻す
 				if (triggerCommentId && triggerCommentBody) {
 					const revertedBody = triggerCommentBody.replace(
-						/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
-						"- [ ] 再度レビューを依頼する",
+						RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
+						RE_REVIEW_CHECKBOX_UNCHECKED,
 					);
 					if (revertedBody !== triggerCommentBody) {
 						try {
@@ -314,8 +320,8 @@ export async function runReReviewAgent(
 			// エラー時はチェックボックスを元に戻し、再試行できるようにする
 			if (triggerCommentId && triggerCommentBody) {
 				const revertedBody = triggerCommentBody.replace(
-					/-\s*\[[xX]\]\s*再度レビューを依頼する/g,
-					"- [ ] 再度レビューを依頼する",
+					RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
+					RE_REVIEW_CHECKBOX_UNCHECKED,
 				);
 				if (revertedBody !== triggerCommentBody) {
 					try {

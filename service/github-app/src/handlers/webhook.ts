@@ -4,6 +4,10 @@ import { env } from "hono/adapter";
 import { getBotName } from "../config/env";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import { reReviewCommand, replyCommand } from "../jobs";
+import {
+	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
+	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
+} from "../jobs/constants";
 import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
@@ -89,8 +93,8 @@ export async function githubWebhookHandler(c: Context) {
 			if (payload.action === "edited") {
 				const fromBody = payload.changes?.body?.from || "";
 				// 前のコメントにはチェックなしの項目があり、現在のコメントにはチェックありの項目があるか
-				const uncheckedRegex = /-\s*\[\s*\]\s*再度レビューを依頼する/;
-				const checkedRegex = /-\s*\[[xX]\]\s*再度レビューを依頼する/;
+				const uncheckedRegex = RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE;
+				const checkedRegex = RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE;
 
 				if (uncheckedRegex.test(fromBody) && checkedRegex.test(commentBody)) {
 					console.log(
