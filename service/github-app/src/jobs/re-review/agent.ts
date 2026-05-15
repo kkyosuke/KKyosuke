@@ -276,8 +276,7 @@ export async function runReReviewAgent(
 
 		const finalReport =
 			`@${sender}\n\n` +
-			markdownReport +
-			`\n\n---\n💸 **LLM Cost**: $${totalCost.toFixed(5)}`;
+			markdownReport;
 
 		console.log(
 			`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -295,14 +294,15 @@ export async function runReReviewAgent(
 
 		if (placeholderCommentId) {
 			console.log(
-				`[ReReviewAgent] Deleting placeholder comment for ${owner}/${repo}#${pullNumber}`,
+				`[ReReviewAgent] Updating placeholder comment for ${owner}/${repo}#${pullNumber}`,
 			);
-			await deleteComment(
+			await updateComment(
 				env,
 				installationId,
 				owner,
 				repo,
 				placeholderCommentId,
+				`💸 **LLM Cost**: $${totalCost.toFixed(5)}`
 			);
 		}
 
