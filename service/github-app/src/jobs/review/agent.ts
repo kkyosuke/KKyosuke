@@ -128,11 +128,21 @@ export async function runReviewAgent(
 						.join("\n")
 				: "| - | - | - | - | 特に指摘事項はありません |";
 
-		const hasIssues = feedbacks.length > 0;
+		const hasMust = feedbacks.some((f) => f.severity === "🔴 must");
+		const hasWant = feedbacks.some((f) => f.severity === "🟡 want");
+		const hasMustOrWant = hasMust || hasWant;
 
-		const nextStepsSection = hasIssues
-			? `\n**【次のステップ】**\n- [ ] \`🔴 must\` の指摘事項を修正する\n- [ ] \`🟡 want\` の指摘事項を修正する、または対応を見送る理由を返信する\n- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`
-			: "";
+		let nextStepsSection = "";
+		if (hasMustOrWant) {
+			nextStepsSection = "\n**【次のステップ】**\n";
+			if (hasMust) {
+				nextStepsSection += "- [ ] `🔴 must` の指摘事項を修正する\n";
+			}
+			if (hasWant) {
+				nextStepsSection += "- [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
+			}
+			nextStepsSection += `- [ ] ※ 修正対応やコメントの返信が終わりましたら、\`@${botName} 再レビューして\` とメンションして再度レビューを依頼してください。`;
+		}
 
 		const markdownReport = template
 			.replaceAll("{{botName}}", botName)
@@ -216,7 +226,7 @@ export async function runReviewAgent(
 			repo,
 			pullNumber,
 			finalReport,
-			hasIssues ? "REQUEST_CHANGES" : "APPROVE",
+			hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
 		);
 
 		if (placeholderCommentId) {
