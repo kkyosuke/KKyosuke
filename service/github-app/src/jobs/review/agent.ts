@@ -3,7 +3,9 @@ import {
 	getIssueComments,
 	getPullRequest,
 	getPullRequestDiff,
+	getRepositoryFile,
 } from "../../lib/github";
+import { REPOSITORY_GUIDELINES_PATH } from "../../config";
 import {
 	calculateCost,
 	generateCodeReview,
@@ -77,6 +79,20 @@ export async function runReviewAgent(
 			.map((c) => `@${c.user?.login}: ${c.body}`)
 			.join("\n\n");
 
+		let finalInstruction = instruction;
+		const guidelines = await getRepositoryFile(
+			env,
+			installationId,
+			owner,
+			repo,
+			REPOSITORY_GUIDELINES_PATH,
+			pr.head?.sha,
+		);
+		if (guidelines) {
+			console.log(`[ReviewAgent] Found repository guidelines`);
+			finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
+		}
+
 		// 2. レビュー結果の生成 (LLM)
 		await progress.update(0, 1);
 
@@ -88,7 +104,7 @@ export async function runReviewAgent(
 			body: pr.body,
 			diff: diff,
 			comments: commentsText,
-			instruction: instruction,
+			instruction: finalInstruction,
 			template: template,
 		});
 

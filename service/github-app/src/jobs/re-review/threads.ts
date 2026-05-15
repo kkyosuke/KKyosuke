@@ -15,6 +15,7 @@ export async function processReviewThreads(
 	pullNumber: number,
 	diff: string,
 	reviewThreads: any[],
+	guidelines?: string | null,
 ): Promise<number> {
 	let totalCost = 0;
 
@@ -42,11 +43,16 @@ export async function processReviewThreads(
 					.map((c: any) => `@${c.author?.login}: ${c.body}`)
 					.join("\n\n---\n\n");
 
+				let finalInstruction = threadInstruction;
+				if (guidelines) {
+					finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守って対応してください：\n\n${guidelines}`;
+				}
+
 				const { output: evalResult, usage: evalUsage } =
 					await evaluateReviewThread(env, {
 						threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
 						diff,
-						instruction: threadInstruction,
+						instruction: finalInstruction,
 					});
 
 				totalCost += calculateCost(evalUsage, REVIEW_MODEL_NAME);

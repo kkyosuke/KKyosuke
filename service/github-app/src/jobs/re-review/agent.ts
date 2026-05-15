@@ -2,9 +2,11 @@ import {
 	createReview,
 	getPullRequest,
 	getPullRequestDiff,
+	getRepositoryFile,
 	getReviewThreads,
 	updateComment,
 } from "../../lib/github";
+import { REPOSITORY_GUIDELINES_PATH } from "../../config";
 import {
 	calculateCost,
 	generateReReview,
@@ -88,6 +90,15 @@ export async function runReReviewAgent(
 				pullNumber,
 			);
 
+			const guidelines = await getRepositoryFile(
+				env,
+				installationId,
+				owner,
+				repo,
+				REPOSITORY_GUIDELINES_PATH,
+				pr.head?.sha,
+			);
+
 			let totalCost = await processReviewThreads(
 				env,
 				installationId,
@@ -96,6 +107,7 @@ export async function runReReviewAgent(
 				pullNumber,
 				diff,
 				reviewThreads,
+				guidelines,
 			);
 
 			// 全体の再レビュー
@@ -104,13 +116,20 @@ export async function runReReviewAgent(
 			console.log(
 				`[ReReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 			);
+
+			let finalInstruction = instruction;
+			if (guidelines) {
+				console.log(`[ReReviewAgent] Found repository guidelines`);
+				finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
+			}
+
 			const { output: result, usage: reReviewUsage } = await generateReReview(
 				env,
 				{
 					title: pr.title,
 					body: pr.body,
 					diff: diff,
-					instruction: instruction,
+					instruction: finalInstruction,
 					template: template,
 				},
 			);
