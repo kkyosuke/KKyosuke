@@ -2,7 +2,7 @@ import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
 import { getBotName } from "../config/env";
-import { reReviewCommand } from "../jobs";
+import { reReviewCommand, replyCommand } from "../jobs";
 import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
@@ -128,6 +128,64 @@ export async function githubWebhookHandler(c: Context) {
 		console.log(
 			`[Webhook] Finished processing issue_comment.${payload.action} event`,
 		);
+	} else if (
+		eventName === "pull_request_review_comment" &&
+		payload.action === "created"
+	) {
+		console.log(`[Webhook] Processing pull_request_review_comment.created event`);
+		const commentBody = payload.comment?.body || "";
+		const owner = payload.repository.owner.login;
+		const repo = payload.repository.name;
+		const pullNumber = payload.pull_request.number;
+		const installationId = payload.installation?.id;
+		const sender = payload.sender.login;
+		const botName = getBotName(e);
+
+		if (!installationId) {
+			console.error("[Webhook] No installationId found in webhook payload");
+			return c.text("OK", 200);
+		}
+
+		// ボット自身のコメントは無視する
+		if (sender === botName || sender.includes("bot")) {
+			console.log(`[Webhook] Ignored own review comment`);
+			return c.text("OK", 200);
+		}
+
+		const commandCtx = {
+			env: e,
+			installationId,
+			owner,
+			repo,
+			issueNumber: pullNumber,
+			commentBody,
+			commentId: payload.comment.id,
+			botName,
+			sender,
+		};
+
+		let routingTask: Promise<void> | undefined;
+
+		// メンションが含まれているか、既存スレッドへの返信である場合にreplyCommandを実行
+		if (commentBody.includes(`@${botName}`) || payload.comment.in_reply_to_id) {
+			console.log(`[Webhook] Triggering replyCommand for review comment ${payload.comment.id}`);
+			routingTask = replyCommand.execute(commandCtx).catch((err) =>
+				console.error("Reply command failed critically", err),
+			);
+		} else {
+			console.log(`[Webhook] Ignored review comment: no mention and not a reply`);
+		}
+
+		if (routingTask) {
+			try {
+				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+					c.executionCtx.waitUntil(routingTask);
+				}
+			} catch {
+				// fire and forget のまま
+			}
+		}
+		console.log(`[Webhook] Finished processing pull_request_review_comment.created event`);
 	} else {
 		console.log(
 			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,
