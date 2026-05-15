@@ -261,3 +261,32 @@ export async function createReplyForReviewComment(
 	});
 	return data;
 }
+
+export async function getRepositoryFile(
+	env: Record<string, string | undefined>,
+	installationId: number,
+	owner: string,
+	repo: string,
+	path: string,
+	ref?: string,
+): Promise<string | null> {
+	const app = getGithubApp(env);
+	const octokit = await app.getInstallationOctokit(installationId);
+	try {
+		const { data } = await octokit.rest.repos.getContent({
+			owner,
+			repo,
+			path,
+			ref,
+			mediaType: {
+				format: "raw",
+			},
+		});
+		return data as unknown as string;
+	} catch (e: any) {
+		if (e.status === 404) {
+			return null; // ファイルが存在しない場合はnullを返す
+		}
+		throw e;
+	}
+}

@@ -17,6 +17,7 @@
 **[Response Policy]**
 - `🔴 must`: Issues that could lead to critical bugs, or negatively impact maintainability/availability. Please address and fix.
 - `🟡 want`: Recommended improvements. Please fix them or provide a reason if you decide to skip.
+- `💬 Q`: Questions or confirmation of intent. Please provide an answer.
 
 
 ## 📊 Evaluation Score Details

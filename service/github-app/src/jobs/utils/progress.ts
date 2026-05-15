@@ -50,14 +50,32 @@ export class ReviewProgressManager {
 	}
 
 	async finish(cost: number) {
+		if (this.steps.length > 0) {
+			const lastStepIndex = this.steps.length - 1;
+			if (this.steps[lastStepIndex]) {
+				this.steps[lastStepIndex].status = "done";
+			}
+		}
+
 		if (this.placeholderCommentId) {
+			const progressComment = getInProgressComment(
+				this.title,
+				this.steps,
+				this.modelName,
+			);
+			const finishedComment = progressComment.replace(
+				"現在処理を実行中です。完了まで少々お待ちください！",
+				"処理が完了しました。",
+			);
+			const finalComment = `${finishedComment}\n> \n> 💸 **LLM Cost**: $${cost.toFixed(5)}`;
+
 			await updateComment(
 				this.env,
 				this.installationId,
 				this.owner,
 				this.repo,
 				this.placeholderCommentId,
-				`💸 **LLM Cost**: $${cost.toFixed(5)}`,
+				finalComment,
 			).catch((e) => console.error("Failed to update cost:", e));
 		}
 	}
@@ -73,6 +91,41 @@ export class ReviewProgressManager {
 				this.placeholderCommentId,
 				errorMessage,
 			).catch((e) => console.error("Failed to update error message:", e));
+		}
+	}
+
+	async checkCancellation() {
+		const kv = (this.env as any).KKYOSUKE_GITHUB_APP_KV;
+		if (!kv) return;
+
+		const cancelKey = `cancel-review-${this.owner}-${this.repo}-${this.pullNumber}`;
+		const isCancelled = await kv.get(cancelKey);
+		if (isCancelled) {
+			console.log(`[ProgressManager] Cancellation signal detected for ${cancelKey}`);
+			throw new Error("CANCELLED");
+		}
+	}
+
+	async cancel() {
+		if (this.placeholderCommentId) {
+			const progressComment = getInProgressComment(
+				this.title,
+				this.steps,
+				this.modelName,
+			);
+			const cancelledComment = progressComment.replace(
+				"現在処理を実行中です。完了まで少々お待ちください！",
+				"新しいコミットがPushされたため、処理をキャンセルしました。新しいコミットに対する処理を待つか、再度レビューを依頼してください。",
+			);
+
+			await updateComment(
+				this.env,
+				this.installationId,
+				this.owner,
+				this.repo,
+				this.placeholderCommentId,
+				cancelledComment,
+			).catch((e) => console.error("Failed to update cancellation message:", e));
 		}
 	}
 }

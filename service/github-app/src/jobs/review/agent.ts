@@ -3,7 +3,9 @@ import {
 	getIssueComments,
 	getPullRequest,
 	getPullRequestDiff,
+	getRepositoryFile,
 } from "../../lib/github";
+import { REPOSITORY_GUIDELINES_PATH } from "../../config";
 import {
 	calculateCost,
 	generateCodeReview,
@@ -77,8 +79,23 @@ export async function runReviewAgent(
 			.map((c) => `@${c.user?.login}: ${c.body}`)
 			.join("\n\n");
 
+		let finalInstruction = instruction;
+		const guidelines = await getRepositoryFile(
+			env,
+			installationId,
+			owner,
+			repo,
+			REPOSITORY_GUIDELINES_PATH,
+			pr.head?.sha,
+		);
+		if (guidelines) {
+			console.log(`[ReviewAgent] Found repository guidelines`);
+			finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守ってレビューしてください：\n\n${guidelines}`;
+		}
+
 		// 2. レビュー結果の生成 (LLM)
 		await progress.update(0, 1);
+		await progress.checkCancellation();
 
 		console.log(
 			`[ReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
@@ -88,7 +105,7 @@ export async function runReviewAgent(
 			body: pr.body,
 			diff: diff,
 			comments: commentsText,
-			instruction: instruction,
+			instruction: finalInstruction,
 			template: template,
 		});
 
@@ -96,7 +113,7 @@ export async function runReviewAgent(
 		const feedbacks = reviewResult.feedback.slice(0, 10);
 		const feedbackTable = createFeedbackTable(feedbacks);
 
-		const { nextStepsSection, hasMustOrWant } = getNextStepsSection(
+		const { nextStepsSection, requiresAction } = getNextStepsSection(
 			feedbacks,
 			botName,
 		);
@@ -125,6 +142,7 @@ export async function runReviewAgent(
 
 		// 3. 結果の投稿
 		await progress.update(1, 2);
+		await progress.checkCancellation();
 
 		console.log(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -139,7 +157,7 @@ export async function runReviewAgent(
 			repo,
 			pullNumber,
 			finalReport,
-			hasMustOrWant ? "REQUEST_CHANGES" : "APPROVE",
+			requiresAction ? "REQUEST_CHANGES" : "APPROVE",
 		);
 
 		await progress.finish(cost);
@@ -161,7 +179,12 @@ export async function runReviewAgent(
 			`[ReviewAgent] Completed review for ${owner}/${repo}#${pullNumber}`,
 		);
 	} catch (error: any) {
-		console.error(`[ReviewAgent] Error in review process:`, error);
-		await progress.error(error, "レビュー処理中にエラーが発生しました。");
+		if (error.message === "CANCELLED") {
+			console.log(`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`);
+			await progress.cancel();
+		} else {
+			console.error(`[ReviewAgent] Error in review process:`, error);
+			await progress.error(error, "レビュー処理中にエラーが発生しました。");
+		}
 	}
 }

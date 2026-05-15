@@ -2,7 +2,12 @@ import { Webhooks } from "@octokit/webhooks";
 import type { Context } from "hono";
 import { env } from "hono/adapter";
 import { getBotName } from "../config/env";
-import { reReviewCommand } from "../jobs";
+import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
+import { reReviewCommand, replyCommand } from "../jobs";
+import {
+	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
+	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
+} from "../jobs/constants";
 import { routeCommentCommand } from "../routers/commentRouter";
 
 export async function githubWebhookHandler(c: Context) {
@@ -88,8 +93,8 @@ export async function githubWebhookHandler(c: Context) {
 			if (payload.action === "edited") {
 				const fromBody = payload.changes?.body?.from || "";
 				// 前のコメントにはチェックなしの項目があり、現在のコメントにはチェックありの項目があるか
-				const uncheckedRegex = /-\s*\[\s*\]\s*再度レビューを依頼する/;
-				const checkedRegex = /-\s*\[[xX]\]\s*再度レビューを依頼する/;
+				const uncheckedRegex = RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE;
+				const checkedRegex = RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE;
 
 				if (uncheckedRegex.test(fromBody) && checkedRegex.test(commentBody)) {
 					console.log(
@@ -128,6 +133,84 @@ export async function githubWebhookHandler(c: Context) {
 		console.log(
 			`[Webhook] Finished processing issue_comment.${payload.action} event`,
 		);
+	} else if (
+		eventName === "pull_request_review_comment" &&
+		payload.action === "created"
+	) {
+		console.log(`[Webhook] Processing pull_request_review_comment.created event`);
+		const commentBody = payload.comment?.body || "";
+		const owner = payload.repository.owner.login;
+		const repo = payload.repository.name;
+		const pullNumber = payload.pull_request.number;
+		const installationId = payload.installation?.id;
+		const sender = payload.sender.login;
+		const botName = getBotName(e);
+
+		if (!installationId) {
+			console.error("[Webhook] No installationId found in webhook payload");
+			return c.text("OK", 200);
+		}
+
+		// ボット自身のコメントは無視する
+		if (sender === botName || sender.includes("bot")) {
+			console.log(`[Webhook] Ignored own review comment`);
+			return c.text("OK", 200);
+		}
+
+		const commandCtx = {
+			env: e,
+			installationId,
+			owner,
+			repo,
+			issueNumber: pullNumber,
+			commentBody,
+			commentId: payload.comment.id,
+			botName,
+			sender,
+		};
+
+		let routingTask: Promise<void> | undefined;
+
+		// メンションが含まれているか、既存スレッドへの返信である場合にreplyCommandを実行
+		if (commentBody.includes(`@${botName}`) || payload.comment.in_reply_to_id) {
+			console.log(`[Webhook] Triggering replyCommand for review comment ${payload.comment.id}`);
+			routingTask = replyCommand.execute(commandCtx).catch((err) =>
+				console.error("Reply command failed critically", err),
+			);
+		} else {
+			console.log(`[Webhook] Ignored review comment: no mention and not a reply`);
+		}
+
+		if (routingTask) {
+			try {
+				if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
+					c.executionCtx.waitUntil(routingTask);
+				}
+			} catch {
+				// fire and forget のまま
+			}
+		}
+		console.log(`[Webhook] Finished processing pull_request_review_comment.created event`);
+	} else if (
+		eventName === "pull_request" &&
+		payload.action === "synchronize"
+	) {
+		console.log(`[Webhook] Processing pull_request.synchronize event`);
+		const owner = payload.repository.owner.login;
+		const repo = payload.repository.name;
+		const pullNumber = payload.pull_request.number;
+
+		const kv = (e as any).KKYOSUKE_GITHUB_APP_KV;
+		if (kv) {
+			const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
+			console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);
+			// 指定された時間(秒)間有効なキャンセルシグナルをセット
+			await kv.put(cancelKey, "1", { expirationTtl: CANCEL_SIGNAL_TTL_SECONDS }).catch((err: any) => {
+				console.error(`[Webhook] Failed to set cancellation flag:`, err);
+			});
+		} else {
+			console.warn(`[Webhook] KV not found, cannot set cancellation flag`);
+		}
 	} else {
 		console.log(
 			`[Webhook] Ignored event: ${eventName}, action: ${payload.action}`,
