@@ -1,6 +1,7 @@
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
 
+import { getBotName } from "../config/env";
 import { MAX_COMMENTS_PER_THREAD, MAX_REVIEW_THREADS } from "../jobs/constants";
 
 export function getGithubApp(env: Record<string, string | undefined>) {
@@ -242,7 +243,15 @@ export async function getReviewThreads(
 		repo,
 		pullNumber,
 	});
-	return result.repository.pullRequest.reviewThreads.nodes;
+	const nodes = result.repository.pullRequest.reviewThreads.nodes;
+	const botName = getBotName(env);
+
+	return nodes.filter((thread: any) => {
+		const firstComment = thread.comments?.nodes?.[0];
+		if (!firstComment) return false;
+		const authorLogin = firstComment.author?.login || "";
+		return authorLogin === botName || authorLogin === `${botName}[bot]`;
+	});
 }
 
 export async function resolveReviewThread(
