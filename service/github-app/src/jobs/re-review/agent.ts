@@ -108,11 +108,11 @@ export async function runReReviewAgent(
 
 			// 未解決のBotスレッドがあるか確認
 			const unresolvedBotThreads = (reviewThreads || []).filter(
-				(thread: any) => {
+				(thread) => {
 					if (thread.isResolved || !thread.comments?.nodes?.length)
 						return false;
 					const firstCommentAuthor =
-						thread.comments.nodes[0].author?.login?.toLowerCase() || "";
+						thread.comments?.nodes?.[0]?.author?.login?.toLowerCase() || "";
 					return (
 						firstCommentAuthor.includes("bot") ||
 						firstCommentAuthor.includes("ai")
@@ -127,7 +127,13 @@ export async function runReReviewAgent(
 			let resolvedAndHandoffSection = "### 💡 解決項目と申し送り\n\nなし\n";
 			let newFeedbackSection = "### 🚨 新たな懸念点\n\nなし\n";
 			let requiresAction = false;
-			let newFeedbacks: any[] = [];
+			let newFeedbacks: Array<{
+				path: string;
+				line: number;
+				reason: string;
+				severity: string;
+				summary: string;
+			}> = [];
 
 			if (hasUnresolvedBotThreads) {
 				// 未解決がある場合は全体レビューをスキップ
@@ -166,7 +172,6 @@ export async function runReReviewAgent(
 					diff,
 					finalInstruction,
 					template,
-					botName,
 					hasUnresolvedBotThreads,
 				);
 
@@ -194,7 +199,7 @@ export async function runReReviewAgent(
 				newFeedbackSection,
 			});
 
-			const finalReport = `@${sender}\n\n` + markdownReport;
+			const finalReport = `@${sender}\n\n${markdownReport}`;
 
 			console.log(
 				`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
@@ -242,8 +247,8 @@ export async function runReReviewAgent(
 			console.log(
 				`[ReReviewAgent] Completed re-review for ${owner}/${repo}#${pullNumber}`,
 			);
-		} catch (error: any) {
-			if (error.message === "CANCELLED") {
+		} catch (error: unknown) {
+			if (error instanceof Error && error.message === "CANCELLED") {
 				console.log(
 					`[ReReviewAgent] Re-review cancelled for ${owner}/${repo}#${pullNumber}`,
 				);
@@ -264,7 +269,10 @@ export async function runReReviewAgent(
 			}
 
 			console.error(`[ReReviewAgent] Error in re-review process:`, error);
-			await progress.error(error, "再レビュー処理中にエラーが発生しました。");
+			await progress.error(
+				error instanceof Error ? error : new Error(String(error)),
+				"再レビュー処理中にエラーが発生しました。",
+			);
 
 			// エラー時はチェックボックスを元に戻し、再試行できるようにする
 			await updateTriggerCommentState(

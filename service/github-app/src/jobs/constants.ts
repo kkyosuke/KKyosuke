@@ -60,7 +60,6 @@ export const MAX_COMMENTS_PER_THREAD = 50;
  */
 export const getNextStepsSection = (
 	feedbacks: Array<{ severity: string }>,
-	botName: string,
 	hasUnresolvedThreads: boolean = false,
 ) => {
 	const hasMust = feedbacks.some((f) => f.severity === "🔴 must");

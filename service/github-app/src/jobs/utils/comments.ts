@@ -50,10 +50,10 @@ export async function postInlineComments(
 				);
 				// API制限を回避するために待機
 				await new Promise((resolve) => setTimeout(resolve, 500));
-			} catch (err: any) {
+			} catch (err: unknown) {
 				console.error(
 					`[InlineComment] Failed to create inline comment for ${item.path}:${item.line}:`,
-					err.message,
+					err instanceof Error ? err.message : String(err),
 				);
 			}
 		}

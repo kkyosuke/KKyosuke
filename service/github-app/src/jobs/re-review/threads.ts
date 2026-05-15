@@ -1,6 +1,7 @@
 import {
 	createReplyForReviewComment,
 	resolveReviewThread,
+	type ReviewThread,
 } from "../../lib/github";
 import {
 	calculateCost,
@@ -31,17 +32,20 @@ export async function processReviewThreads(
 	repo: string,
 	pullNumber: number,
 	diff: string,
-	reviewThreads: any[],
+	reviewThreads: ReviewThread[],
 	guidelines?: string | null,
 ): Promise<number> {
 	let totalCost = 0;
 
 	await Promise.all(
-		reviewThreads.map(async (thread: any) => {
+		reviewThreads.map(async (thread) => {
 			if (thread.isResolved || !thread.comments?.nodes?.length) return;
 
 			const comments = thread.comments.nodes;
-			const firstCommentAuthor = comments[0].author?.login?.toLowerCase() || "";
+			const firstComment = comments?.[0];
+			if (!firstComment) return;
+
+			const firstCommentAuthor = firstComment.author?.login?.toLowerCase() || "";
 			const isBotThread =
 				firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
 
@@ -49,7 +53,7 @@ export async function processReviewThreads(
 
 			console.log(`[ReReviewThreads] Evaluating thread ${thread.id}`);
 			const threadCommentsText = comments
-				.map((c: any) => `@${c.author?.login}: ${c.body}`)
+				.map((c) => `@${c.author?.login}: ${c.body}`)
 				.join("\n\n---\n\n");
 
 			let finalInstruction = threadInstruction;
@@ -82,13 +86,13 @@ export async function processReviewThreads(
 						owner,
 						repo,
 						pullNumber,
-						comments[0].databaseId,
+						firstComment.databaseId,
 						evalResult.replyBody,
 					);
-				} catch (e: any) {
+				} catch (e: unknown) {
 					console.warn(
 						`[ReReviewThreads] Failed to reply to thread ${thread.id}:`,
-						e.message,
+						e instanceof Error ? e.message : String(e),
 					);
 				}
 			}
@@ -100,10 +104,10 @@ export async function processReviewThreads(
 				try {
 					await resolveReviewThread(env, installationId, thread.id);
 					thread.isResolved = true; // Mark as resolved in memory
-				} catch (e: any) {
+				} catch (e: unknown) {
 					console.warn(
 						`[ReReviewThreads] Failed to resolve thread ${thread.id}:`,
-						e.message,
+						e instanceof Error ? e.message : String(e),
 					);
 				}
 			}

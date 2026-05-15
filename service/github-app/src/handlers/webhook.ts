@@ -8,8 +8,20 @@ import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
 	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
 } from "../jobs/constants";
-import type { CommandContext } from "../jobs/types";
+import type { CommandContext, KVBinding } from "../jobs/types";
 import { routeCommentCommand } from "../routers/commentRouter";
+
+type WebhookPayload = {
+	action?: string;
+	installation?: { id: number };
+	repository: { owner: { login: string }; name: string };
+	issue?: { number: number; pull_request?: unknown };
+	pull_request?: { number: number };
+	sender: { login: string };
+	comment?: { body: string; id: number; in_reply_to_id?: number };
+	review?: { body: string; id: number };
+	changes?: { body?: { from?: string } };
+};
 
 /**
  * Webhookのペイロードからコマンド実行用のコンテキストを構築します。
@@ -21,7 +33,7 @@ import { routeCommentCommand } from "../routers/commentRouter";
  */
 function buildCommandContext(
 	e: Record<string, string | undefined>,
-	payload: any,
+	payload: WebhookPayload,
 	commentInfo: { body: string; id: number; isReviewSummary?: boolean },
 ): CommandContext | null {
 	const installationId = payload.installation?.id;
@@ -35,7 +47,7 @@ function buildCommandContext(
 		installationId,
 		owner: payload.repository.owner.login,
 		repo: payload.repository.name,
-		issueNumber: payload.issue?.number || payload.pull_request?.number,
+		issueNumber: payload.issue?.number || payload.pull_request?.number || 0,
 		commentBody: commentInfo.body,
 		commentId: commentInfo.id,
 		isReviewSummary: commentInfo.isReviewSummary,
@@ -107,10 +119,10 @@ export async function githubWebhookHandler(c: Context) {
 		return c.text("Error verifying signature", 500);
 	}
 
-	let payload: any;
+	let payload: WebhookPayload;
 	try {
 		payload = JSON.parse(rawBody);
-	} catch (err) {
+	} catch (_err) {
 		console.warn(`[Webhook] Invalid JSON payload`);
 		return c.text("Invalid JSON", 400);
 	}
@@ -124,12 +136,12 @@ export async function githubWebhookHandler(c: Context) {
 		case "issue_comment.created":
 		case "issue_comment.edited": {
 			console.log(`[Webhook] Processing ${eventAction} event`);
-			if (!payload.issue?.pull_request) {
-				console.log(`[Webhook] Ignored comment: not a pull request issue`);
+			if (!payload.issue?.pull_request || !payload.comment) {
+				console.log(`[Webhook] Ignored comment: not a pull request issue or missing comment`);
 				break;
 			}
 
-			const commentBody = payload.comment?.body || "";
+			const commentBody = payload.comment.body || "";
 			const ctx = buildCommandContext(e, payload, {
 				body: commentBody,
 				id: payload.comment.id,
@@ -163,7 +175,9 @@ export async function githubWebhookHandler(c: Context) {
 
 		case "pull_request_review.edited": {
 			console.log(`[Webhook] Processing ${eventAction} event`);
-			const commentBody = payload.review?.body || "";
+			if (!payload.review) break;
+
+			const commentBody = payload.review.body || "";
 			const fromBody = payload.changes?.body?.from || "";
 
 			const uncheckedRegex = RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE;
@@ -190,7 +204,9 @@ export async function githubWebhookHandler(c: Context) {
 
 		case "pull_request_review_comment.created": {
 			console.log(`[Webhook] Processing ${eventAction} event`);
-			const commentBody = payload.comment?.body || "";
+			if (!payload.comment) break;
+
+			const commentBody = payload.comment.body || "";
 			const ctx = buildCommandContext(e, payload, {
 				body: commentBody,
 				id: payload.comment.id,
@@ -223,17 +239,19 @@ export async function githubWebhookHandler(c: Context) {
 
 		case "pull_request.synchronize": {
 			console.log(`[Webhook] Processing ${eventAction} event`);
+			if (!payload.pull_request) break;
+
 			const owner = payload.repository.owner.login;
 			const repo = payload.repository.name;
 			const pullNumber = payload.pull_request.number;
 
-			const kv = (e as any).KKYOSUKE_GITHUB_APP_KV;
+			const kv = (e as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as KVBinding | undefined;
 			if (kv) {
 				const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
 				console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);
 				await kv
 					.put(cancelKey, "1", { expirationTtl: CANCEL_SIGNAL_TTL_SECONDS })
-					.catch((err: any) => {
+					.catch((err: unknown) => {
 						console.error(`[Webhook] Failed to set cancellation flag:`, err);
 					});
 			} else {

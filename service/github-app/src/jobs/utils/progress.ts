@@ -1,5 +1,6 @@
 import { createPlaceholderComment, updateComment } from "../../lib/github";
 import { getInProgressComment, type ProgressStep } from "../constants";
+import type { KVBinding } from "../types";
 
 /**
  * レビューの進捗状況をコメントで管理します。
@@ -83,9 +84,9 @@ export class ReviewProgressManager {
 		}
 	}
 
-	async error(error: any, customMessage: string) {
+	async error(error: Error | unknown, customMessage: string) {
 		if (this.placeholderCommentId) {
-			const errorMessage = `⚠️ ${customMessage}\n\`\`\`\n${error.message}\n\`\`\``;
+			const errorMessage = `⚠️ ${customMessage}\n\`\`\`\n${error instanceof Error ? error.message : String(error)}\n\`\`\``;
 			await updateComment(
 				this.env,
 				this.installationId,
@@ -98,7 +99,7 @@ export class ReviewProgressManager {
 	}
 
 	async checkCancellation() {
-		const kv = (this.env as any).KKYOSUKE_GITHUB_APP_KV;
+		const kv = (this.env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as KVBinding | undefined;
 		if (!kv) return;
 
 		const cancelKey = `cancel-review-${this.owner}-${this.repo}-${this.pullNumber}`;

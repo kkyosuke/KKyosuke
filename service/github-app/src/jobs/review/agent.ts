@@ -111,7 +111,6 @@ export async function runReviewAgent(
 
 		const { nextStepsSection, requiresAction } = getNextStepsSection(
 			feedbacks,
-			botName,
 		);
 
 		const markdownReport = formatTemplate(template, {
@@ -144,7 +143,7 @@ export async function runReviewAgent(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
 		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
-		const finalReport = `@${sender}\n\n` + markdownReport;
+		const finalReport = `@${sender}\n\n${markdownReport}`;
 
 		await createReview(
 			env,
@@ -174,15 +173,18 @@ export async function runReviewAgent(
 		console.log(
 			`[ReviewAgent] Completed review for ${owner}/${repo}#${pullNumber}`,
 		);
-	} catch (error: any) {
-		if (error.message === "CANCELLED") {
+	} catch (error: unknown) {
+		if (error instanceof Error && error.message === "CANCELLED") {
 			console.log(
 				`[ReviewAgent] Review cancelled for ${owner}/${repo}#${pullNumber}`,
 			);
 			await progress.cancel();
 		} else {
 			console.error(`[ReviewAgent] Error in review process:`, error);
-			await progress.error(error, "レビュー処理中にエラーが発生しました。");
+			await progress.error(
+				error instanceof Error ? error : new Error(String(error)),
+				"レビュー処理中にエラーが発生しました。",
+			);
 		}
 	}
 }

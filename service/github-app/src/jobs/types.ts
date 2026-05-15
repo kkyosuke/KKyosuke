@@ -23,3 +23,12 @@ export interface CommandJob {
 	priority?: number; // 判定の優先順位（大きいほど優先）
 	execute: (ctx: CommandContext) => Promise<void>;
 }
+
+/**
+ * KVの名前空間のバインディング
+ */
+export interface KVBinding {
+	get(key: string): Promise<string | null>;
+	put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+	delete(key: string): Promise<void>;
+}

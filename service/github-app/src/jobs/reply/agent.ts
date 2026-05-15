@@ -1,6 +1,5 @@
 import {
 	createReplyForReviewComment,
-	getPullRequestDiff,
 	getReviewThreads,
 	resolveReviewThread,
 } from "../../lib/github";
@@ -56,8 +55,8 @@ export async function runReplyAgent(
 		);
 
 		// 指定されたコメントIDが含まれるスレッドを検索
-		const thread = reviewThreads.find((t: any) =>
-			t.comments.nodes.some((c: any) => c.databaseId === commentId),
+		const thread = reviewThreads.find((t) =>
+			t.comments.nodes.some((c) => c.databaseId === commentId),
 		);
 
 		if (!thread) {
@@ -72,7 +71,7 @@ export async function runReplyAgent(
 
 		const comments = thread.comments.nodes;
 		const threadCommentsText = comments
-			.map((c: any) => `@${c.author?.login}: ${c.body}`)
+			.map((c) => `@${c.author?.login}: ${c.body}`)
 			.join("\n\n---\n\n");
 
 		console.log(`[ReplyAgent] Evaluating thread ${thread.id}`);
@@ -111,13 +110,13 @@ export async function runReplyAgent(
 					owner,
 					repo,
 					pullNumber,
-					comments[0].databaseId, // スレッドの最初のコメントIDを指定して返信
+					comments[0]?.databaseId ?? 0, // スレッドの最初のコメントIDを指定して返信
 					evalResult.replyBody,
 				);
-			} catch (e: any) {
+			} catch (e: unknown) {
 				console.warn(
 					`[ReplyAgent] Failed to reply to thread ${thread.id}:`,
-					e.message,
+					e instanceof Error ? e.message : String(e),
 				);
 			}
 		}
@@ -128,16 +127,16 @@ export async function runReplyAgent(
 		) {
 			try {
 				await resolveReviewThread(env, installationId, thread.id);
-			} catch (e: any) {
+			} catch (e: unknown) {
 				console.warn(
 					`[ReplyAgent] Failed to resolve thread ${thread.id}:`,
-					e.message,
+					e instanceof Error ? e.message : String(e),
 				);
 			}
 		}
 
 		console.log(`[ReplyAgent] Completed reply for comment ${commentId}`);
-	} catch (error: any) {
+	} catch (error: unknown) {
 		console.error(`[ReplyAgent] Error in reply process:`, error);
 	}
 }

@@ -19,11 +19,10 @@ import { getNextStepsSection } from "../constants";
  */
 export async function performFullReReview(
 	env: Record<string, string | undefined>,
-	pr: any,
+	pr: { title: string; body: string | null },
 	diff: string,
 	finalInstruction: string,
 	template: string,
-	botName: string,
 	hasUnresolvedBotThreads: boolean,
 ) {
 	const { output: result, usage: reReviewUsage } = await generateReReview(env, {
@@ -45,18 +44,16 @@ export async function performFullReReview(
 	if (generalNewFeedback.length > 0) {
 		newFeedbackSection =
 			"### 🚨 新たな懸念点\n\n| 対象 (ファイル等) | 該当行 | 指摘理由 | 対応度 | 概要 |\n| :--- | :--- | :--- | :--- | :--- |\n";
-		newFeedbackSection +=
-			generalNewFeedback
-				.map(
-					(f) =>
-						`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
-				)
-				.join("\n") + "\n";
+		newFeedbackSection += `${generalNewFeedback
+			.map(
+				(f) =>
+					`| ${f.path} | ${f.line > 0 ? f.line : "-"} | ${f.reason} | ${f.severity} | ${f.summary} |`,
+			)
+			.join("\n")}\n`;
 	}
 
 	const nextSteps = getNextStepsSection(
 		newFeedbacks,
-		botName,
 		hasUnresolvedBotThreads,
 	);
 	const nextStepsSection = nextSteps.nextStepsSection;

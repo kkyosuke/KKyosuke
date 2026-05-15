@@ -55,10 +55,10 @@ export async function updateTriggerCommentState(
 			console.log(
 				`[TriggerComment] Updated trigger comment ${triggerCommentId} to ${state}`,
 			);
-		} catch (err: any) {
+		} catch (err: unknown) {
 			console.warn(
 				`[TriggerComment] Failed to update trigger comment ${triggerCommentId}:`,
-				err.message,
+				err instanceof Error ? err.message : String(err),
 			);
 		}
 	}

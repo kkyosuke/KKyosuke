@@ -93,31 +93,6 @@
   </div>
 
   <script>
-    var diagramCode = `
-st=>start: 開発者が
-スレッドに返信
-opFetch=>operation: スレッドの全コメント
-(質問と回答)を取得
-opLLM=>operation: LLMで会話内容と
-コード差分を評価
-condAction=>condition: LLMの判定
-(Action)
-opReply=>operation: 追加の返信を投稿
-(REPLY)
-opResolve=>operation: スレッドを解決
-(RESOLVE)
-opReplyRes=>operation: 返信して解決
-(REPLY_AND_RESOLVE)
-opIgnore=>operation: 何もしない
-(IGNORE)
-e=>end: 完了
-
-st->opFetch->opLLM->condAction
-condAction(yes, right)->opReply->e
-condAction(no, bottom)->opResolve->e
-condAction(yes, bottom)->opReplyRes->e
-condAction(no, left)->opIgnore->e
-`;
 
     // フローチャートの描画処理（条件分岐が4つあるため見せ方を工夫）
     var diagramCode = `

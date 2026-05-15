@@ -4,6 +4,21 @@ import { Octokit } from "@octokit/rest";
 import { getBotName } from "../config/env";
 import { MAX_COMMENTS_PER_THREAD, MAX_REVIEW_THREADS } from "../jobs/constants";
 
+export interface ReviewThread {
+	id: string;
+	isResolved: boolean;
+	path: string;
+	line: number;
+	comments: {
+		nodes: Array<{
+			id: string;
+			databaseId: number;
+			body: string;
+			author?: { login?: string };
+		}>;
+	};
+}
+
 /**
  * GitHub Appのインスタンスを取得します。
  */
@@ -274,7 +289,11 @@ export async function getReviewThreads(
 			}
 		}
 	`;
-	const result = await octokit.graphql<any>(query, {
+	const result = await octokit.graphql<{
+		repository: {
+			pullRequest: { reviewThreads: { nodes: ReviewThread[] } };
+		};
+	}>(query, {
 		owner,
 		repo,
 		pullNumber,
@@ -282,7 +301,7 @@ export async function getReviewThreads(
 	const nodes = result.repository.pullRequest.reviewThreads.nodes;
 	const botName = getBotName(env);
 
-	return nodes.filter((thread: any) => {
+	return nodes.filter((thread) => {
 		const firstComment = thread.comments?.nodes?.[0];
 		if (!firstComment) return false;
 		const authorLogin = firstComment.author?.login || "";
@@ -358,8 +377,8 @@ export async function getRepositoryFile(
 			},
 		});
 		return data as unknown as string;
-	} catch (e: any) {
-		if (e.status === 404) {
+	} catch (e: unknown) {
+		if (e && typeof e === "object" && "status" in e && e.status === 404) {
 			return null; // ファイルが存在しない場合はnullを返す
 		}
 		throw e;
