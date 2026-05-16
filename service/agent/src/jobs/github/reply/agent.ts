@@ -8,7 +8,7 @@ import {
 	evaluateReviewThread,
 	REVIEW_MODEL_NAME,
 } from "../../../lib/llm";
-import threadInstruction from "../../../prompts/reply/instruction.md" with {
+import threadInstruction from "../../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
 import {

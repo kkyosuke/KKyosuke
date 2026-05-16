@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スレッド保存機能 (save-summary) 仕様書</title>
+  
+  <!-- Mermaid.js for Sequence Diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true});</script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .diagram-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.875rem;
+    }
+    ul, ol {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>スレッド保存機能 (save-summary) 仕様書</h1>
+  
+  <h2>概要 (Overview)</h2>
+  <p>Slackのメッセージショートカット、または特定キーワードのメンションを利用して、指定したスレッドでのやり取りをLLM（AI）で要約し、D1データベース（<code>AI_KYOSUKE_DB</code>）に「進捗情報」として保存する機能です。1つのスレッド内に複数人の投稿がある場合でも、個人ごとに内容を分けて要約・評価を行います。処理完了後、該当スレッドにボットが結果を返信します。</p>
+
+  <h2>トリガー情報</h2>
+  <ul>
+    <li><strong>パターンA:</strong> メッセージショートカット (Message Shortcut)
+      <ul>
+        <li>Callback ID: <code>save-summary</code></li>
+        <li>UI表示名: スレッドを進捗として保存</li>
+      </ul>
+    </li>
+    <li><strong>パターンB:</strong> App Mention (Botへのメンション)
+      <ul>
+        <li>キーワード: <code>@kyosuke.ai 日報をまとめて</code></li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2>処理フロー (Sequence Diagram)</h2>
+  <div class="diagram-container">
+    <div class="mermaid">
+      sequenceDiagram
+        autonumber
+        actor User as ユーザー
+        participant Slack as Slack
+        participant Worker as Cloudflare Worker<br/>(slack-cloudflare-workers)
+        participant LLM as LLM API<br/>(summarizeThread)
+        participant D1 as D1 Database<br/>(AI_KYOSUKE_DB)
+
+        alt メッセージショートカット
+            User->>Slack: メッセージメニューから<br/>「スレッドを進捗として保存」を選択
+            Slack->>Worker: shortcut リクエスト (payload送信)
+            Worker-->>Slack: Ack (即時応答 3秒以内)
+        else App Mention
+            User->>Slack: スレッド内で「@kyosuke.ai 日報をまとめて」とメンション
+            Slack->>Worker: app_mention リクエスト
+            Worker->>Slack: 処理開始通知（🔄 要約して保存しています...）
+        end
+        
+        Note over Worker,D1: バックグラウンド非同期処理
+        Worker->>Slack: API: conversations.replies (スレッド履歴取得)
+        Slack-->>Worker: メッセージ履歴を返却
+        
+        Worker->>Worker: メッセージを整形<br/>(`[日時] <@User>: Text`形式)
+        
+        Worker->>LLM: 要約リクエスト (複数人分をまとめて依頼)
+        LLM-->>Worker: ユーザーごとの進捗・評価・要約 (JSON) を返却
+        
+        loop ユーザーごと
+            Worker->>D1: INSERT (progress_summariesテーブル)
+        end
+        D1-->>Worker: 保存完了
+        
+        Worker->>Slack: API: chat.postMessage<br/>(スレッドに要約結果を返信)
+        Slack-->>User: 個人ごとの進捗・評価・要約を閲覧
+    </div>
+  </div>
+
+  <h2>主要な処理詳細</h2>
+  
+  <h3>1. トリガーと即時応答</h3>
+  <p>Slack APIの制約（3秒以内の応答必須）を回避するため、ショートカットの場合は即座にAckを返します。メンションの場合は、ユーザーに処理開始を伝えるためのメッセージをスレッドに即座に投稿します。</p>
+
+  <h3>2. スレッド履歴の取得</h3>
+  <p>対象のメッセージがスレッド内のリプライか、親メッセージかに関わらず適切に <code>thread_ts</code> を取得し、<code>conversations.replies</code> APIを用いてスレッド内の全てのやり取りを取得します。</p>
+
+  <h3>3. テキストの整形と要約生成</h3>
+  <p>LLMが文脈と各個人の発言を理解しやすいように、各メッセージを <code>[投稿日時] &lt;@ユーザーID&gt;: メッセージ内容</code> の形式に結合します。LLMにはJSON形式で返却するよう指示し、参加している全ユーザーごとの「進捗（%）」「評価スコア（5点満点）」「要約テキスト」を一度の呼び出しで生成させます。</p>
+
+  <h3>4. データの永続化 (D1 Database)</h3>
+  <p>要約結果を、一意のID（UUID）と共にD1データベースの <code>progress_summaries</code> テーブルに保存します。スレッドに複数人が参加している場合は、人数分のレコードが作成されます。</p>
+  <ul>
+    <li><code>id</code>: UUID</li>
+    <li><code>user_id</code>: 投稿した個人のSlack ID</li>
+    <li><code>target_date</code>: 対象日（スレッド開始日時などから取得）</li>
+    <li><code>progress_percent</code>: LLMが判定した進捗率（0-100）</li>
+    <li><code>evaluation_score</code>: LLMが判定した評価スコア（1-5）</li>
+    <li><code>summary_text</code>: LLMによる個人の要約テキスト</li>
+  </ul>
+
+  <div class="bg-note">
+    <strong>Note:</strong> スキーマ定義については別途 <code>schema.sql</code> 等を作成してマイグレーションを行う必要があります。
+  </div>
+
+</body>
+</html>
