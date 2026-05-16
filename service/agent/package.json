@@ -10,7 +10,7 @@
 		"check": "biome check --write .",
 		"format": "biome format --write .",
 		"lint": "biome lint --write .",
-		"deploy:prod": "wrangler d1 migrations apply ai_kyosuke --remote --auto-approve && wrangler deploy"
+		"deploy:prod": "wrangler d1 migrations apply ai_kyosuke --remote && wrangler deploy"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.15",
