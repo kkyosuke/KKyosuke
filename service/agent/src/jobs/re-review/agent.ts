@@ -196,7 +196,15 @@ export async function runReReviewAgent(
 				newFeedbackSection,
 			});
 
-			const finalReport = `@${sender}\n\n${markdownReport}`;
+			let targetMention = sender;
+			if (triggerCommentBody) {
+				const match = triggerCommentBody.trim().match(/^@([a-zA-Z0-9_-]+)/);
+				if (match?.[1]) {
+					targetMention = match[1];
+				}
+			}
+
+			const finalReport = `@${targetMention}\n\n${markdownReport}`;
 
 			console.log(
 				`[ReReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
