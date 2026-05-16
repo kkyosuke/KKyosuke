@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slackbot 導入設計書</title>
+  
+  <!-- Mermaid.js for Sequence Diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true});</script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .diagram-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.875rem;
+    }
+    ul, ol {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Slackbot 導入設計書</h1>
+  
+  <h2>概要 (Overview)</h2>
+  <p>GitHub App (PR Review Agent) にSlackbotの機能を統合し、以下の要件を満たすシステムを構築します。</p>
+  <ol>
+    <li><strong>通知 (Notification)</strong>: PRレビューの完了やエラー発生などの重要なイベントをSlackチャンネルに通知する。</li>
+    <li><strong>操作 (Interaction)</strong>: Slackのコマンドやメンションから、PRレビューの再実行や状態確認を行えるようにする。</li>
+  </ol>
+
+  <h2>動作環境・制約</h2>
+  <p>本システムは <strong>Cloudflare Workers</strong> 上で動作しています。<br>
+  Node.js環境に強く依存する公式の <code>@slack/bolt</code> は使用せず、Cloudflare Workers 用に最適化されたBolt風フレームワーク <strong><code>slack-cloudflare-workers</code></strong> を採用します。</p>
+  <ul>
+    <li><strong>書き心地はBoltと同じ</strong>: モーダルやアクション（Block Kit）などの複雑なUIも、Boltと全く同じ感覚で実装できます。</li>
+    <li><strong>Honoとの共存</strong>: 既存のHonoのルーティング（GitHub Webhook用）と並行して、Slackからのリクエストを処理できます。</li>
+  </ul>
+
+  <h2>アーキテクチャ構成 (Architecture)</h2>
+
+  <h3>1. ディレクトリ構成の追加・変更箇所</h3>
+  <pre><code>src/
+ ├── handlers/
+ │    └── slack.ts         # slack-cloudflare-workers のアプリ初期化・ハンドラー定義
+ └── config/
+      └── env.ts           # Slack用の環境変数定義を追加</code></pre>
+
+  <h3>2. 環境変数 (Environment Variables)</h3>
+  <p>以下の環境変数をCloudflare Workers (および <code>.env</code>) に追加します。</p>
+  <ul>
+    <li><code>SLACK_BOT_TOKEN</code>: SlackアプリのBot User OAuth Token (<code>xoxb-</code> から始まる)</li>
+    <li><code>SLACK_SIGNING_SECRET</code>: Slackからのリクエストの正当性を検証するためのシークレット</li>
+    <li><code>SLACK_NOTIFICATION_CHANNEL</code>: 通知を送信するデフォルトのチャンネルID（オプション）</li>
+  </ul>
+
+  <h2>機能詳細とシーケンス</h2>
+
+  <h3>A. 通知機能（PRレビュー完了時の通知）</h3>
+  <p>AIによるレビューが完了した際に、結果のサマリーをSlackへ送信します。</p>
+  <ol>
+    <li><code>src/jobs/review/agent.ts</code> または <code>src/handlers/webhook.ts</code> の処理完了部分。</li>
+    <li><code>slackClient.chat.postMessage</code> を呼び出し、対象のPRリンク、レビューステータス（Approve / Request Changes など）、およびサマリーを通知。</li>
+  </ol>
+  <p><strong>シーケンスイメージ:</strong></p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+    participant GitHub
+    participant App as CF Workers (Hono)
+    participant AI as Claude / Gemini
+    participant Slack
+    GitHub->>App: Webhook (pull_request.opened)
+    App->>AI: PR Diff 解析
+    AI-->>App: レビュー結果
+    App->>GitHub: レビューコメント投稿
+    App->>Slack: 通知「PR #XX のレビューが完了しました」
+    </div>
+  </div>
+
+  <h3>B. インタラクティブ機能（Slash Command によるレビュー指示）</h3>
+  <p>Slackのコマンド（例: <code>/pr-review &lt;PRのURL&gt;</code>）から任意のPRに対してレビューをトリガーします。</p>
+  <ol>
+    <li>ユーザーがSlackで <code>/pr-review https://github.com/owner/repo/pull/123</code> を実行。</li>
+    <li>Slackから <code>POST /slack/events</code> エンドポイントへリクエストが飛ぶ。</li>
+    <li><code>slack-cloudflare-workers</code> がリクエストを検証し、対象のPR情報をパース。</li>
+    <li>Slackへ即座に「レビューを開始します...」と応答を返す。</li>
+    <li>バックグラウンド処理（<code>ctx.waitUntil</code> または Queue）でレビュー処理を続行し、完了後に結果をSlackへスレッド返信。</li>
+  </ol>
+  <p><strong>シーケンスイメージ:</strong></p>
+  <div class="diagram-container">
+    <div class="mermaid">
+sequenceDiagram
+    participant User
+    participant Slack
+    participant App as CF Workers (Hono)
+    participant GitHub
+    participant AI
+    User->>Slack: /pr-review &lt;URL&gt;
+    Slack->>App: POST /slack/events
+    App-->>Slack: 200 OK "レビューを開始します"
+    App->>GitHub: PR詳細取得
+    App->>AI: レビュー実行
+    AI-->>App: 結果
+    App->>GitHub: レビューコメント投稿
+    App->>Slack: "レビューが完了しました (リンク)"
+    </div>
+  </div>
+
+  <h2>今後のステップ (Next Steps)</h2>
+  <ol>
+    <li><strong>Slack App の作成</strong>: Slack APIコンソールでアプリを作成し、TokenとSecretを取得する。</li>
+    <li><strong>依存関係の追加</strong>: <code>bun add slack-cloudflare-workers</code></li>
+    <li><strong>環境変数の設定</strong>: <code>.env</code> と Cloudflare ダッシュボードに環境変数を追加。</li>
+    <li><strong>コア機能の実装</strong>: HonoとSlackAppの統合から着手する。</li>
+  </ol>
+
+</body>
+</html>

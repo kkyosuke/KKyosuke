@@ -9,7 +9,9 @@ export async function withKvLock(
 	ttlSeconds: number,
 	callback: () => Promise<void>,
 ) {
-	const kv = (env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as KVBinding | undefined;
+	const kv = (env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as
+		| KVBinding
+		| undefined;
 	if (!kv) {
 		// KVが設定されていない場合はそのまま実行
 		await callback();

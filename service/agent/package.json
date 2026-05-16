@@ -1,5 +1,5 @@
 {
-	"name": "github-app",
+	"name": "agent",
 	"module": "index.ts",
 	"type": "module",
 	"private": true,
@@ -16,7 +16,6 @@
 		"@biomejs/biome": "2.4.15",
 		"@cloudflare/workers-types": "^4.20260510.1",
 		"@types/bun": "latest",
-		"smee-client": "^5.0.0",
 		"typescript": "^6",
 		"wrangler": "^4.90.0"
 	},
@@ -32,6 +31,7 @@
 		"ai": "^6.0.177",
 		"dotenv": "^17.4.2",
 		"hono": "^4.12.18",
+		"slack-cloudflare-workers": "^1.3.10",
 		"zod": "^4.4.3"
 	}
 }
