@@ -1,25 +1,19 @@
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
-import { resolveEnv } from "../config/env";
+import { resolveEnv, getFreeeConfig } from "../config/env";
 import { saveUserToken } from "../datasource/db/userToken";
 import { getDatabaseClient } from "../lib/db";
-import { Freee } from "../lib/freee";
+import { createFreeeClient } from "../lib/freee/index";
 
-export const authApp = new Hono<{ Bindings: Record<string, string | undefined> }>();
+export const freeeApp = new Hono<{ Bindings: Record<string, string | undefined> }>();
 
-authApp.get("/freee", async (c) => {
+freeeApp.get("/auth", async (c) => {
 	const userId = c.req.query("user_id");
 	if (!userId) {
 		return c.text("user_id parameter is required", 400);
 	}
 
-	const env = resolveEnv(c.env);
-	const clientId = env.FREEE_CLIENT_ID;
-	const redirectUri = env.FREEE_REDIRECT_URI;
-
-	if (!clientId || !redirectUri) {
-		return c.text("Freee credentials are not configured", 500);
-	}
+	const config = getFreeeConfig(c.env as any);
 
 	// stateにユーザーIDを含めるか、Cookieで管理する
 	// CSRF対策としてランダムな文字列を生成し、ユーザーIDと組み合わせる
@@ -33,11 +27,12 @@ authApp.get("/freee", async (c) => {
 		maxAge: 60 * 10, // 10 minutes
 	});
 
-	const authUrl = Freee.getAuthorizationUrl(clientId, redirectUri, state);
+	const freee = createFreeeClient(config);
+	const authUrl = freee.getAuthorizationUrl(state);
 	return c.redirect(authUrl);
 });
 
-authApp.get("/freee/callback", async (c) => {
+freeeApp.get("/auth/callback", async (c) => {
 	const code = c.req.query("code");
 	const state = c.req.query("state");
 	const savedState = getCookie(c, "freee_auth_state");
@@ -57,23 +52,12 @@ authApp.get("/freee/callback", async (c) => {
 		return c.text("Invalid state format", 400);
 	}
 
-	const env = resolveEnv(c.env);
-	const clientId = env.FREEE_CLIENT_ID;
-	const clientSecret = env.FREEE_CLIENT_SECRET;
-	const redirectUri = env.FREEE_REDIRECT_URI;
-
-	if (!clientId || !clientSecret || !redirectUri) {
-		return c.text("Freee credentials are not configured", 500);
-	}
+	const config = getFreeeConfig(c.env as any);
 
 	try {
 		// 得られた認可コードを取得してアクセストークンを取得
-		const tokenRes = await Freee.getAccessToken(
-			clientId,
-			clientSecret,
-			code,
-			redirectUri,
-		);
+		const freee = createFreeeClient(config);
+		const tokenRes = await freee.getAccessToken(code);
 
 		const db = getDatabaseClient(c.env as any);
 

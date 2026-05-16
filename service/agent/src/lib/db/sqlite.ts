@@ -8,6 +8,13 @@ export function getLocalDbClient() {
 
 	const sqlite = new Database("local.db");
 
+	initLocalDb(sqlite);
+
+	return drizzleBun(sqlite, { schema });
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: Any is used dynamically to avoid importing bun modules in worker
+export function initLocalDb(sqlite: any) {
 	try {
 		const fsMod = "node:fs";
 		const pathMod = "node:path";
@@ -23,19 +30,25 @@ export function getLocalDbClient() {
 				.filter((f: string) => f.endsWith(".sql"))
 				.sort();
 
+			let hasError = false;
 			for (const file of files) {
-				const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
-				if (typeof sqlite.exec === "function") {
-					sqlite.exec(sql);
-				} else {
-					sqlite.run(sql);
+				try {
+					const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+					if (typeof sqlite.exec === "function") {
+						sqlite.exec(sql);
+					} else {
+						sqlite.run(sql);
+					}
+				} catch (fileError) {
+					console.warn(`Failed to apply migration ${file} to local db:`, fileError);
+					hasError = true;
 				}
 			}
-			console.log("Local SQLite migrations applied successfully.");
+			if (!hasError) {
+				console.log("Local SQLite migrations applied successfully.");
+			}
 		}
 	} catch (error) {
-		console.warn("Failed to apply migrations to local db:", error);
+		console.warn("Error reading migrations directory:", error);
 	}
-
-	return drizzleBun(sqlite, { schema });
 }

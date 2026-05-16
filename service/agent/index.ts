@@ -4,7 +4,7 @@ import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { resolveEnv } from "./src/config/env";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubWebhookHandler } from "./src/handlers/webhook";
-import { authApp } from "./src/handlers/auth";
+import { freeeApp } from "./src/handlers/freee";
 
 const app = new Hono();
 
@@ -26,8 +26,8 @@ app.get("/", (c) => {
 // GitHub Webhook のエンドポイント
 app.post("/webhook/github", githubWebhookHandler);
 
-// 認証系のエンドポイント
-app.route("/auth", authApp);
+// Freee関連のエンドポイント
+app.route("/freee", freeeApp);
 
 export default {
 	async fetch(

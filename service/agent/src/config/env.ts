@@ -24,3 +24,19 @@ export function getBotName(env: Record<string, string | undefined>): string {
 		typeof process !== "undefined" && process.env.NODE_ENV !== "production";
 	return resolvedEnv.BOT_NAME || (isLocal ? "test.kkyosuke.ai" : "kkyosuke.ai");
 }
+
+export function getFreeeConfig(env: Record<string, string | undefined>) {
+	const resolvedEnv = resolveEnv(env);
+	const appUrl = resolvedEnv.APP_URL || "http://localhost:3000";
+	const config = {
+		clientId: resolvedEnv.FREEE_CLIENT_ID || "",
+		clientSecret: resolvedEnv.FREEE_CLIENT_SECRET || "",
+		redirectUri: `${appUrl}/freee/auth/callback`,
+	};
+
+	if (!config.clientId || !config.redirectUri) {
+		throw Error("Freee credentials are not configured");
+	}
+
+	return config
+}
