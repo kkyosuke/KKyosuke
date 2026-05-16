@@ -1,5 +1,6 @@
 import { availableCommands } from "./index";
 import type { SlackEventRequest, SlackMentionContext } from "./types";
+import { executeWithReaction } from "./utils";
 
 export const routeMentionEvent = async (req: SlackEventRequest) => {
 	const payload = req.payload as {
@@ -40,7 +41,7 @@ export const routeMentionEvent = async (req: SlackEventRequest) => {
 		);
 		if (isTriggered) {
 			console.log(`[SlackRouter] Executing command: ${command.name}`);
-			await command.execute(ctx);
+			await executeWithReaction(ctx, command);
 			return;
 		}
 	}
