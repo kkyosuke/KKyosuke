@@ -1,5 +1,5 @@
 {
-	"name": "github-app",
+	"name": "agent",
 	"module": "index.ts",
 	"type": "module",
 	"private": true,
