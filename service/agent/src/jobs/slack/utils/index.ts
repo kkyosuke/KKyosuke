@@ -1,4 +1,4 @@
-import type { SlackMentionCommand, SlackMentionContext } from "./types";
+import type { SlackMentionCommand, SlackMentionContext } from "../types";
 
 export const executeWithReaction = async (
 	ctx: SlackMentionContext,
