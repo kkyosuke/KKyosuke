@@ -4,8 +4,11 @@ display_information:
   background_color: "#473b45"
 features:
   bot_user:
-    display_name: cf-worker-test-app
+    display_name: kyosuke.ai
     always_online: true
+  app_home:
+    messages_tab_enabled: true
+    messages_tab_read_only_enabled: false
   shortcuts:
     - name: Hey Cloudflare Wokers!
       type: global
@@ -24,12 +27,14 @@ oauth_config:
       - chat:write
       - chat:write.public
       - commands
+      - im:history
   pkce_enabled: false
 settings:
   event_subscriptions:
     request_url: https://local.kyosuke.dev/slack/
     bot_events:
       - app_mention
+      - message.im
   interactivity:
     is_enabled: true
     request_url: https://local.kyosuke.dev/slack/
