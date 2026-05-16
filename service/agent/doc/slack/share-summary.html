@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>週次進捗まとめ (share-summary) 仕様書</title>
+  
+  <!-- Mermaid.js for Sequence Diagrams -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true});</script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .diagram-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 2rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.875rem;
+    }
+    ul, ol {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>週次進捗まとめ機能 (share-summary) 仕様書</h1>
+  
+  <h2>概要 (Overview)</h2>
+  <p>Slack上でBot宛てにメンションを送ることで、今週および先週の進捗データをD1データベースから取得し、LLM（AI）を用いて個人ごとに週次の進捗まとめを作成・投稿する機能です。先週と今週の比較（比率）、全体のまとめ、および来週へのアクション（頑張り）を生成し、該当メンバーへのメンション付きでSlackへ通知します。</p>
+
+  <h2>トリガー情報</h2>
+  <ul>
+    <li><strong>App Mention (Botへのメンション)</strong>
+      <ul>
+        <li>キーワード: <code>@kyosuke.ai 今週の進捗をまとめて</code></li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2>処理フロー (Sequence Diagram)</h2>
+  <div class="diagram-container">
+    <div class="mermaid">
+      sequenceDiagram
+        autonumber
+        actor User as ユーザー
+        participant Slack as Slack
+        participant Worker as Cloudflare Worker<br/>(slack-cloudflare-workers)
+        participant D1 as D1 Database<br/>(AI_KYOSUKE_DB)
+        participant LLM as LLM API
+        
+        User->>Slack: 「@kyosuke.ai 今週の進捗をまとめて」とメンション
+        Slack->>Worker: app_mention リクエスト
+        Worker->>Slack: 処理開始通知（🔄 今週の進捗をまとめています...）
+        
+        Note over Worker,LLM: バックグラウンド非同期処理
+        
+        Worker->>Worker: 今週・先週の対象期間（日付範囲）を計算
+        
+        Worker->>D1: 今週分と先週分のデータを取得 (SELECT)
+        D1-->>Worker: 個人ごとの進捗データ一覧を返却
+        
+        Worker->>LLM: 取得したデータを基に要約リクエスト<br/>（個人ごとに先週・今週の比率、まとめ、来週の頑張りを作成）
+        LLM-->>Worker: 個人ごとのまとめテキスト (JSON等) を返却
+        
+        Worker->>Worker: 返却されたデータをSlack用メッセージに整形<br/>（対象者へのメンション `<@USER_ID>` を付与）
+        
+        Worker->>Slack: API: chat.postMessage<br/>(チャンネルにまとめ結果を投稿)
+        Slack-->>User: メンション付きで個人ごとの週次まとめを閲覧
+    </div>
+  </div>
+
+  <h2>主要な処理詳細</h2>
+  
+  <h3>1. トリガーと即時応答</h3>
+  <p>メンションイベントを受け取ると、Slack APIの3秒ルールに対応するため、ユーザーに対して「進捗をまとめています...」等の処理開始メッセージを即座に返し、実際の集計処理は非同期で実行します。</p>
+
+  <h3>2. 対象期間の計算とDBからのデータ取得</h3>
+  <p>実行された日付を基準にして「今週」と「先週」の開始日・終了日を算出します。算出された日付範囲を用いて、D1データベースの進捗データから今週分および先週分のデータを取得します。</p>
+
+  <h3>3. AIによる要約と分析</h3>
+  <p>取得した今週・先週のデータをLLMに渡し、以下の項目を個人ごとに算出・要約させます。</p>
+  <ul>
+    <li><strong>先週と今週の比率:</strong> 進捗や評価スコアの変動（例: 先週比120%など）</li>
+    <li><strong>まとめ:</strong> 今週の具体的な成果や活動内容の要約</li>
+    <li><strong>来週の頑張り:</strong> 今週の結果を踏まえた、来週に向けたアクションプランや目標</li>
+  </ul>
+
+  <h3>4. Slackへの通知とメンション</h3>
+  <p>AIによって生成されたまとめ情報を、Slackのメッセージフォーマットに整形します。その際、必ず対象者のSlack IDを用いて <code>&lt;@USER_ID&gt;</code> の形式でメンションを含め、該当者が自身のまとめに気づきやすいように投稿します。</p>
+
+</body>
+</html>
