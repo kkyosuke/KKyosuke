@@ -21,3 +21,17 @@ In a separate terminal, start the cloudflared tunnel to expose your local server
 ```bash
 cloudflared tunnel run --token <token>
 ```
+
+## Database Migrations
+
+To apply database changes to the local development environment:
+
+```bash
+bunx wrangler d1 migrations apply ai_kyosuke --local
+```
+
+To apply database changes to the production (Cloudflare) environment:
+
+```bash
+bunx wrangler d1 migrations apply ai_kyosuke --remote
+```
