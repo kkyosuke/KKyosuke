@@ -19,16 +19,36 @@ export class SqliteDatabaseClient implements DatabaseClient {
 
 	private initialize() {
 		if (!this.db) return;
-		this.db.run(`
-			CREATE TABLE IF NOT EXISTS progress_summaries (
-				id TEXT PRIMARY KEY,
-				user_id TEXT,
-				target_date TEXT,
-				progress_percent INTEGER,
-				evaluation_score INTEGER,
-				summary_text TEXT
-			)
-		`);
+		try {
+			const fsMod = "node:fs";
+			const pathMod = "node:path";
+			// biome-ignore lint/suspicious/noExplicitAny: bypass require
+			const fs = require(fsMod) as any;
+			// biome-ignore lint/suspicious/noExplicitAny: bypass require
+			const path = require(pathMod) as any;
+
+			const migrationsDir = path.resolve(process.cwd(), "migrations");
+			if (fs.existsSync(migrationsDir)) {
+				const files = fs
+					.readdirSync(migrationsDir)
+					.filter((f: string) => f.endsWith(".sql"))
+					.sort();
+
+				for (const file of files) {
+					const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+					if (typeof this.db.exec === "function") {
+						this.db.exec(sql);
+					} else {
+						this.db.run(sql);
+					}
+				}
+				console.log("Local SQLite migrations applied successfully.");
+			} else {
+				console.warn("Migrations directory not found at:", migrationsDir);
+			}
+		} catch (error) {
+			console.warn("Failed to apply migrations to local db:", error);
+		}
 	}
 
 	async insertProgressSummary(summary: ProgressSummary): Promise<void> {
@@ -38,7 +58,7 @@ export class SqliteDatabaseClient implements DatabaseClient {
 		}
 
 		const query = this.db.query(
-			"INSERT INTO progress_summaries (id, user_id, target_date, progress_percent, evaluation_score, summary_text) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+			"INSERT INTO progress_summaries (id, user_id, target_date, progress_percent, evaluation_score, summary_text) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT(user_id, target_date) DO UPDATE SET progress_percent = excluded.progress_percent, evaluation_score = excluded.evaluation_score, summary_text = excluded.summary_text",
 		);
 		query.run(
 			summary.id,
