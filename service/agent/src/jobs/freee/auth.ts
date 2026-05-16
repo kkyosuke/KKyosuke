@@ -5,6 +5,7 @@ import { saveUserToken } from "../../datasource/db/userToken";
 import { getDatabaseClient } from "../../lib/db";
 import { createFreeeClient } from "../../lib/freee/index";
 import { publishHomeView } from "../slack/app-home/index";
+import { saveAccessTokenToKV } from "./utils/token";
 
 export async function handleFreeeAuthStart(
 	c: Context<{ Bindings: Record<string, string | undefined> }>,
@@ -140,9 +141,11 @@ export async function handleFreeeAuthCallback(
 			? new Date(Date.now() + tokenRes.expires_in * 1000).toISOString()
 			: null;
 
-		// データベースにアクセストークンとリフレッシュトークンを保存
+		// データベースにはリフレッシュトークンのみ保存
 		await saveUserToken(db, userId, "freee", "refresh_token", tokenRes.refresh_token, expiresAt);
-		await saveUserToken(db, userId, "freee", "access_token", tokenRes.access_token, expiresAt);
+
+		// KVにアクセストークンを保存 (TTL 10分)
+		await saveAccessTokenToKV(c.env, userId, tokenRes.access_token);
 
 		// 連携が完了したのでSlackのホームタブを更新する
 		await publishHomeView(userId, c.env as any);

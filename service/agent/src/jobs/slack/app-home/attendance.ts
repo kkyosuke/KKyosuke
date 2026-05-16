@@ -11,7 +11,7 @@ export async function buildAttendanceBlocks(
 	userId: string,
 	env: Record<string, string | undefined>,
 ): Promise<AnyHomeTabBlock[]> {
-	const freeeToken = await getUserTokenByType(db, userId, "freee", "access_token");
+	const freeeToken = await getUserTokenByType(db, userId, "freee", "refresh_token");
 
 	let state: AttendanceState = "not_linked";
 

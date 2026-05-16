@@ -9,6 +9,10 @@ import {
 	summaryShortcutLazy,
 } from "../jobs/slack/save-summary";
 
+import { getDatabaseClient } from "../lib/db";
+import { recordAttendance } from "../jobs/freee/attendance";
+import { publishHomeView } from "../jobs/slack/app-home";
+
 export interface CustomAppEnv extends SlackEdgeAppEnv {
 	AI_KYOSUKE_DB: D1Database;
 }
@@ -27,6 +31,25 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		// ボタンに `url` が設定されているため、ブラウザは自動的に開きます。
 		// ここでは単にアクションを受け取ったことを処理（実質的に何もしない）するだけでOKです。
 	});
+
+	const handleAttendanceAction = (type: "clock_in" | "clock_out" | "break_begin" | "break_end") => async ({ context, payload, env }: any) => {
+		const userId = payload.user.id;
+		try {
+			const db = getDatabaseClient(env as any);
+			await recordAttendance(db, userId, env as any, type);
+			await publishHomeView(userId, env as any);
+		} catch (e: any) {
+			console.error(`Freee attendance error (${type}):`, e);
+			// Ideally post an ephemeral message to the user here
+		}
+	};
+
+	app.action("freee_clock_in_office", handleAttendanceAction("clock_in"));
+	app.action("freee_clock_in_remote", handleAttendanceAction("clock_in"));
+	app.action("freee_clock_in_other", handleAttendanceAction("clock_in"));
+	app.action("freee_clock_out", handleAttendanceAction("clock_out"));
+	app.action("freee_break_begin", handleAttendanceAction("break_begin"));
+	app.action("freee_break_end", handleAttendanceAction("break_end"));
 
 	return app;
 }
