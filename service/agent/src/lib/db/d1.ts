@@ -1,5 +1,5 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import type { DatabaseClient, ProgressSummary } from "./client";
+import type { DatabaseClient, ProgressSummary, UserToken } from "./client";
 
 export class D1DatabaseClient implements DatabaseClient {
 	constructor(private db: D1Database) {}
@@ -31,5 +31,16 @@ export class D1DatabaseClient implements DatabaseClient {
 			.all<ProgressSummary>();
 
 		return result.results || [];
+	}
+
+	async getUserToken(userId: string, type: string): Promise<UserToken | null> {
+		const result = await this.db
+			.prepare(
+				"SELECT id, user_id as userId, type, token, expires_at as expiresAt, created_at as createdAt, updated_at as updatedAt FROM user_tokens WHERE user_id = ? AND type = ?",
+			)
+			.bind(userId, type)
+			.first<UserToken>();
+
+		return result;
 	}
 }

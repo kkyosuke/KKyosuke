@@ -1,4 +1,4 @@
-import type { DatabaseClient, ProgressSummary } from "./client";
+import type { DatabaseClient, ProgressSummary, UserToken } from "./client";
 
 export class SqliteDatabaseClient implements DatabaseClient {
 	// biome-ignore lint/suspicious/noExplicitAny: To avoid bundle errors, we use any for sqlite database reference
@@ -83,5 +83,17 @@ export class SqliteDatabaseClient implements DatabaseClient {
 		);
 		const results = query.all(startDate, endDate) as ProgressSummary[];
 		return results || [];
+	}
+
+	async getUserToken(userId: string, type: string): Promise<UserToken | null> {
+		if (!this.db) {
+			console.warn("DB client not initialized. Returning null.");
+			return null;
+		}
+		const query = this.db.query(
+			"SELECT id, user_id as userId, type, token, expires_at as expiresAt, created_at as createdAt, updated_at as updatedAt FROM user_tokens WHERE user_id = ? AND type = ?",
+		);
+		const result = query.get(userId, type) as UserToken | undefined;
+		return result || null;
 	}
 }

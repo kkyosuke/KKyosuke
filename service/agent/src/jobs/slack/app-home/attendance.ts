@@ -1,8 +1,20 @@
 import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
+import type { DatabaseClient } from "../../../lib/db";
 
 export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break";
 
-export function buildAttendanceBlocks(state: AttendanceState): AnyHomeTabBlock[] {
+export async function buildAttendanceBlocks(
+	db: DatabaseClient,
+	userId: string,
+): Promise<AnyHomeTabBlock[]> {
+	const freeeToken = await db.getUserToken(userId, "freee");
+	let state: AttendanceState = "not_linked";
+
+	if (freeeToken) {
+		// TODO: freee APIから現在の打刻状態を取得する
+		state = "not_clocked_in";
+	}
+
 	const blocks: AnyHomeTabBlock[] = [
 		{
 			type: "header",

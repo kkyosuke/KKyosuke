@@ -7,10 +7,21 @@ export interface ProgressSummary {
 	summaryText: string;
 }
 
+export interface UserToken {
+	id: string;
+	userId: string;
+	type: string;
+	token: string;
+	expiresAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
 export interface DatabaseClient {
 	insertProgressSummary(summary: ProgressSummary): Promise<void>;
 	getProgressSummariesByDateRange(
 		startDate: string,
 		endDate: string,
 	): Promise<ProgressSummary[]>;
+	getUserToken(userId: string, type: string): Promise<UserToken | null>;
 }

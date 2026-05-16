@@ -1,22 +1,21 @@
 import type { SlackApp, SlackEdgeAppEnv, AnyHomeTabBlock } from "slack-cloudflare-workers";
+import type { CustomAppEnv } from "../../../handlers/slack";
 import { buildWelcomeBlocks } from "./welcome";
-import { buildAttendanceBlocks, type AttendanceState } from "./attendance";
+import { buildAttendanceBlocks } from "./attendance";
+import { getDatabaseClient } from "../../../lib/db";
 
-export const appHomeOpened = async ({
-	context,
-	payload,
-}: Parameters<Parameters<SlackApp<SlackEdgeAppEnv>["event"]>[1]>[0]) => {
+export const appHomeOpened = async (
+	req: Parameters<Parameters<SlackApp<CustomAppEnv>["event"]>[1]>[0],
+) => {
+	const { context, payload, env } = req;
 	const p = payload as { user?: string; event?: { user?: string } };
 	const userId = p.user || p.event?.user || "";
 
-	// TODO: D1データベースから連携状態を取得し、freee APIから現在の打刻状態を取得する
-	// UI確認用に仮のステータスを指定しています。
-	// "not_linked" | "not_clocked_in" | "clocked_in" | "on_break" に変更してUIを確認できます。
-	const mockState: AttendanceState = "not_clocked_in";
+	const db = getDatabaseClient(env);
 
 	const blocks: AnyHomeTabBlock[] = [
 		...buildWelcomeBlocks(),
-		...buildAttendanceBlocks(mockState),
+		...(await buildAttendanceBlocks(db, userId)),
 		{
 			type: "divider",
 		},
