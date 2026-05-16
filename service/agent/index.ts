@@ -38,7 +38,9 @@ export default {
 
 		// SlackからのリクエストはSlackAppで処理する
 		if (url.pathname.startsWith("/slack")) {
-			const slackApp = createSlackApp(appEnv);
+			const slackApp = createSlackApp(
+				appEnv as unknown as import("./src/handlers/slack").CustomAppEnv,
+			);
 			return await slackApp.run(request, ctx);
 		}
 

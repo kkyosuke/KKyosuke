@@ -16,6 +16,10 @@ features:
       type: global
       callback_id: hey-cf-workers
       description: Say hi to CF Workers
+    - name: スレッドを進捗として保存
+      type: message
+      callback_id: save-summary
+      description: このスレッドの内容を要約して進捗として保存します
   slash_commands:
     - command: /hey-cf-workers
       url: https://local.kyosuke.dev/slack/
@@ -26,9 +30,11 @@ oauth_config:
   scopes:
     bot:
       - app_mentions:read
+      - channels:history
       - chat:write
       - chat:write.public
       - commands
+      - groups:history
       - im:history
   pkce_enabled: false
 settings:

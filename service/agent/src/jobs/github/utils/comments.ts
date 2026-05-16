@@ -1,4 +1,4 @@
-import { createReviewComment } from "../../lib/github";
+import { createReviewComment } from "../../../lib/github";
 
 /**
  * インラインコメントをGitHub PRに投稿します。

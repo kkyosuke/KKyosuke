@@ -4,8 +4,8 @@ export const appHomeOpened = async ({
 	context,
 	payload,
 }: Parameters<Parameters<SlackApp<SlackEdgeAppEnv>["event"]>[1]>[0]) => {
-	// @ts-ignore
-	const userId = payload.user || payload.event?.user;
+	const p = payload as { user?: string; event?: { user?: string } };
+	const userId = p.user || p.event?.user || "";
 	await context.client.views.publish({
 		user_id: userId,
 		view: {

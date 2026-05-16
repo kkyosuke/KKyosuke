@@ -1,6 +1,6 @@
-import { createPlaceholderComment, updateComment } from "../../lib/github";
+import { createPlaceholderComment, updateComment } from "../../../lib/github";
+import type { KVBinding } from "../../common/types";
 import { getInProgressComment, type ProgressStep } from "../constants";
-import type { KVBinding } from "../types";
 
 /**
  * レビューの進捗状況をコメントで管理します。

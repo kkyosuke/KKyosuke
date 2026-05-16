@@ -2,7 +2,10 @@ import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
 
 import { getBotName } from "../config/env";
-import { MAX_COMMENTS_PER_THREAD, MAX_REVIEW_THREADS } from "../jobs/constants";
+import {
+	MAX_COMMENTS_PER_THREAD,
+	MAX_REVIEW_THREADS,
+} from "../jobs/github/constants";
 
 export interface ReviewThread {
 	id: string;

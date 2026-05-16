@@ -2,7 +2,7 @@ import {
 	calculateCost,
 	generateReReview,
 	REVIEW_MODEL_NAME,
-} from "../../lib/llm";
+} from "../../../lib/llm";
 import { getNextStepsSection } from "../constants";
 
 /**

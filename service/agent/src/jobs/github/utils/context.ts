@@ -1,9 +1,9 @@
-import { REPOSITORY_GUIDELINES_PATH } from "../../config";
+import { REPOSITORY_GUIDELINES_PATH } from "../../../config";
 import {
 	getPullRequest,
 	getPullRequestDiff,
 	getRepositoryFile,
-} from "../../lib/github";
+} from "../../../lib/github";
 
 /**
  * PRの情報や差分、ガイドラインを取得します。

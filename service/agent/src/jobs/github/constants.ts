@@ -1,4 +1,4 @@
-import pkg from "../../package.json" with { type: "json" };
+import pkg from "../../../package.json" with { type: "json" };
 
 /**
  * 進捗ステップの型定義
