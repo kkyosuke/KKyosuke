@@ -72,11 +72,11 @@
   </ol>
 
   <h2>動作環境・制約</h2>
-  <p>本システムは <strong>Cloudflare Workers</strong> 上で動作する <strong>Hono</strong> アプリケーションです。<br>
-  そのため、Node.js環境に強く依存する <code>@slack/bolt</code> フレームワークは使用せず、以下の構成で実装を行います。</p>
+  <p>本システムは <strong>Cloudflare Workers</strong> 上で動作しています。<br>
+  Node.js環境に強く依存する公式の <code>@slack/bolt</code> は使用せず、Cloudflare Workers 用に最適化されたBolt風フレームワーク <strong><code>slack-cloudflare-workers</code></strong> を採用します。</p>
   <ul>
-    <li><strong>Web API</strong>: <code>@slack/web-api</code> パッケージを利用して、Slackへのメッセージ送信を行います。</li>
-    <li><strong>Events/Interactivity API</strong>: Hono内に専用のエンドポイント (<code>POST /webhook/slack</code>) を作成し、Slackからのリクエスト（コマンドやメンション）を受信・処理します。</li>
+    <li><strong>書き心地はBoltと同じ</strong>: モーダルやアクション（Block Kit）などの複雑なUIも、Boltと全く同じ感覚で実装できます。</li>
+    <li><strong>Honoとの共存</strong>: 既存のHonoのルーティング（GitHub Webhook用）と並行して、Slackからのリクエストを処理できます。</li>
   </ul>
 
   <h2>アーキテクチャ構成 (Architecture)</h2>
@@ -84,11 +84,7 @@
   <h3>1. ディレクトリ構成の追加・変更箇所</h3>
   <pre><code>src/
  ├── handlers/
- │    └── slack.ts         # SlackからのWebhookを受け付けるHonoハンドラー
- ├── lib/
- │    └── slack/
- │         ├── client.ts   # @slack/web-api の初期化とラッパー関数
- │         └── verify.ts   # Slackからのリクエストの署名検証ロジック
+ │    └── slack.ts         # slack-cloudflare-workers のアプリ初期化・ハンドラー定義
  └── config/
       └── env.ts           # Slack用の環境変数定義を追加</code></pre>
 
@@ -128,9 +124,8 @@ sequenceDiagram
   <p>Slackのコマンド（例: <code>/pr-review &lt;PRのURL&gt;</code>）から任意のPRに対してレビューをトリガーします。</p>
   <ol>
     <li>ユーザーがSlackで <code>/pr-review https://github.com/owner/repo/pull/123</code> を実行。</li>
-    <li>Slackから <code>POST /webhook/slack</code> エンドポイントへリクエストが飛ぶ。</li>
-    <li><code>verify.ts</code> で <code>SLACK_SIGNING_SECRET</code> を用いてリクエストを検証。</li>
-    <li>Honoハンドラがリクエストを受け付け、対象のPR情報をパース。</li>
+    <li>Slackから <code>POST /slack/events</code> エンドポイントへリクエストが飛ぶ。</li>
+    <li><code>slack-cloudflare-workers</code> がリクエストを検証し、対象のPR情報をパース。</li>
     <li>Slackへ即座に「レビューを開始します...」と応答を返す。</li>
     <li>バックグラウンド処理（<code>ctx.waitUntil</code> または Queue）でレビュー処理を続行し、完了後に結果をSlackへスレッド返信。</li>
   </ol>
@@ -144,7 +139,7 @@ sequenceDiagram
     participant GitHub
     participant AI
     User->>Slack: /pr-review &lt;URL&gt;
-    Slack->>App: POST /webhook/slack
+    Slack->>App: POST /slack/events
     App-->>Slack: 200 OK "レビューを開始します"
     App->>GitHub: PR詳細取得
     App->>AI: レビュー実行
@@ -157,9 +152,9 @@ sequenceDiagram
   <h2>今後のステップ (Next Steps)</h2>
   <ol>
     <li><strong>Slack App の作成</strong>: Slack APIコンソールでアプリを作成し、TokenとSecretを取得する。</li>
-    <li><strong>依存関係の追加</strong>: <code>bun add @slack/web-api</code></li>
+    <li><strong>依存関係の追加</strong>: <code>bun add slack-cloudflare-workers</code></li>
     <li><strong>環境変数の設定</strong>: <code>.env</code> と Cloudflare ダッシュボードに環境変数を追加。</li>
-    <li><strong>コア機能の実装</strong>: <code>src/lib/slack/client.ts</code> の実装および、通知機能の組み込みから着手する。</li>
+    <li><strong>コア機能の実装</strong>: HonoとSlackAppの統合から着手する。</li>
   </ol>
 
 </body>

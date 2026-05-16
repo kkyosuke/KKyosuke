@@ -1,0 +1,35 @@
+display_information:
+  name: kyosuke.ai
+  description: ai of kyosuke
+  background_color: "#473b45"
+features:
+  bot_user:
+    display_name: cf-worker-test-app
+    always_online: true
+  shortcuts:
+    - name: Hey Cloudflare Wokers!
+      type: global
+      callback_id: hey-cf-workers
+      description: Say hi to CF Workers
+  slash_commands:
+    - command: /hey-cf-workers
+      url: https://XXX.trycloudflare.com/
+      description: Say hi to CF Workers
+      usage_hint: Say hi to CF Workers
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - chat:write
+      - chat:write.public
+      - commands
+settings:
+  event_subscriptions:
+    request_url: https://XXX.trycloudflare.com/
+    bot_events:
+      - app_mention
+  interactivity:
+    is_enabled: true
+    request_url: https://XXX.trycloudflare.com/
+    message_menu_options_url: https://XXX.trycloudflare.com/
+    
