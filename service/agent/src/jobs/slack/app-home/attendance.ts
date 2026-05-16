@@ -48,7 +48,7 @@ export async function buildAttendanceBlocks(
 				value: "link_freee",
 				action_id: "freee_link_action",
 				style: "primary",
-				url: `${resolveEnv(env).APP_URL || "http://localhost:3000"}/freee/auth?user_id=${userId}`,
+				url: `${resolveEnv(env).APP_URL || "http://localhost:3000"}/freee/auth/start?user_id=${userId}`,
 			},
 		});
 		return blocks;
