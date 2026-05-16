@@ -101,7 +101,7 @@
         Worker->>LLM: 取得したデータを基に要約リクエスト<br/>（個人ごとに先週・今週の比率、まとめ、来週の頑張りを作成）
         LLM-->>Worker: 個人ごとのまとめテキスト (JSON等) を返却
         
-        Worker->>Worker: 返却されたデータをSlack用メッセージに整形<br/>（対象者へのメンション `<@USER_ID>` を付与）
+        Worker->>Worker: 返却されたデータをSlack用メッセージに整形<br/>（対象者へのメンション `&lt;@USER_ID&gt;` を付与）
         
         Worker->>Slack: API: chat.postMessage<br/>(チャンネルにまとめ結果を投稿)
         Slack-->>User: メンション付きで個人ごとの週次まとめを閲覧
