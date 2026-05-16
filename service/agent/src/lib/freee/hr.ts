@@ -1,17 +1,13 @@
 export interface FreeeMeResponse {
-	user: {
+	id: number;
+	companies: {
 		id: number;
-		email: string;
-		display_name: string;
-		first_name: string;
-		last_name: string;
-		companies: {
-			id: number;
-			name: string;
-			role: string;
-			employee_id: number;
-		}[];
-	};
+		name: string;
+		role: string;
+		external_cid?: string;
+		employee_id: number;
+		display_name?: string;
+	}[];
 }
 
 export async function getMe(accessToken: string): Promise<FreeeMeResponse> {

@@ -45,13 +45,13 @@ export async function recordAttendance(
 
 	// 2. Get company_id and employee_id
 	const me = await freee.hr.getMe(accessToken);
-	if (!me.user.companies || me.user.companies.length === 0) {
+	if (!me.companies || me.companies.length === 0) {
 		throw new Error("User does not belong to any companies in freee HR.");
 	}
 
 	// Assuming the user belongs to the first company.
 	// For users belonging to multiple companies, this might need selection.
-	const company = me.user.companies?.[0];
+	const company = me.companies?.[0];
 	if (!company) {
 		throw new Error("Company not found for the user in freee HR.");
 	}
