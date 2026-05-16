@@ -156,17 +156,10 @@ async function executeSummary(
 		}
 
 		// Slackのスレッドに結果を返信
-		const replyText = summaryData.summary
-			.map(
-				(s) =>
-					`*<@${s.user_id}>*\n*【対象日】* ${summaryData.target_date}\n*【進捗】* ${s.progress}%\n*【評価】* ${s.score}/5\n*【要約】*\n${s.text}`,
-			)
-			.join("\n\n---\n\n");
-
 		await client.chat.postMessage({
 			channel: channel_id,
 			thread_ts: thread_ts,
-			text: `📝 このスレッドのやり取りを進捗としてまとめて保存しました！\n\n${replyText}`,
+			text: `📝 このスレッドのやり取りを進捗としてまとめて保存しました！`,
 		});
 	} catch (error) {
 		console.error("executeSummary Error:", error);
