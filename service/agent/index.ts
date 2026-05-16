@@ -1,5 +1,8 @@
 import { Hono } from "hono";
 import { githubWebhookHandler } from "./src/handlers/webhook";
+import { SlackApp } from "slack-cloudflare-workers";
+import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
+import type { ExecutionContext } from "@cloudflare/workers-types";
 
 const app = new Hono();
 
@@ -26,19 +29,52 @@ if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {
 	import("smee-client")
 		.then((SmeeClientModule) => {
 			const SmeeClient = SmeeClientModule.default || SmeeClientModule;
+
+			// GitHub Webhook 用のSmee
 			const smeeSourceUrl =
-				process.env.SMEE_SOURCE_URL || "https://smee.io/mIMVWFjE10f5eUgC";
+				process.env.SMEE_SOURCE_URL_GITHUB || "https://smee.io/mIMVWFjE10f5eUgC";
 			const smee = new SmeeClient({
 				source: smeeSourceUrl,
 				target: "http://localhost:3000/webhook/github",
 				logger: console,
 			});
 			smee.start();
-			console.log(`[Dev] Smee client started forwarding from ${smeeSourceUrl}`);
+			console.log(`[Dev] GitHub Smee client started forwarding from ${smeeSourceUrl}`);
+
+			// Slack用のSmee
+			const slackSmeeSourceUrl = process.env.SMEE_SOURCE_URL_SLACK;
+			if (slackSmeeSourceUrl) {
+				const slackSmee = new SmeeClient({
+					source: slackSmeeSourceUrl,
+					target: "http://localhost:3000/slack/events",
+					logger: console,
+				});
+				slackSmee.start();
+				console.log(`[Dev] Slack Smee client started forwarding from ${slackSmeeSourceUrl}`);
+			} else {
+				console.log("[Dev] SLACK_SMEE_SOURCE_URL is not set. Slack Smee client will not start.");
+			}
 		})
 		.catch((_e) => {
 			console.warn("[Dev] smee-client is not installed or failed to start.");
 		});
 }
 
-export default app;
+export default {
+	async fetch(
+		request: Request,
+		env: SlackEdgeAppEnv,
+		ctx: ExecutionContext,
+	): Promise<Response> {
+		const url = new URL(request.url);
+
+		// SlackからのリクエストはSlackAppで処理する
+		if (url.pathname.startsWith("/slack")) {
+			const slackApp = new SlackApp({ env });
+			return await slackApp.run(request, ctx);
+		}
+
+		// それ以外はHonoで処理する
+		return await app.fetch(request, env as any, ctx);
+	},
+};
