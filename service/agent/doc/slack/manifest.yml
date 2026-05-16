@@ -13,9 +13,10 @@ features:
       description: Say hi to CF Workers
   slash_commands:
     - command: /hey-cf-workers
-      url: https://XXX.trycloudflare.com/
+      url: https://local.kyosuke.dev/slack/
       description: Say hi to CF Workers
       usage_hint: Say hi to CF Workers
+      should_escape: false
 oauth_config:
   scopes:
     bot:
@@ -23,13 +24,17 @@ oauth_config:
       - chat:write
       - chat:write.public
       - commands
+  pkce_enabled: false
 settings:
   event_subscriptions:
-    request_url: https://XXX.trycloudflare.com/
+    request_url: https://local.kyosuke.dev/slack/
     bot_events:
       - app_mention
   interactivity:
     is_enabled: true
-    request_url: https://XXX.trycloudflare.com/
-    message_menu_options_url: https://XXX.trycloudflare.com/
-    
+    request_url: https://local.kyosuke.dev/slack/
+    message_menu_options_url: https://local.kyosuke.dev/slack/
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
+  is_mcp_enabled: false
