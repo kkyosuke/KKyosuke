@@ -2,11 +2,17 @@ import { eq, and } from "drizzle-orm";
 import type { DBClient } from "../../lib/db";
 import { userTokens } from "../../lib/db/schema";
 
-export async function getUserTokenByType(db: DBClient, userId: string, type: string) {
+export async function getUserTokenByType(db: DBClient, userId: string, service: string, type: string) {
 	const result = await db
 		.select()
 		.from(userTokens)
-		.where(and(eq(userTokens.userId, userId), eq(userTokens.type, type)));
+		.where(
+			and(
+				eq(userTokens.userId, userId),
+				eq(userTokens.service, service),
+				eq(userTokens.type, type),
+			),
+		);
 	
 	return result.length > 0 ? result[0] : null;
 }
@@ -14,11 +20,12 @@ export async function getUserTokenByType(db: DBClient, userId: string, type: str
 export async function saveUserToken(
 	db: DBClient,
 	userId: string,
+	service: string,
 	type: string,
 	token: string,
 	expiresAt: string | null,
 ) {
-	const existing = await getUserTokenByType(db, userId, type);
+	const existing = await getUserTokenByType(db, userId, service, type);
 	const now = new Date().toISOString();
 
 	if (existing) {
@@ -34,6 +41,7 @@ export async function saveUserToken(
 		await db.insert(userTokens).values({
 			id: crypto.randomUUID(),
 			userId,
+			service,
 			type,
 			token,
 			expiresAt,

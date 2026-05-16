@@ -2,13 +2,16 @@ import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
 import type { DBClient } from "../../../lib/db";
 import { getUserTokenByType } from "../../../datasource/db/userToken";
 
+import { resolveEnv } from "../../../config/env";
+
 export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break";
 
 export async function buildAttendanceBlocks(
 	db: DBClient,
 	userId: string,
+	env: Record<string, string | undefined>,
 ): Promise<AnyHomeTabBlock[]> {
-	const freeeToken = await getUserTokenByType(db, userId, "freee");
+	const freeeToken = await getUserTokenByType(db, userId, "freee", "access_token");
 
 	let state: AttendanceState = "not_linked";
 
@@ -45,6 +48,7 @@ export async function buildAttendanceBlocks(
 				value: "link_freee",
 				action_id: "freee_link_action",
 				style: "primary",
+				url: `${resolveEnv(env).APP_URL || "http://localhost:3000"}/freee/auth?user_id=${userId}`,
 			},
 		});
 		return blocks;

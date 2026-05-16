@@ -7,15 +7,19 @@ import { getDatabaseClient } from "../../../lib/db";
 export const appHomeOpened = async (
 	req: Parameters<Parameters<SlackApp<CustomAppEnv>["event"]>[1]>[0],
 ) => {
-	const { context, payload, env } = req;
+	const { payload, env } = req;
 	const p = payload as { user?: string; event?: { user?: string } };
 	const userId = p.user || p.event?.user || "";
 
+	await publishHomeView(userId, env);
+};
+
+export async function publishHomeView(userId: string, env: CustomAppEnv) {
 	const db = getDatabaseClient(env);
 
 	const blocks: AnyHomeTabBlock[] = [
 		...buildWelcomeBlocks(),
-		...(await buildAttendanceBlocks(db, userId)),
+		...(await buildAttendanceBlocks(db, userId, env as any)),
 		{
 			type: "divider",
 		},
@@ -31,11 +35,21 @@ export const appHomeOpened = async (
 		},
 	];
 
-	await context.client.views.publish({
-		user_id: userId,
-		view: {
-			type: "home",
-			blocks,
-		},
-	});
-};
+	const slackToken = env.SLACK_BOT_TOKEN;
+	if (slackToken) {
+		await fetch("https://slack.com/api/views.publish", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${slackToken}`,
+			},
+			body: JSON.stringify({
+				user_id: userId,
+				view: {
+					type: "home",
+					blocks,
+				},
+			}),
+		});
+	}
+}
