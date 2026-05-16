@@ -3,13 +3,14 @@ import type { Context } from "hono";
 import { env } from "hono/adapter";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import { getBotName } from "../config/env";
-import { replyCommand, reReviewCommand } from "../jobs";
+import type { KVBinding } from "../jobs/common/types";
+import { replyCommand, reReviewCommand } from "../jobs/github";
 import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
 	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
-} from "../jobs/constants";
-import type { CommandContext, KVBinding } from "../jobs/types";
-import { routeCommentCommand } from "../routers/commentRouter";
+} from "../jobs/github/constants";
+import { routeCommentCommand } from "../jobs/github/router";
+import type { CommandContext } from "../jobs/github/types";
 
 type WebhookPayload = {
 	action?: string;

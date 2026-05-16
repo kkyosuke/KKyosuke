@@ -2,13 +2,13 @@ import {
 	createReplyForReviewComment,
 	type ReviewThread,
 	resolveReviewThread,
-} from "../../lib/github";
+} from "../../../lib/github";
 import {
 	calculateCost,
 	evaluateReviewThread,
 	REVIEW_MODEL_NAME,
-} from "../../lib/llm";
-import threadInstruction from "../../prompts/re-review/thread-instruction.md" with {
+} from "../../../lib/llm";
+import threadInstruction from "../../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
 

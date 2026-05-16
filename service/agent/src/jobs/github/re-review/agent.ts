@@ -1,11 +1,13 @@
-import { createReview, getReviewThreads } from "../../lib/github";
-import { REVIEW_MODEL_NAME } from "../../lib/llm";
-import instruction from "../../prompts/re-review/instruction.md" with {
+import { createReview, getReviewThreads } from "../../../lib/github";
+import { REVIEW_MODEL_NAME } from "../../../lib/llm";
+import instruction from "../../../prompts/re-review/instruction.md" with {
 	type: "text",
 };
-import template from "../../prompts/re-review/template.md" with {
+import template from "../../../prompts/re-review/template.md" with {
 	type: "text",
 };
+import { formatTemplate } from "../../common/utils/format";
+import { withKvLock } from "../../common/utils/lock";
 import {
 	getUnresolvedThreadsSkippedReport,
 	type ProgressStep,
@@ -15,8 +17,6 @@ import {
 	buildInstructionWithGuidelines,
 	fetchReviewContext,
 } from "../utils/context";
-import { formatTemplate } from "../utils/format";
-import { withKvLock } from "../utils/lock";
 import { ReviewProgressManager } from "../utils/progress";
 import { updateTriggerCommentState } from "../utils/trigger-comment";
 import { performFullReReview } from "./full-review";

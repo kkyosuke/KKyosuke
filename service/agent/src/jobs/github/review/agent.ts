@@ -1,20 +1,22 @@
-import { createReview, getIssueComments } from "../../lib/github";
+import { createReview, getIssueComments } from "../../../lib/github";
 import {
 	calculateCost,
 	generateCodeReview,
 	REVIEW_MODEL_NAME,
-} from "../../lib/llm";
-import instruction from "../../prompts/review/instruction.md" with {
+} from "../../../lib/llm";
+import instruction from "../../../prompts/review/instruction.md" with {
 	type: "text",
 };
-import template from "../../prompts/review/template.md" with { type: "text" };
+import template from "../../../prompts/review/template.md" with {
+	type: "text",
+};
+import { createFeedbackTable, formatTemplate } from "../../common/utils/format";
 import { getNextStepsSection, type ProgressStep } from "../constants";
 import { postInlineComments } from "../utils/comments";
 import {
 	buildInstructionWithGuidelines,
 	fetchReviewContext,
 } from "../utils/context";
-import { createFeedbackTable, formatTemplate } from "../utils/format";
 import { ReviewProgressManager } from "../utils/progress";
 
 /**

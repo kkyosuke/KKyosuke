@@ -1,5 +1,5 @@
-import type { CommandContext } from "../jobs";
-import { availableCommands } from "../jobs";
+import { availableCommands } from "./index";
+import type { CommandContext } from "./types";
 
 export const routeCommentCommand = async (ctx: CommandContext) => {
 	const triggerMention = `@${ctx.botName}`;
