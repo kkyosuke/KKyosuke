@@ -3,7 +3,7 @@ import { getUserTokenByType, saveUserToken } from "../../../datasource/db/userTo
 import { createFreeeClient } from "../../../lib/freee/index";
 import { getFreeeConfig } from "../../../config/env";
 
-import { getAccessTokenFromKV, saveAccessTokenToKV } from "../utils/token";
+import { getAccessTokenFromKV, saveAccessTokenToKV, ensureFreeeAccessToken } from "../utils/token";
 
 export async function recordAttendance(
 	db: DBClient,
@@ -11,37 +11,14 @@ export async function recordAttendance(
 	env: Record<string, string | undefined>,
 	type: "clock_in" | "clock_out" | "break_begin" | "break_end",
 ) {
-	// 1. Get user access token from KV
-	let accessToken = await getAccessTokenFromKV(env, userId);
+	// 1. Get user access token from KV or refresh it
+	let accessToken = await ensureFreeeAccessToken(db, env as any, userId);
+	if (!accessToken) {
+		throw new Error("Failed to authenticate with freee. Please re-link your account.");
+	}
 
 	const config = getFreeeConfig(env as any);
 	const freee = createFreeeClient(config);
-
-	if (!accessToken) {
-		// Try to refresh token
-		const refreshToken = await getUserTokenByType(db, userId, "freee", "refresh_token");
-		if (!refreshToken) {
-			throw new Error("Freee is not linked for this user (no refresh token).");
-		}
-
-		try {
-			const tokenRes = await freee.refreshAccessToken(refreshToken);
-			accessToken = tokenRes.access_token;
-			
-			const expiresAt = tokenRes.expires_in
-				? new Date(Date.now() + tokenRes.expires_in * 1000).toISOString()
-				: null;
-
-			// Save new refresh token to DB
-			await saveUserToken(db, userId, "freee", "refresh_token", tokenRes.refresh_token, expiresAt);
-			
-			// Save new access token to KV
-			await saveAccessTokenToKV(env, userId, accessToken);
-		} catch (e) {
-			console.error("Failed to refresh token", e);
-			throw new Error("Failed to authenticate with freee. Please re-link your account.");
-		}
-	}
 
 	// 2. Get company_id and employee_id
 	const me = await freee.hr.getMe(accessToken);

@@ -2,7 +2,9 @@ import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
 import type { DBClient } from "../../../lib/db";
 import { getUserTokenByType } from "../../../datasource/db/userToken";
 
-import { resolveEnv } from "../../../config/env";
+import { resolveEnv, getFreeeConfig } from "../../../config/env";
+import { ensureFreeeAccessToken } from "../../freee/utils/token";
+import { createFreeeClient } from "../../../lib/freee/index";
 
 export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break";
 
@@ -16,8 +18,33 @@ export async function buildAttendanceBlocks(
 	let state: AttendanceState = "not_linked";
 
 	if (freeeToken) {
-		// TODO: freee APIから現在の打刻状態を取得する
-		state = "not_clocked_in";
+		state = "not_clocked_in"; // default if linked
+		const accessToken = await ensureFreeeAccessToken(db, env, userId);
+		if (accessToken) {
+			try {
+				const config = getFreeeConfig(env as any);
+				const freee = createFreeeClient(config);
+				
+				const me = await freee.hr.getMe(accessToken);
+				const company = me.companies?.[0];
+				if (company) {
+					const typesRes = await freee.hr.getAvailableTimeClockTypes(accessToken, company.employee_id, company.id);
+					const available = typesRes.available_types;
+
+					if (available.includes("clock_in")) {
+						state = "not_clocked_in";
+					} else if (available.includes("clock_out")) {
+						if (available.includes("break_end")) {
+							state = "on_break";
+						} else {
+							state = "clocked_in";
+						}
+					}
+				}
+			} catch (e) {
+				console.error("Failed to fetch freee attendance state", e);
+			}
+		}
 	}
 
 	const blocks: AnyHomeTabBlock[] = [

@@ -67,7 +67,6 @@ export function buildAuthFunction(config: FreeeConfig) {
 				client_id: config.clientId,
 				client_secret: config.clientSecret,
 				refresh_token: refreshToken,
-				redirect_uri: config.redirectUri,
 			});
 
 			const response = await fetch(

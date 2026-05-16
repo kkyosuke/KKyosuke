@@ -70,3 +70,34 @@ export async function postTimeClock(
 		);
 	}
 }
+
+export interface AvailableTimeClocksResponse {
+	available_types: ("clock_in" | "break_begin" | "break_end" | "clock_out")[];
+	base_date: string;
+}
+
+export async function getAvailableTimeClockTypes(
+	accessToken: string,
+	employeeId: number,
+	companyId: number,
+): Promise<AvailableTimeClocksResponse> {
+	const response = await fetch(
+		`https://api.freee.co.jp/hr/api/v1/employees/${employeeId}/time_clocks/available_types?company_id=${companyId}`,
+		{
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				Accept: "application/json",
+			},
+		},
+	);
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(
+			`Failed to get available time clock types from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		);
+	}
+
+	return (await response.json()) as AvailableTimeClocksResponse;
+}
