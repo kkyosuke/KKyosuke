@@ -96,58 +96,7 @@
     <li><code>SLACK_NOTIFICATION_CHANNEL</code>: 通知を送信するデフォルトのチャンネルID（オプション）</li>
   </ul>
 
-  <h2>機能詳細とシーケンス</h2>
 
-  <h3>A. 通知機能（PRレビュー完了時の通知）</h3>
-  <p>AIによるレビューが完了した際に、結果のサマリーをSlackへ送信します。</p>
-  <ol>
-    <li><code>src/jobs/review/agent.ts</code> または <code>src/handlers/webhook.ts</code> の処理完了部分。</li>
-    <li><code>slackClient.chat.postMessage</code> を呼び出し、対象のPRリンク、レビューステータス（Approve / Request Changes など）、およびサマリーを通知。</li>
-  </ol>
-  <p><strong>シーケンスイメージ:</strong></p>
-  <div class="diagram-container">
-    <div class="mermaid">
-sequenceDiagram
-    participant GitHub
-    participant App as CF Workers (Hono)
-    participant AI as Claude / Gemini
-    participant Slack
-    GitHub->>App: Webhook (pull_request.opened)
-    App->>AI: PR Diff 解析
-    AI-->>App: レビュー結果
-    App->>GitHub: レビューコメント投稿
-    App->>Slack: 通知「PR #XX のレビューが完了しました」
-    </div>
-  </div>
-
-  <h3>B. インタラクティブ機能（Slash Command によるレビュー指示）</h3>
-  <p>Slackのコマンド（例: <code>/pr-review &lt;PRのURL&gt;</code>）から任意のPRに対してレビューをトリガーします。</p>
-  <ol>
-    <li>ユーザーがSlackで <code>/pr-review https://github.com/owner/repo/pull/123</code> を実行。</li>
-    <li>Slackから <code>POST /slack/events</code> エンドポイントへリクエストが飛ぶ。</li>
-    <li><code>slack-cloudflare-workers</code> がリクエストを検証し、対象のPR情報をパース。</li>
-    <li>Slackへ即座に「レビューを開始します...」と応答を返す。</li>
-    <li>バックグラウンド処理（<code>ctx.waitUntil</code> または Queue）でレビュー処理を続行し、完了後に結果をSlackへスレッド返信。</li>
-  </ol>
-  <p><strong>シーケンスイメージ:</strong></p>
-  <div class="diagram-container">
-    <div class="mermaid">
-sequenceDiagram
-    participant User
-    participant Slack
-    participant App as CF Workers (Hono)
-    participant GitHub
-    participant AI
-    User->>Slack: /pr-review &lt;URL&gt;
-    Slack->>App: POST /slack/events
-    App-->>Slack: 200 OK "レビューを開始します"
-    App->>GitHub: PR詳細取得
-    App->>AI: レビュー実行
-    AI-->>App: 結果
-    App->>GitHub: レビューコメント投稿
-    App->>Slack: "レビューが完了しました (リンク)"
-    </div>
-  </div>
 
   <h2>今後のステップ (Next Steps)</h2>
   <ol>
