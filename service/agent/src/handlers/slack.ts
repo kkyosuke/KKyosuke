@@ -12,6 +12,7 @@ import {
 import { getDatabaseClient } from "../lib/db";
 import { recordAttendance } from "../jobs/freee/attendance";
 import { publishHomeView } from "../jobs/slack/app-home";
+import { notifyAttendanceToSlack } from "../jobs/slack/attendance-notification";
 
 export interface CustomAppEnv extends SlackEdgeAppEnv {
 	AI_KYOSUKE_DB: D1Database;
@@ -38,6 +39,7 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 			const db = getDatabaseClient(env as any);
 			await recordAttendance(db, userId, env as any, type);
 			await publishHomeView(userId, env as any);
+			await notifyAttendanceToSlack(context.client, userId, type);
 		} catch (e: any) {
 			console.error(`Freee attendance error (${type}):`, e);
 			// Ideally post an ephemeral message to the user here
