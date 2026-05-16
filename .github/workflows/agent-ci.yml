@@ -1,4 +1,4 @@
-name: GitHub App CI
+name: Agent CI
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./service/github-app
+        working-directory: ./service/agent
 
     steps:
       - name: Checkout repository
@@ -20,12 +20,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: './service/github-app/.nvmrc'
+          node-version-file: './service/agent/.nvmrc'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: './service/github-app/.bun-version'
+          bun-version-file: './service/agent/.bun-version'
 
       - name: Install dependencies
         run: bun install
