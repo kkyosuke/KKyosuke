@@ -6,7 +6,17 @@ import { resolveEnv, getFreeeConfig } from "../../../config/env";
 import { ensureFreeeAccessToken } from "../../freee/utils/token";
 import { createFreeeClient } from "../../../lib/freee/index";
 
-export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break";
+export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break" | "clocked_out";
+
+function getTodayJST(): string {
+	const formatter = new Intl.DateTimeFormat("ja-JP", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+	return formatter.format(new Date()).replace(/\//g, "-");
+}
 
 export async function buildAttendanceBlocks(
 	db: DBClient,
@@ -28,17 +38,21 @@ export async function buildAttendanceBlocks(
 				const me = await freee.hr.getMe(accessToken);
 				const company = me.companies?.[0];
 				if (company) {
+					const today = getTodayJST();
+					const clocks = await freee.hr.getTimeClocks(accessToken, company.employee_id, company.id, today, today);
+					const lastClock = clocks.length > 0 ? clocks[clocks.length - 1] : null;
+
 					const typesRes = await freee.hr.getAvailableTimeClockTypes(accessToken, company.employee_id, company.id);
 					const available = typesRes.available_types;
 
-					if (available.includes("clock_in")) {
+					if (available.includes("break_end")) {
+						state = "on_break";
+					} else if (lastClock && lastClock.type === "clock_out") {
+						state = "clocked_out";
+					} else if (available.includes("clock_out") || available.includes("break_begin")) {
+						state = "clocked_in";
+					} else if (available.includes("clock_in")) {
 						state = "not_clocked_in";
-					} else if (available.includes("clock_out")) {
-						if (available.includes("break_end")) {
-							state = "on_break";
-						} else {
-							state = "clocked_in";
-						}
 					}
 				}
 			} catch (e) {
@@ -151,7 +165,7 @@ export async function buildAttendanceBlocks(
 					type: "button",
 					text: {
 						type: "plain_text",
-						text: "終了",
+						text: "退勤",
 						emoji: true,
 					},
 					value: "clock_out",
@@ -182,18 +196,15 @@ export async function buildAttendanceBlocks(
 					action_id: "freee_break_end",
 					style: "primary",
 				},
-				{
-					type: "button",
-					text: {
-						type: "plain_text",
-						text: "終了",
-						emoji: true,
-					},
-					value: "clock_out",
-					action_id: "freee_clock_out",
-					style: "danger",
-				},
 			],
+		});
+	} else if (state === "clocked_out") {
+		blocks.push({
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "現在の状態: *退勤済*\n\n今日も一日お疲れさまでした。",
+			},
 		});
 	}
 

@@ -5,11 +5,11 @@ import { createFreeeClient } from "../../../lib/freee/index";
 import { getFreeeConfig } from "../../../config/env";
 
 /**
- * KVにfreeeのアクセストークンを保存します (TTL 10分)
+ * KVにfreeeのアクセストークンを保存します
  */
-export async function saveAccessTokenToKV(env: Record<string, any>, userId: string, accessToken: string): Promise<void> {
+export async function saveAccessTokenToKV(env: Record<string, any>, userId: string, accessToken: string, expiresIn: number = 600): Promise<void> {
 	const kv = getKVClient(env);
-	await kv.put(`freee:access_token:${userId}`, accessToken, { expirationTtl: 600 });
+	await kv.put(`freee:access_token:${userId}`, accessToken, { expirationTtl: expiresIn });
 }
 
 /**
@@ -41,7 +41,7 @@ export async function ensureFreeeAccessToken(db: DBClient, env: Record<string, a
 		const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
 		await saveUserToken(db, userId, "freee", "refresh_token", tokenRes.refresh_token, expiresAt);
-		await saveAccessTokenToKV(env, userId, accessToken);
+		await saveAccessTokenToKV(env, userId, accessToken, tokenRes.expires_in);
 		
 		return accessToken;
 	} catch (e) {

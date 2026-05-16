@@ -36,15 +36,9 @@ export async function postTimeClock(
 	type: "clock_in" | "clock_out" | "break_begin" | "break_end",
 	baseDate?: string,
 ): Promise<void> {
-	// Freee uses "rest_start" and "rest_end" instead of break_begin/break_end? Actually let me double check.
-	// Earlier search said: "rest_start" (休憩開始), "rest_end" (休憩終了). So let's map it.
-	let freeeType = type as string;
-	if (type === "break_begin") freeeType = "rest_start";
-	if (type === "break_end") freeeType = "rest_end";
-
 	const body: any = {
 		company_id: companyId,
-		type: freeeType,
+		type: type,
 	};
 	if (baseDate) {
 		body.base_date = baseDate;
@@ -100,4 +94,41 @@ export async function getAvailableTimeClockTypes(
 	}
 
 	return (await response.json()) as AvailableTimeClocksResponse;
+}
+
+export interface TimeClock {
+	id: number;
+	date: string;
+	type: "clock_in" | "break_begin" | "break_end" | "clock_out";
+	datetime: string;
+	original_datetime: string;
+	note: string;
+}
+
+export async function getTimeClocks(
+	accessToken: string,
+	employeeId: number,
+	companyId: number,
+	fromDate: string,
+	toDate: string,
+): Promise<TimeClock[]> {
+	const response = await fetch(
+		`https://api.freee.co.jp/hr/api/v1/employees/${employeeId}/time_clocks?company_id=${companyId}&from_date=${fromDate}&to_date=${toDate}`,
+		{
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				Accept: "application/json",
+			},
+		},
+	);
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(
+			`Failed to get time clocks from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		);
+	}
+
+	return (await response.json()) as TimeClock[];
 }
