@@ -52,10 +52,7 @@ export async function performFullReReview(
 			.join("\n")}\n`;
 	}
 
-	const nextSteps = getNextStepsSection(
-		newFeedbacks,
-		hasUnresolvedBotThreads,
-	);
+	const nextSteps = getNextStepsSection(newFeedbacks, hasUnresolvedBotThreads);
 	const nextStepsSection = nextSteps.nextStepsSection;
 	const requiresAction = nextSteps.requiresAction;
 

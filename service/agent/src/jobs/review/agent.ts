@@ -109,9 +109,7 @@ export async function runReviewAgent(
 		const feedbacks = reviewResult.feedback.slice(0, 10);
 		const feedbackTable = createFeedbackTable(feedbacks);
 
-		const { nextStepsSection, requiresAction } = getNextStepsSection(
-			feedbacks,
-		);
+		const { nextStepsSection, requiresAction } = getNextStepsSection(feedbacks);
 
 		const markdownReport = formatTemplate(template, {
 			botName,

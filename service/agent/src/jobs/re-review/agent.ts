@@ -107,18 +107,15 @@ export async function runReReviewAgent(
 			);
 
 			// 未解決のBotスレッドがあるか確認
-			const unresolvedBotThreads = (reviewThreads || []).filter(
-				(thread) => {
-					if (thread.isResolved || !thread.comments?.nodes?.length)
-						return false;
-					const firstCommentAuthor =
-						thread.comments?.nodes?.[0]?.author?.login?.toLowerCase() || "";
-					return (
-						firstCommentAuthor.includes("bot") ||
-						firstCommentAuthor.includes("ai")
-					);
-				},
-			);
+			const unresolvedBotThreads = (reviewThreads || []).filter((thread) => {
+				if (thread.isResolved || !thread.comments?.nodes?.length) return false;
+				const firstCommentAuthor =
+					thread.comments?.nodes?.[0]?.author?.login?.toLowerCase() || "";
+				return (
+					firstCommentAuthor.includes("bot") ||
+					firstCommentAuthor.includes("ai")
+				);
+			});
 			const hasUnresolvedBotThreads = unresolvedBotThreads.length > 0;
 
 			let nextStepsSection = "";

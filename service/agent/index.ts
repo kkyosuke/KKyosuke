@@ -1,8 +1,9 @@
-import { Hono } from "hono";
-import { githubWebhookHandler } from "./src/handlers/webhook";
-import { SlackApp } from "slack-cloudflare-workers";
-import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import type { ExecutionContext } from "@cloudflare/workers-types";
+import { Hono } from "hono";
+import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
+import { resolveEnv } from "./src/config/env";
+import { createSlackApp } from "./src/handlers/slack";
+import { githubWebhookHandler } from "./src/handlers/webhook";
 
 const app = new Hono();
 
@@ -32,16 +33,20 @@ export default {
 	): Promise<Response> {
 		const url = new URL(request.url);
 
-		// Bun等での実行時は env が存在しない、または別のオブジェクト(Server)の場合があるため process.env をフォールバックとして使う
-		const appEnv = (env && (env as any).SLACK_BOT_TOKEN) ? env : (typeof process !== "undefined" ? process.env : env) as unknown as SlackEdgeAppEnv;
+		// 実行環境（Cloudflare / ローカル）の違いを吸収して env を取得する
+		const appEnv = resolveEnv(env) as unknown as SlackEdgeAppEnv;
 
 		// SlackからのリクエストはSlackAppで処理する
 		if (url.pathname.startsWith("/slack")) {
-			const slackApp = new SlackApp({ env: appEnv });
+			const slackApp = createSlackApp(appEnv);
 			return await slackApp.run(request, ctx);
 		}
 
 		// それ以外はHonoで処理する
-		return await app.fetch(request, appEnv as any, ctx);
+		return await app.fetch(
+			request,
+			appEnv as unknown as Record<string, unknown>,
+			ctx,
+		);
 	},
 };

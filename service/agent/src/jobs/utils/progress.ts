@@ -99,7 +99,9 @@ export class ReviewProgressManager {
 	}
 
 	async checkCancellation() {
-		const kv = (this.env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as KVBinding | undefined;
+		const kv = (this.env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as
+			| KVBinding
+			| undefined;
 		if (!kv) return;
 
 		const cancelKey = `cancel-review-${this.owner}-${this.repo}-${this.pullNumber}`;

@@ -137,7 +137,9 @@ export async function githubWebhookHandler(c: Context) {
 		case "issue_comment.edited": {
 			console.log(`[Webhook] Processing ${eventAction} event`);
 			if (!payload.issue?.pull_request || !payload.comment) {
-				console.log(`[Webhook] Ignored comment: not a pull request issue or missing comment`);
+				console.log(
+					`[Webhook] Ignored comment: not a pull request issue or missing comment`,
+				);
 				break;
 			}
 
@@ -245,7 +247,9 @@ export async function githubWebhookHandler(c: Context) {
 			const repo = payload.repository.name;
 			const pullNumber = payload.pull_request.number;
 
-			const kv = (e as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as KVBinding | undefined;
+			const kv = (e as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as
+				| KVBinding
+				| undefined;
 			if (kv) {
 				const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
 				console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);

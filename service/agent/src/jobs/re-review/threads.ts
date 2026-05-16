@@ -1,7 +1,7 @@
 import {
 	createReplyForReviewComment,
-	resolveReviewThread,
 	type ReviewThread,
+	resolveReviewThread,
 } from "../../lib/github";
 import {
 	calculateCost,
@@ -45,7 +45,8 @@ export async function processReviewThreads(
 			const firstComment = comments?.[0];
 			if (!firstComment) return;
 
-			const firstCommentAuthor = firstComment.author?.login?.toLowerCase() || "";
+			const firstCommentAuthor =
+				firstComment.author?.login?.toLowerCase() || "";
 			const isBotThread =
 				firstCommentAuthor.includes("bot") || firstCommentAuthor.includes("ai");
 
