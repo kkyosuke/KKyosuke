@@ -69,4 +69,19 @@ export class SqliteDatabaseClient implements DatabaseClient {
 			summary.summaryText,
 		);
 	}
+	async getProgressSummariesByDateRange(
+		startDate: string,
+		endDate: string,
+	): Promise<ProgressSummary[]> {
+		if (!this.db) {
+			console.warn("DB client not initialized. Returning empty array.");
+			return [];
+		}
+
+		const query = this.db.query(
+			"SELECT id, user_id as userId, target_date as targetDate, progress_percent as progressPercent, evaluation_score as evaluationScore, summary_text as summaryText FROM progress_summaries WHERE target_date >= ? AND target_date <= ? ORDER BY target_date ASC",
+		);
+		const results = query.all(startDate, endDate) as ProgressSummary[];
+		return results || [];
+	}
 }

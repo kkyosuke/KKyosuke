@@ -1,7 +1,7 @@
 import type { SlackApp } from "slack-cloudflare-workers";
-import type { CustomAppEnv } from "../../handlers/slack";
-import { getDatabaseClient } from "../../lib/db";
-import { summarizeThread } from "../../lib/llm/summary";
+import type { CustomAppEnv } from "../../../handlers/slack";
+import { getDatabaseClient } from "../../../lib/db";
+import { summarizeThread } from "../../../lib/llm/summary";
 
 type ShortcutHandlerArgs = Parameters<SlackApp<CustomAppEnv>["shortcut"]>;
 type AckFn = ShortcutHandlerArgs[1];
@@ -33,7 +33,7 @@ export const summaryShortcutLazy: LazyFn = async (req) => {
 	}
 };
 
-import type { SlackMentionCommand } from "./types";
+import type { SlackMentionCommand } from "../types";
 
 export const summaryMentionCommand: SlackMentionCommand = {
 	name: "Summary",
@@ -41,13 +41,6 @@ export const summaryMentionCommand: SlackMentionCommand = {
 	execute: async (ctx) => {
 		try {
 			console.log("[SlackRouter] Executing summaryMentionCommand");
-
-			// 処理開始を通知
-			await ctx.req.context.client.chat.postMessage({
-				channel: ctx.channelId,
-				thread_ts: ctx.threadTs,
-				text: "🔄 スレッドの内容を要約して進捗として保存しています...",
-			});
 
 			await executeSummary(
 				ctx.req.context.client,
@@ -159,7 +152,7 @@ async function executeSummary(
 		await client.chat.postMessage({
 			channel: channel_id,
 			thread_ts: thread_ts,
-			text: `📝 このスレッドのやり取りを進捗としてまとめて保存しました！`,
+			text: `📝 進捗をまとめて保存しました！`,
 		});
 	} catch (error) {
 		console.error("executeSummary Error:", error);

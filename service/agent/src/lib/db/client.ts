@@ -9,4 +9,8 @@ export interface ProgressSummary {
 
 export interface DatabaseClient {
 	insertProgressSummary(summary: ProgressSummary): Promise<void>;
+	getProgressSummariesByDateRange(
+		startDate: string,
+		endDate: string,
+	): Promise<ProgressSummary[]>;
 }

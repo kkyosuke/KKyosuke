@@ -19,4 +19,17 @@ export class D1DatabaseClient implements DatabaseClient {
 			)
 			.run();
 	}
+	async getProgressSummariesByDateRange(
+		startDate: string,
+		endDate: string,
+	): Promise<ProgressSummary[]> {
+		const result = await this.db
+			.prepare(
+				"SELECT id, user_id as userId, target_date as targetDate, progress_percent as progressPercent, evaluation_score as evaluationScore, summary_text as summaryText FROM progress_summaries WHERE target_date >= ? AND target_date <= ? ORDER BY target_date ASC",
+			)
+			.bind(startDate, endDate)
+			.all<ProgressSummary>();
+
+		return result.results || [];
+	}
 }
