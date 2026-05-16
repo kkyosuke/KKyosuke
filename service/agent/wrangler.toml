@@ -17,8 +17,9 @@ invocation_logs = false
 enabled = false
 
 # Define standard variables (secrets must be uploaded via wrangler secret put)
-# [vars]
-# You can add non-sensitive environment variables here
+[vars]
+APP_URL = "https://api.kyosuke.dev"
+FREEE_CLIENT_ID = "728756541310561"
 
 [[kv_namespaces]]
 binding = "KKYOSUKE_GITHUB_APP_KV"
