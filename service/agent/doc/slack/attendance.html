@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>freee打刻機能 仕様書</title>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    .status-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 1rem 0;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    ul, ol {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .button-badge {
+      display: inline-block;
+      background: #e5e7eb;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+      margin-right: 0.4rem;
+      border: 1px solid #d1d5db;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>freee打刻機能 (Homeタブ) 仕様書</h1>
+  
+  <h2>概要</h2>
+  <p>Slackの「Homeタブ」を利用して、freee人事労務への打刻（出勤・退勤・休憩など）を直接行えるようにする機能の仕様です。</p>
+
+  <h2>表示・状態遷移の仕様</h2>
+  
+  <p>Slackからのイベント <code>app_home_opened</code>（Homeタブを開いたタイミング）をトリガーとして画面を更新し、ユーザーのfreee連携状態によって表示内容を切り替えます。</p>
+
+  <h3>1. freee連携ができていない場合</h3>
+  <div class="status-container">
+    <ul>
+      <li><strong>表示内容:</strong> 「freee連携ボタン」を表示する。</li>
+      <li><strong>状態管理:</strong> ユーザーの連携状態はデータベース（DB）で管理し、DB上に該当ユーザーの連携情報が存在しない場合はこの画面を表示する。</li>
+    </ul>
+  </div>
+
+  <h3>2. freee連携ができている場合</h3>
+  <div class="status-container">
+    <p>現在の勤務状態を <strong>freeeのAPIから取得</strong> して表示し、その状態に応じたアクションボタンを表示します。</p>
+
+    <h4>状態別の表示内容とボタン</h4>
+    <ul>
+      <li><strong>現在の状態: 未出勤</strong>
+        <p>
+          表示するアクション:<br>
+          <span class="button-badge">出社【本社】</span>
+          <span class="button-badge">出社【リモート】</span>
+          <span class="button-badge">出社【任意文字】</span>
+        </p>
+        <p style="font-size: 0.9em; color: #4b5563; margin-top: 0.2rem;">
+          ※「出社【任意文字】」ボタンをクリックした場合は、場所やメモを入力できる<strong>モーダル（ポップアップ画面）</strong>が開き、入力した内容を含めて打刻処理を行います。
+        </p>
+      </li>
+      <li><strong>現在の状態: 出勤（勤務中）</strong>
+        <p>
+          表示するアクション:<br>
+          <span class="button-badge">休憩</span>
+          <span class="button-badge">終了</span>
+        </p>
+      </li>
+      <li><strong>現在の状態: 休憩中</strong>
+        <p>
+          表示するアクション:<br>
+          <span class="button-badge">再開</span>
+          <span class="button-badge">終了</span>
+        </p>
+      </li>
+    </ul>
+  </div>
+
+  <div class="bg-note">
+    <strong>備考</strong><br>
+    本ドキュメントはUIおよび状態遷移の仕様のみを定義しています。<br>
+    （実装は行わず、設計の整理としてまとめています）
+  </div>
+
+</body>
+</html>
