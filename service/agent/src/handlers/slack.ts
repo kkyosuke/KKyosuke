@@ -33,22 +33,22 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		// ここでは単にアクションを受け取ったことを処理（実質的に何もしない）するだけでOKです。
 	});
 
-	const handleAttendanceAction = (type: "clock_in" | "clock_out" | "break_begin" | "break_end") => async ({ context, payload, env }: any) => {
+	const handleAttendanceAction = (type: "clock_in" | "clock_out" | "break_begin" | "break_end", notificationType?: string) => async ({ context, payload, env }: any) => {
 		const userId = payload.user.id;
 		try {
 			const db = getDatabaseClient(env as any);
 			await recordAttendance(db, userId, env as any, type);
 			await publishHomeView(userId, env as any);
-			await notifyAttendanceToSlack(context.client, userId, type);
+			await notifyAttendanceToSlack(context.client, userId, notificationType || type);
 		} catch (e: any) {
 			console.error(`Freee attendance error (${type}):`, e);
 			// Ideally post an ephemeral message to the user here
 		}
 	};
 
-	app.action("freee_clock_in_office", handleAttendanceAction("clock_in"));
-	app.action("freee_clock_in_remote", handleAttendanceAction("clock_in"));
-	app.action("freee_clock_in_other", handleAttendanceAction("clock_in"));
+	app.action("freee_clock_in_office", handleAttendanceAction("clock_in", "clock_in_office"));
+	app.action("freee_clock_in_remote", handleAttendanceAction("clock_in", "clock_in_remote"));
+	app.action("freee_clock_in_other", handleAttendanceAction("clock_in", "clock_in_other"));
 	app.action("freee_clock_out", handleAttendanceAction("clock_out"));
 	app.action("freee_break_begin", handleAttendanceAction("break_begin"));
 	app.action("freee_break_end", handleAttendanceAction("break_end"));

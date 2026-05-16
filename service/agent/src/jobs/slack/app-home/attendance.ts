@@ -132,12 +132,13 @@ export async function buildAttendanceBlocks(
 					type: "button",
 					text: {
 						type: "plain_text",
-						text: "出社【その他】",
+						text: "出社【その他】(未実装)",
 						emoji: true,
 					},
 					value: "clock_in_other",
 					action_id: "freee_clock_in_other",
-				},
+					disabled: true,
+				} as any,
 			],
 		});
 	} else if (state === "clocked_in") {

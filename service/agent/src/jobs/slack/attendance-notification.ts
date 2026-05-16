@@ -13,16 +13,19 @@ function getTodayJST(): string {
 }
 
 const actionTypeToText: Record<string, string> = {
-	clock_in: "出勤",
-	clock_out: "退勤",
-	break_begin: "休憩",
-	break_end: "再開",
+	clock_in: "出勤しました :accelhack:",
+	clock_in_office: "出勤しました :accelhack:",
+	clock_in_remote: "出勤しました :home:",
+	clock_in_other: "出勤しました :briefcase:",
+	clock_out: "退勤しました :wave:",
+	break_begin: "休憩に入ります :doughnut:",
+	break_end: "再開します :rocket:",
 };
 
 export async function notifyAttendanceToSlack(
 	client: SlackAPIClient,
 	userId: string,
-	type: "clock_in" | "clock_out" | "break_begin" | "break_end"
+	type: string
 ) {
 	try {
 		const today = getTodayJST();
@@ -50,7 +53,7 @@ export async function notifyAttendanceToSlack(
 			await client.chat.postMessage({
 				channel: ATTENDANCE_CHANNEL_ID,
 				thread_ts: targetMessage.ts,
-				text: `<@${userId}> さんが ${actionText} しました。`,
+				text: `<@${userId}> さんが ${actionText}`,
 			});
 		} else {
 			console.log("Today's attendance thread not found.");
