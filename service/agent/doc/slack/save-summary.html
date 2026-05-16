@@ -107,7 +107,7 @@
         Worker->>Slack: API: conversations.replies (スレッド履歴取得)
         Slack-->>Worker: メッセージ履歴を返却
         
-        Worker->>Worker: メッセージを整形<br/>(`[日時] <@User>: Text`形式)
+        Worker->>Worker: メッセージを整形<br/>(`[日時] &lt;@User>: Text`形式)
         
         Worker->>LLM: 要約リクエスト (複数人分をまとめて依頼)
         LLM-->>Worker: ユーザーごとの進捗・評価・要約 (JSON) を返却

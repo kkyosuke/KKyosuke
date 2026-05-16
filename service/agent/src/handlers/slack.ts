@@ -3,11 +3,8 @@ import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { SlackApp } from "slack-cloudflare-workers";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/commands";
 import { appHomeOpened } from "../jobs/slack/events";
-import {
-	summaryShortcutAck,
-	summaryShortcutLazy,
-} from "../jobs/slack/summary";
 import { routeMentionEvent } from "../jobs/slack/router";
+import { summaryShortcutAck, summaryShortcutLazy } from "../jobs/slack/summary";
 
 export interface CustomAppEnv extends SlackEdgeAppEnv {
 	AI_KYOSUKE_DB: D1Database;

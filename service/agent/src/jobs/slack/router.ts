@@ -14,7 +14,9 @@ export const routeMentionEvent = async (req: SlackEventRequest) => {
 	const threadTs = payload.thread_ts || payload.ts;
 
 	if (!channelId || !threadTs) {
-		console.warn("[SlackRouter] Missing channelId or threadTs in mention event");
+		console.warn(
+			"[SlackRouter] Missing channelId or threadTs in mention event",
+		);
 		return;
 	}
 

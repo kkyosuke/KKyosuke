@@ -1,5 +1,6 @@
 import type { SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../handlers/slack";
+import { getDatabaseClient } from "../../lib/db";
 import { summarizeThread } from "../../lib/llm/summary";
 
 type ShortcutHandlerArgs = Parameters<SlackApp<CustomAppEnv>["shortcut"]>;
@@ -136,21 +137,22 @@ async function executeSummary(
 			threadContent,
 		);
 
+		const dbClient = getDatabaseClient(
+			env as unknown as {
+				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
+			},
+		);
 		for (const userSummary of summaryData.summary) {
-			// D1に進捗として保存
+			// D1（またはローカルSQLite）に進捗として保存
 			const id = crypto.randomUUID();
-			await env.AI_KYOSUKE_DB.prepare(
-				"INSERT INTO progress_summaries (id, user_id, target_date, progress_percent, evaluation_score, summary_text) VALUES (?, ?, ?, ?, ?, ?)",
-			)
-				.bind(
-					id,
-					userSummary.user_id,
-					summaryData.target_date,
-					userSummary.progress,
-					userSummary.score,
-					userSummary.text,
-				)
-				.run();
+			await dbClient.insertProgressSummary({
+				id,
+				userId: userSummary.user_id,
+				targetDate: summaryData.target_date,
+				progressPercent: userSummary.progress,
+				evaluationScore: userSummary.score,
+				summaryText: userSummary.text,
+			});
 		}
 
 		// Slackのスレッドに結果を返信
