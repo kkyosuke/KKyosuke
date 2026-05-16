@@ -1,19 +1,20 @@
 import type { D1Database } from "@cloudflare/workers-types";
-import type { DatabaseClient } from "./client";
-import { D1DatabaseClient } from "./d1";
+import { drizzle as drizzleD1 } from "drizzle-orm/d1";
+import * as schema from "./schema";
 
-export * from "./client";
+export * from "./schema";
+
+export type DBClient = ReturnType<typeof getDatabaseClient>;
 
 export function getDatabaseClient(env: {
 	AI_KYOSUKE_DB?: D1Database;
-}): DatabaseClient {
+}) {
 	if (env.AI_KYOSUKE_DB) {
-		return new D1DatabaseClient(env.AI_KYOSUKE_DB);
+		return drizzleD1(env.AI_KYOSUKE_DB, { schema });
 	}
 
 	// ローカル環境等でD1がバインドされていない場合、Bun SQLite実装を動的に利用する
-	// ビルドツールの静的解析を避けるため変数経由で require する
 	const mod = "./sqlite";
-	const { SqliteDatabaseClient } = require(mod);
-	return new SqliteDatabaseClient();
+	const { getLocalDbClient } = require(mod);
+	return getLocalDbClient();
 }

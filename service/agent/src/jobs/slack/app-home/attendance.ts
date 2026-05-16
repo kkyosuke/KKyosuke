@@ -1,13 +1,15 @@
 import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
-import type { DatabaseClient } from "../../../lib/db";
+import type { DBClient } from "../../../lib/db";
+import { getUserTokenByType } from "../../../datasource/db/userToken";
 
 export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break";
 
 export async function buildAttendanceBlocks(
-	db: DatabaseClient,
+	db: DBClient,
 	userId: string,
 ): Promise<AnyHomeTabBlock[]> {
-	const freeeToken = await db.getUserToken(userId, "freee");
+	const freeeToken = await getUserTokenByType(db, userId, "freee");
+
 	let state: AttendanceState = "not_linked";
 
 	if (freeeToken) {

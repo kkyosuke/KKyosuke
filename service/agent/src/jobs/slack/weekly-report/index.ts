@@ -62,15 +62,11 @@ async function executeWeeklyReport(
 			},
 		);
 
+		const { getProgressSummariesByDateRange } = await import("../../../datasource/db/progressSummary");
+
 		// Fetch summaries
-		const lastWeekSummaries = await dbClient.getProgressSummariesByDateRange(
-			lastWeekStartStr,
-			lastWeekEndStr,
-		);
-		const weekBeforeLastSummaries = await dbClient.getProgressSummariesByDateRange(
-			weekBeforeLastStartStr,
-			weekBeforeLastEndStr,
-		);
+		const lastWeekSummaries = await getProgressSummariesByDateRange(dbClient, lastWeekStartStr, lastWeekEndStr);
+		const weekBeforeLastSummaries = await getProgressSummariesByDateRange(dbClient, weekBeforeLastStartStr, weekBeforeLastEndStr);
 
 		if (lastWeekSummaries.length === 0) {
 			await client.chat.postMessage({
@@ -83,9 +79,7 @@ async function executeWeeklyReport(
 
 		// Prepare LLM input
 		const formatSummary = (
-			s: Awaited<
-				ReturnType<typeof dbClient.getProgressSummariesByDateRange>
-			>[number],
+			s: typeof lastWeekSummaries[number],
 		) =>
 			`UserID: <@${s.userId}>, Date: ${s.targetDate}, Progress: ${s.progressPercent}%, Score: ${s.evaluationScore}, Summary: ${s.summaryText}`;
 

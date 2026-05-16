@@ -135,10 +135,12 @@ async function executeSummary(
 				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
 			},
 		);
+		
+		const { saveProgressSummary } = await import("../../../datasource/db/progressSummary");
 		for (const userSummary of summaryData.summary) {
 			// D1（またはローカルSQLite）に進捗として保存
 			const id = crypto.randomUUID();
-			await dbClient.insertProgressSummary({
+			await saveProgressSummary(dbClient, {
 				id,
 				userId: userSummary.user_id,
 				targetDate: summaryData.target_date,
