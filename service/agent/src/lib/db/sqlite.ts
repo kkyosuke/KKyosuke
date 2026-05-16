@@ -1,87 +1,54 @@
-import type { DatabaseClient, ProgressSummary } from "./client";
+import * as schema from "./schema";
 
-export class SqliteDatabaseClient implements DatabaseClient {
-	// biome-ignore lint/suspicious/noExplicitAny: To avoid bundle errors, we use any for sqlite database reference
-	private db: any;
+export function getLocalDbClient() {
+	const mod = "drizzle-orm/bun-sqlite";
+	const sqliteMod = "bun:sqlite";
+	const { drizzle: drizzleBun } = require(mod);
+	const { Database } = require(sqliteMod);
 
-	constructor(filename = "local.db") {
-		try {
-			// 変数経由でrequireすることで、Cloudflare Workersのビルド(esbuild)によるバンドル解決を回避する
-			const mod = "bun:sqlite";
-			// biome-ignore lint/suspicious/noExplicitAny: require return value needs to be bypassed to avoid type issues with dynamic import
-			const { Database } = require(mod) as any;
-			this.db = new Database(filename);
-			this.initialize();
-		} catch (e) {
-			console.warn("bun:sqlite could not be loaded.", e);
-		}
-	}
+	const sqlite = new Database("local.db");
 
-	private initialize() {
-		if (!this.db) return;
-		try {
-			const fsMod = "node:fs";
-			const pathMod = "node:path";
-			// biome-ignore lint/suspicious/noExplicitAny: bypass require
-			const fs = require(fsMod) as any;
-			// biome-ignore lint/suspicious/noExplicitAny: bypass require
-			const path = require(pathMod) as any;
+	initLocalDb(sqlite);
 
-			const migrationsDir = path.resolve(process.cwd(), "migrations");
-			if (fs.existsSync(migrationsDir)) {
-				const files = fs
-					.readdirSync(migrationsDir)
-					.filter((f: string) => f.endsWith(".sql"))
-					.sort();
+	return drizzleBun(sqlite, { schema });
+}
 
-				for (const file of files) {
+// biome-ignore lint/suspicious/noExplicitAny: Any is used dynamically to avoid importing bun modules in worker
+export function initLocalDb(sqlite: any) {
+	try {
+		const fsMod = "node:fs";
+		const pathMod = "node:path";
+		// biome-ignore lint/suspicious/noExplicitAny: bypass require
+		const fs = require(fsMod) as any;
+		// biome-ignore lint/suspicious/noExplicitAny: bypass require
+		const path = require(pathMod) as any;
+
+		const migrationsDir = path.resolve(process.cwd(), "migrations");
+		if (fs.existsSync(migrationsDir)) {
+			const files = fs
+				.readdirSync(migrationsDir)
+				.filter((f: string) => f.endsWith(".sql"))
+				.sort();
+
+			let hasError = false;
+			for (const file of files) {
+				try {
 					const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
-					if (typeof this.db.exec === "function") {
-						this.db.exec(sql);
+					if (typeof sqlite.exec === "function") {
+						sqlite.exec(sql);
 					} else {
-						this.db.run(sql);
+						sqlite.run(sql);
 					}
+				} catch (fileError) {
+					console.warn(`Failed to apply migration ${file} to local db:`, fileError);
+					hasError = true;
 				}
-				console.log("Local SQLite migrations applied successfully.");
-			} else {
-				console.warn("Migrations directory not found at:", migrationsDir);
 			}
-		} catch (error) {
-			console.warn("Failed to apply migrations to local db:", error);
+			if (!hasError) {
+				console.log("Local SQLite migrations applied successfully.");
+			}
 		}
-	}
-
-	async insertProgressSummary(summary: ProgressSummary): Promise<void> {
-		if (!this.db) {
-			console.warn("DB client not initialized. Skipping insert.");
-			return;
-		}
-
-		const query = this.db.query(
-			"INSERT INTO progress_summaries (id, user_id, target_date, progress_percent, evaluation_score, summary_text) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT(user_id, target_date) DO UPDATE SET progress_percent = excluded.progress_percent, evaluation_score = excluded.evaluation_score, summary_text = excluded.summary_text",
-		);
-		query.run(
-			summary.id,
-			summary.userId,
-			summary.targetDate,
-			summary.progressPercent,
-			summary.evaluationScore,
-			summary.summaryText,
-		);
-	}
-	async getProgressSummariesByDateRange(
-		startDate: string,
-		endDate: string,
-	): Promise<ProgressSummary[]> {
-		if (!this.db) {
-			console.warn("DB client not initialized. Returning empty array.");
-			return [];
-		}
-
-		const query = this.db.query(
-			"SELECT id, user_id as userId, target_date as targetDate, progress_percent as progressPercent, evaluation_score as evaluationScore, summary_text as summaryText FROM progress_summaries WHERE target_date >= ? AND target_date <= ? ORDER BY target_date ASC",
-		);
-		const results = query.all(startDate, endDate) as ProgressSummary[];
-		return results || [];
+	} catch (error) {
+		console.warn("Error reading migrations directory:", error);
 	}
 }

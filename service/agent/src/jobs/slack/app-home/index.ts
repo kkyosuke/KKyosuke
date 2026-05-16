@@ -1,45 +1,55 @@
-import type { SlackApp, SlackEdgeAppEnv } from "slack-cloudflare-workers";
+import type { SlackApp, SlackEdgeAppEnv, AnyHomeTabBlock } from "slack-cloudflare-workers";
+import type { CustomAppEnv } from "../../../handlers/slack";
+import { buildWelcomeBlocks } from "./welcome";
+import { buildAttendanceBlocks } from "./attendance";
+import { getDatabaseClient } from "../../../lib/db";
 
-export const appHomeOpened = async ({
-	context,
-	payload,
-}: Parameters<Parameters<SlackApp<SlackEdgeAppEnv>["event"]>[1]>[0]) => {
+export const appHomeOpened = async (
+	req: Parameters<Parameters<SlackApp<CustomAppEnv>["event"]>[1]>[0],
+) => {
+	const { payload, env } = req;
 	const p = payload as { user?: string; event?: { user?: string } };
 	const userId = p.user || p.event?.user || "";
-	await context.client.views.publish({
-		user_id: userId,
-		view: {
-			type: "home",
-			blocks: [
+
+	await publishHomeView(userId, env);
+};
+
+export async function publishHomeView(userId: string, env: CustomAppEnv) {
+	const db = getDatabaseClient(env);
+
+	const blocks: AnyHomeTabBlock[] = [
+		...buildWelcomeBlocks(),
+		...(await buildAttendanceBlocks(db, userId, env as any)),
+		{
+			type: "divider",
+		},
+		{
+			type: "context",
+			elements: [
 				{
-					type: "header",
-					text: {
-						type: "plain_text",
-						text: "Welcome to kyosuke.ai Home! 🏠",
-						emoji: true,
-					},
-				},
-				{
-					type: "section",
-					text: {
-						type: "mrkdwn",
-						text: "ここはボットのホームタブです。この画面は Cloudflare Workers から動的に生成されています！\n\n*できること:*\n• `/hey-cf-workers` コマンドで挨拶\n• メッセージタブから直接会話",
-					},
-				},
-				{
-					type: "divider",
-				},
-				{
-					type: "context",
-					elements: [
-						{
-							type: "plain_text",
-							text: "This is a sample home tab powered by slack-cloudflare-workers",
-							emoji: true,
-						},
-					],
+					type: "plain_text",
+					text: "This is a sample home tab powered by slack-cloudflare-workers",
+					emoji: true,
 				},
 			],
 		},
-	});
-};
+	];
+
+	const slackToken = env.SLACK_BOT_TOKEN;
+	if (slackToken) {
+		await fetch("https://slack.com/api/views.publish", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${slackToken}`,
+			},
+			body: JSON.stringify({
+				user_id: userId,
+				view: {
+					type: "home",
+					blocks,
+				},
+			}),
+		});
+	}
+}

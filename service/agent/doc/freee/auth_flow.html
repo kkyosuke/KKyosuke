@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>freee 連携 (OAuth 2.0) 認証フロー</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    h1, h2, h3 { color: #111827; }
+    h1 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; }
+    h2 { margin-top: 2rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.3rem; }
+    code { background: #f3f4f6; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+    th { background: #f9fafb; }
+    .mermaid { margin: 2rem 0; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true});</script>
+</head>
+<body>
+  <h1>freee 連携 (OAuth 2.0) 認証フロー</h1>
+  <p>このドキュメントでは、Slackアプリからfreee人事労務へ連携（OAuth 2.0 認可コードフロー）する際の一連のアーキテクチャとシーケンスを解説します。</p>
+
+  <h2>概要</h2>
+  <p>Slack Block Kitの仕様上、バックエンド側から強制的にユーザーのブラウザを開かせることはできません。そのため、ボタン要素に <code>url</code> プロパティを付与し、Slackクライアントにブラウザ起動を委譲しています。<br>
+  また、ユーザー体験（UX）を向上させるために、即座にfreeeの認可画面へリダイレクトさせず、一度「ローディング画面（クッションページ）」を挟むアプローチを採用しています。</p>
+
+  <h2>シーケンス図</h2>
+  <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User as ユーザー
+    participant SlackClient as Slackクライアント
+    participant Backend as API (Cloudflare Workers)
+    participant FreeeAPI as freee API
+    participant DB as データベース (D1 / SQLite)
+
+    User->>SlackClient: 「freeeと連携する」ボタンをクリック
+    
+    par アクション通知 (バックグラウンド)
+        SlackClient->>Backend: block_actions イベント送信
+        Backend-->>SlackClient: 200 OK (ack)
+    and ブラウザの起動
+        SlackClient->>User: ブラウザを開く (GET /freee/auth/start?user_id=xxx)
+    end
+
+    User->>Backend: GET /freee/auth/start?user_id=xxx
+    Backend-->>User: ローディング画面 (HTML) を返却
+    Note over User: 「freeeへ遷移しています...」<br/>スピナー表示 (1秒待機)
+    
+    User->>Backend: GET /freee/auth?user_id=xxx (JSで自動リダイレクト)
+    Note over Backend: state生成 (userId + ランダム文字列)<br/>Cookieへ保存 (CSRF対策)
+    Backend-->>User: 302 Redirect to freee認可画面
+
+    User->>FreeeAPI: 認可画面へアクセス (client_id, redirect_uri, state等)
+    Note over User,FreeeAPI: ログイン ＆ 認可（事業所の選択など）
+    FreeeAPI-->>User: 302 Redirect to /freee/auth/callback?code=yyy&state=zzz
+
+    User->>Backend: GET /freee/auth/callback?code=yyy&state=zzz
+    Note over Backend: Cookieのstateとクエリのstateを検証<br/>stateからuserIdを抽出
+
+    Backend->>FreeeAPI: POST /token (認可コードの交換)
+    FreeeAPI-->>Backend: access_token, refresh_token, expires_in 等
+    
+    Backend->>DB: トークン保存 (service="freee", type="access_token", "refresh_token")
+    DB-->>Backend: 保存完了
+
+    Backend->>SlackClient: views.publish 実行 (ホームタブを更新)
+    SlackClient-->>Backend: 更新完了
+
+    Backend-->>User: 認証完了画面 (HTML) を返却
+    Note over User: 「完了しました」<br/>3秒後に JS (window.close) でタブが自動で閉じる
+  </div>
+
+  <h2>各エンドポイントの役割</h2>
+  
+  <h3>1. <code>GET /freee/auth/start</code></h3>
+  <ul>
+    <li><strong>役割</strong>: クッションページ（ローディング画面）の表示。</li>
+    <li><strong>背景</strong>: ボタンクリック直後にいきなりfreeeの画面に飛んだり、APIの応答待ちでブラウザが真っ白になるのを防ぐため、明示的に「遷移中」であることをユーザーに知らせます。</li>
+    <li><strong>処理</strong>: CSSによるスピナーと遷移メッセージを含むHTMLを返し、1秒後に <code>/freee/auth</code> へJSでリダイレクトします。</li>
+  </ul>
+
+  <h3>2. <code>GET /freee/auth</code></h3>
+  <ul>
+    <li><strong>役割</strong>: 認可URLの生成とリダイレクト。</li>
+    <li><strong>処理</strong>:
+      <ol>
+        <li>クエリパラメータから <code>user_id</code> を取得。</li>
+        <li>CSRF攻撃を防ぐための <code>state</code> パラメータを生成（<code>userId</code> + UUID）。</li>
+        <li><code>state</code> をセキュアなCookie（<code>freee_auth_state</code>）に保存。</li>
+        <li>freeeクライアントで認可URL（<code>/public_api/authorize</code>）を生成し、302リダイレクト。</li>
+      </ol>
+    </li>
+  </ul>
+
+  <h3>3. <code>GET /freee/auth/callback</code></h3>
+  <ul>
+    <li><strong>役割</strong>: 認可コードの受け取りとアクセストークン取得、DB保存、Slack UI更新。</li>
+    <li><strong>処理</strong>:
+      <ol>
+        <li>送られてきた <code>state</code> がCookieの値と一致するか検証（CSRF対策）。</li>
+        <li><code>state</code> に埋め込まれた <code>user_id</code> を抽出。</li>
+        <li>認可コード (<code>code</code>) を用いて、freee APIにトークンリクエストを実行。</li>
+        <li>取得した <code>access_token</code> および <code>refresh_token</code> を <code>user_tokens</code> テーブルへ保存（または更新）。</li>
+        <li>連携が完了したことを反映するため、Slack API (<code>views.publish</code>) を呼び出してユーザーのホームタブを更新（未出勤状態などにする）。</li>
+        <li>タブを自動で閉じる（<code>window.close()</code>）スクリプトを含む認証完了HTMLを返却。</li>
+      </ol>
+    </li>
+  </ul>
+
+  <h2>データベーススキーマについて</h2>
+  <p>アクセストークンおよびリフレッシュトークンは、<code>user_tokens</code> テーブルで管理されます。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>カラム名</th>
+        <th>説明</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>UUID (主キー)</td>
+      </tr>
+      <tr>
+        <td><code>user_id</code></td>
+        <td>SlackのユーザーID (<code>Uxxxxxxxx</code>)</td>
+      </tr>
+      <tr>
+        <td><code>service</code></td>
+        <td>連携サービス名 (<code>freee</code> など)</td>
+      </tr>
+      <tr>
+        <td><code>type</code></td>
+        <td>トークンの種類 (<code>access_token</code> または <code>refresh_token</code>)</td>
+      </tr>
+      <tr>
+        <td><code>token</code></td>
+        <td>トークン文字列</td>
+      </tr>
+      <tr>
+        <td><code>expires_at</code></td>
+        <td>トークンの有効期限 (ISO8601形式文字列)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>※ <code>(user_id, service, type)</code> の組み合わせでユニーク制約が設定されています。</p>
+
+</body>
+</html>
