@@ -31,10 +31,10 @@ database_name = "ai_kyosuke"
 database_id = "33f25041-0aae-4518-a973-88005841f603"
 
 [[queues.producers]]
-binding = "REVIEW_QUEUE"
-queue = "ai-kyosuke-queue"
+binding = "GITHUB_QUEUE"
+queue = "ai-kyosuke-gh-queue"
 
 [[queues.consumers]]
-queue = "ai-kyosuke-queue"
+queue = "ai-kyosuke-gh-queue"
 max_batch_size = 1
 max_batch_timeout = 5
