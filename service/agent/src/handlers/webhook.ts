@@ -287,7 +287,7 @@ export async function githubWebhookHandler(c: Context) {
 			const repo = payload.repository.name;
 			const pullNumber = payload.pull_request.number;
 
-			const kv = (e as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as
+			const kv = (e as Record<string, unknown>).GITHUB_KV as
 				| KVBinding
 				| undefined;
 			if (kv) {

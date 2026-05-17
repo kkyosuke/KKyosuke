@@ -9,7 +9,7 @@ export async function withKvLock(
 	ttlSeconds: number,
 	callback: () => Promise<void>,
 ) {
-	const kv = (env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as
+	const kv = (env as Record<string, unknown>).GITHUB_KV as
 		| KVBinding
 		| undefined;
 	if (!kv) {

@@ -5,15 +5,15 @@ export interface KVClient {
 	put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
-export function getKVClient(env: { KKYOSUKE_GITHUB_APP_KV?: KVNamespace }): KVClient {
-	if (env.KKYOSUKE_GITHUB_APP_KV) {
+export function getKVClient(env: { GITHUB_KV?: KVNamespace }): KVClient {
+	if (env.GITHUB_KV) {
 		// Cloudflare KV
 		return {
 			async get(key: string) {
-				return await env.KKYOSUKE_GITHUB_APP_KV!.get(key);
+				return await env.GITHUB_KV!.get(key);
 			},
 			async put(key: string, value: string, options?: { expirationTtl?: number }) {
-				await env.KKYOSUKE_GITHUB_APP_KV!.put(key, value, options);
+				await env.GITHUB_KV!.put(key, value, options);
 			},
 		};
 	}
