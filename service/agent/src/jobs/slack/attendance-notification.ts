@@ -45,10 +45,10 @@ export async function notifyAttendanceToSlack(
 
 		// Find today's thread
 		const targetMessage = historyRes.messages.find(
-			(msg) => msg.text && msg.text.includes(threadTitle),
+			(msg) => msg.text?.includes(threadTitle),
 		);
 
-		if (targetMessage && targetMessage.ts) {
+		if (targetMessage?.ts) {
 			// Post result to the thread
 			await client.chat.postMessage({
 				channel: ATTENDANCE_CHANNEL_ID,
