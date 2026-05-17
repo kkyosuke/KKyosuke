@@ -32,9 +32,9 @@ database_id = "33f25041-0aae-4518-a973-88005841f603"
 
 [[queues.producers]]
 binding = "GITHUB_QUEUE"
-queue = "ai-kyosuke-gh-queue"
+queue = "ai-kyosuke-github"
 
 [[queues.consumers]]
-queue = "ai-kyosuke-gh-queue"
+queue = "ai-kyosuke-github"
 max_batch_size = 1
 max_batch_timeout = 5
