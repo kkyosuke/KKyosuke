@@ -64,7 +64,7 @@ async function dispatchToQueue(
 	e: Record<string, unknown>,
 	message: ReviewQueueMessage,
 ) {
-	const queue = e.REVIEW_QUEUE as { send: (msg: any) => Promise<void> } | undefined;
+	const queue = e.GITHUB_QUEUE as { send: (msg: any) => Promise<void> } | undefined;
 	if (queue && typeof queue.send === "function") {
 		try {
 			await queue.send(message);
@@ -73,7 +73,7 @@ async function dispatchToQueue(
 			console.error(`[Webhook] Failed to publish message to queue:`, error);
 		}
 	} else {
-		console.warn(`[Webhook] REVIEW_QUEUE binding not found or invalid`);
+		console.warn(`[Webhook] GITHUB_QUEUE binding not found or invalid`);
 	}
 }
 
