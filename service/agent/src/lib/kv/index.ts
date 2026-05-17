@@ -1,4 +1,4 @@
-import type { KVNamespace } from "@cloudflare/workers-types";
+import type { AppBindings } from "../../types/bindings";
 
 export interface KVClient {
 	get(key: string): Promise<string | null>;
@@ -9,7 +9,7 @@ export interface KVClient {
 	): Promise<void>;
 }
 
-export function getKVClient(env: { GITHUB_KV?: KVNamespace }): KVClient {
+export function getKVClient(env: Partial<AppBindings>): KVClient {
 	if (env.GITHUB_KV) {
 		// Cloudflare KV
 		return {

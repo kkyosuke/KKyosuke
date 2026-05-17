@@ -2,6 +2,7 @@ import type { SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../handlers/slack";
 import { getDatabaseClient } from "../../../lib/db";
 import { summarizeThread } from "../../../lib/llm/summary";
+import type { AppBindings } from "../../../types/bindings";
 
 type ShortcutHandlerArgs = Parameters<SlackApp<CustomAppEnv>["shortcut"]>;
 type AckFn = ShortcutHandlerArgs[1];
@@ -130,11 +131,7 @@ async function executeSummary(
 			threadContent,
 		);
 
-		const dbClient = getDatabaseClient(
-			env as unknown as {
-				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
-			},
-		);
+		const dbClient = getDatabaseClient(env as unknown as Partial<AppBindings>);
 
 		const { saveProgressSummary } = await import(
 			"../../../datasource/db/progressSummary"

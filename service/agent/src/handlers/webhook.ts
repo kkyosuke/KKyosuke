@@ -11,6 +11,7 @@ import {
 } from "../jobs/github/constants";
 import type { ReviewQueueMessage } from "../jobs/github/queue";
 import type { CommandContext } from "../jobs/github/types";
+import type { AppBindings } from "../types/bindings";
 
 type WebhookPayload = {
 	action?: string;
@@ -33,7 +34,7 @@ type WebhookPayload = {
  * @returns コマンドコンテキスト、または失敗時にnull
  */
 function buildCommandContext(
-	e: Record<string, string | undefined>,
+	e: Record<string, string | undefined> | AppBindings,
 	payload: WebhookPayload,
 	commentInfo: { body: string; id: number; isReviewSummary?: boolean },
 ): CommandContext | null {
@@ -44,7 +45,7 @@ function buildCommandContext(
 	}
 
 	return {
-		env: e,
+		env: e as Record<string, string | undefined>,
 		installationId,
 		owner: payload.repository.owner.login,
 		repo: payload.repository.name,
@@ -52,7 +53,7 @@ function buildCommandContext(
 		commentBody: commentInfo.body,
 		commentId: commentInfo.id,
 		isReviewSummary: commentInfo.isReviewSummary,
-		botName: getBotName(e),
+		botName: getBotName(e as Record<string, string | undefined>),
 		sender: payload.sender.login,
 	};
 }
@@ -61,7 +62,7 @@ function buildCommandContext(
  * キューにメッセージを送信します
  */
 async function dispatchToQueue(
-	e: Record<string, unknown>,
+	e: Record<string, unknown> | AppBindings,
 	message: ReviewQueueMessage,
 ) {
 	const queue = e.GITHUB_QUEUE as
@@ -85,8 +86,10 @@ async function dispatchToQueue(
  * @param c - Honoコンテキスト
  * @returns レスポンス
  */
-export async function githubWebhookHandler(c: Context) {
-	const e = env<Record<string, string | undefined>>(c);
+export async function githubWebhookHandler(
+	c: Context<{ Bindings: AppBindings }>,
+) {
+	const e = c.env;
 	const webhooks = new Webhooks({
 		secret: e.GITHUB_WEBHOOK_SECRET || "",
 	});
@@ -289,7 +292,7 @@ export async function githubWebhookHandler(c: Context) {
 			const repo = payload.repository.name;
 			const pullNumber = payload.pull_request.number;
 
-			const kv = (e as Record<string, unknown>).GITHUB_KV as
+			const kv = (e as unknown as Record<string, unknown>).GITHUB_KV as
 				| KVBinding
 				| undefined;
 			if (kv) {

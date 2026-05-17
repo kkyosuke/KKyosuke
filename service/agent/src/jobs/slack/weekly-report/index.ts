@@ -1,6 +1,7 @@
 import type { CustomAppEnv } from "../../../handlers/slack";
 import { getDatabaseClient } from "../../../lib/db";
 import { generateWeeklyShareSummary } from "../../../lib/llm/weekly-report";
+import type { AppBindings } from "../../../types/bindings";
 import type { SlackMentionCommand } from "../types";
 
 export const weeklyReportMentionCommand: SlackMentionCommand = {
@@ -56,11 +57,7 @@ async function executeWeeklyReport(
 		const weekBeforeLastStartStr = formatDate(weekBeforeLastStart);
 		const weekBeforeLastEndStr = formatDate(weekBeforeLastEnd);
 
-		const dbClient = getDatabaseClient(
-			env as unknown as {
-				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
-			},
-		);
+		const dbClient = getDatabaseClient(env as unknown as Partial<AppBindings>);
 
 		const { getProgressSummariesByDateRange } = await import(
 			"../../../datasource/db/progressSummary"

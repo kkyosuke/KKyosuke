@@ -6,7 +6,9 @@ import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubWebhookHandler } from "./src/handlers/webhook";
 
-const app = new Hono();
+import type { AppBindings } from "./src/types/bindings";
+
+const app = new Hono<{ Bindings: AppBindings }>();
 
 // APIの実行時間を測定しログに出力するミドルウェア
 app.use("*", async (c, next) => {

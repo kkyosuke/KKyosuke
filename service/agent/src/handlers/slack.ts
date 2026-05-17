@@ -12,9 +12,9 @@ import {
 } from "../jobs/slack/save-summary";
 import { getDatabaseClient } from "../lib/db";
 
-export interface CustomAppEnv extends SlackEdgeAppEnv {
-	AI_KYOSUKE_DB: D1Database;
-}
+import type { AppBindings } from "../types/bindings";
+
+export interface CustomAppEnv extends SlackEdgeAppEnv, AppBindings {}
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 	const app = new SlackApp({ env });
