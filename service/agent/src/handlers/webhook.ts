@@ -1,5 +1,5 @@
 import { Webhooks } from "@octokit/webhooks";
-import type { Context } from "hono";
+import { Hono, type Context } from "hono";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import { getBotName } from "../config/env";
 import type { KVBinding } from "../jobs/common/types";
@@ -78,13 +78,15 @@ async function dispatchToQueue(
 	}
 }
 
+export const githubApp = new Hono<{ Bindings: AppBindings }>();
+
 /**
  * GitHub Webhookのリクエストを受け取り、適切なジョブにルーティングします。
  *
  * @param c - Honoコンテキスト
  * @returns レスポンス
  */
-export async function githubWebhookHandler(
+async function githubWebhookHandler(
 	c: Context<{ Bindings: AppBindings }>,
 ) {
 	const e = c.env;
@@ -322,3 +324,6 @@ export async function githubWebhookHandler(
 	// GitHub Webhook に即座に200を返す
 	return c.text("OK", 200);
 }
+
+githubApp.post("/webhook", githubWebhookHandler);
+
