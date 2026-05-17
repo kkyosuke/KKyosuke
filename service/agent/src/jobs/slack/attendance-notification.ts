@@ -12,6 +12,22 @@ function getTodayJST(): string {
 	return formatter.format(new Date()).replace(/\//g, "-");
 }
 
+function getStartOfTodayJSTUnix(): string {
+	const formatter = new Intl.DateTimeFormat("ja-JP", {
+		timeZone: "Asia/Tokyo",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	});
+	const [year, month, day] = formatter
+		.format(new Date())
+		.split("/")
+		.map(Number) as [number, number, number];
+	return Math.floor(
+		Date.UTC(year, month - 1, day, -9, 0, 0, 0) / 1000,
+	).toString();
+}
+
 const actionTypeToText: Record<string, string> = {
 	clock_in: "出勤しました :accelhack:",
 	clock_in_office: "出勤しました :accelhack:",
@@ -32,10 +48,10 @@ export async function notifyAttendanceToSlack(
 		const threadTitle = `[${today}]勤怠報告`;
 		const actionText = actionTypeToText[type] || type;
 
-		// Get recent 5 messages from the attendance channel
+		// Get messages from today in the attendance channel
 		const historyRes = await client.conversations.history({
 			channel: ATTENDANCE_CHANNEL_ID,
-			limit: 5,
+			oldest: getStartOfTodayJSTUnix(),
 		});
 
 		if (!historyRes.messages) {
@@ -45,7 +61,7 @@ export async function notifyAttendanceToSlack(
 
 		// Find today's thread
 		const targetMessage = historyRes.messages.find((msg) =>
-			msg.text?.includes(threadTitle),
+			msg.text?.includes(threadTitle) && msg.username === "勤怠報告",
 		);
 
 		if (targetMessage?.ts) {
