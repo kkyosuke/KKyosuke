@@ -79,11 +79,11 @@ export const getNextStepsSection = (
 				"> - [ ] 過去の未解決のコメント（スレッド）を確認し、返信して再評価を依頼する\n";
 		}
 		if (hasMust) {
-			nextStepsSection += "> - [ ] `🔴 must` の指摘事項を修正する\n";
+			nextStepsSection += "> - [ ] `🔴 must` の指摘事項を修正しました。\n";
 		}
 		if (hasWant) {
 			nextStepsSection +=
-				"> - [ ] `🟡 want` の指摘事項を修正する、または対応を見送る理由を返信する\n";
+				"> - [ ] `🟡 want` の指摘事項を修正しました/対応を見送る理由を返信しました\n";
 		}
 		if (hasQ) {
 			nextStepsSection += "> - [ ] `💬 Q` の質問に回答する\n";

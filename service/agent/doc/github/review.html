@@ -49,6 +49,7 @@
 
   <h2>1. 目的とアーキテクチャ方針</h2>
   <ul>
+    <li><strong>非同期処理アーキテクチャ (Cloudflare Queues):</strong> LLMを用いたコードレビューは30秒以上かかることが多く、Cloudflare Workersの実行時間制限（HTTP Fetch時の30秒）を回避するため、Webhook受領時はキューへのメッセージ送信（Publish）のみ行い、実際の処理はキューのConsumer（最大15分実行可能）で非同期に行います。</li>
     <li><strong>ステートレス化:</strong> KVストア等での独自の状態管理を廃止し、GitHub自体を唯一のデータソース（Single Source of Truth）とします。</li>
     <li><strong>スレッド機能の活用:</strong> GitHubのインラインコメントは自動的に「スレッド」を形成し、<code>isResolved</code>（解決済みかどうか）のフラグを持ちます。これを利用することで、未解決指摘のトラッキングをAPIのみで実現します。</li>
   </ul>
@@ -61,9 +62,10 @@
   <h2>3. 実装のポイント</h2>
 
   <div class="bg-note">
-    <strong>実装箇所 (src/jobs/review/agent.ts)</strong><br>
+    <strong>実装箇所 (src/handlers/webhook.ts &amp; src/jobs/github/queue.ts &amp; src/jobs/github/review/agent.ts)</strong><br>
     <ul>
-      <li><code>generateCodeReview</code> でLLMからレビュー結果（サマリとインラインの指摘事項）を取得します。</li>
+      <li><strong>Webhook Handler:</strong> GitHub Webhookを受け取ると、処理に必要なペイロード（PR情報等）を <code>ai-kyosuke-queue</code> にPublishし、即座に200 OKを返します。</li>
+      <li><strong>Queue Consumer:</strong> バックグラウンドでQueueメッセージを受信し、<code>generateCodeReview</code> でLLMからレビュー結果を取得します。</li>
       <li><code>createReview</code> APIを呼び出し、Pull Requestのメインレビュー（全体のサマリと評価）を投稿します。</li>
       <li><code>createReviewComment</code> APIを使用して、具体的なコード行に対してインラインコメントを投稿します。この際、GitHub側で自動的に一意な「スレッドID」が生成され、未解決 (Unresolved) 状態でトラッキングが開始されます。</li>
     </ul>
@@ -71,8 +73,12 @@
 
   <script>
     var diagramCode = `
-st=>start: レビューコマンド
+st=>start: Webhook受信
 (例: レビューして)
+opQueue=>operation: Cloudflare QueueへPublish
+(200 OKを即座に返す)
+opConsumer=>operation: Queue Consumerが
+メッセージを受信 (非同期)
 opData=>operation: PRと差分データを
 GitHub APIで取得
 opLLM=>operation: LLMによる全体サマリ
@@ -86,7 +92,7 @@ opThread=>operation: GitHub側で自動的に
 作成・管理される
 e=>end: レビュー完了
 
-st->opData->opLLM->opPostMain->opPostInline->opThread->e
+st->opQueue->opConsumer->opData->opLLM->opPostMain->opPostInline->opThread->e
 `;
 
     var diagram = flowchart.parse(diagramCode);

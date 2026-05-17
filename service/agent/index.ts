@@ -1,4 +1,4 @@
-import type { ExecutionContext } from "@cloudflare/workers-types";
+import type { ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { resolveEnv } from "./src/config/env";
@@ -29,6 +29,8 @@ app.post("/webhook/github", githubWebhookHandler);
 // Freee関連のエンドポイント
 app.route("/freee", freeeApp);
 
+import { queueHandler } from "./src/handlers/queue";
+
 export default {
 	async fetch(
 		request: Request,
@@ -54,5 +56,12 @@ export default {
 			appEnv as unknown as Record<string, unknown>,
 			ctx,
 		);
+	},
+	async queue(
+		batch: MessageBatch<import("./src/jobs/github/queue").ReviewQueueMessage>,
+		env: Record<string, string | undefined>,
+	): Promise<void> {
+		const appEnv = resolveEnv(env);
+		await queueHandler(batch, appEnv as Record<string, string | undefined>);
 	},
 };

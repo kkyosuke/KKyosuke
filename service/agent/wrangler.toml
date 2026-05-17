@@ -29,3 +29,12 @@ id = "6074644670544a80a9805a8814aeeed9"
 binding = "AI_KYOSUKE_DB"
 database_name = "ai_kyosuke"
 database_id = "33f25041-0aae-4518-a973-88005841f603"
+
+[[queues.producers]]
+binding = "REVIEW_QUEUE"
+queue = "ai-kyosuke-queue"
+
+[[queues.consumers]]
+queue = "ai-kyosuke-queue"
+max_batch_size = 1
+max_batch_timeout = 5
