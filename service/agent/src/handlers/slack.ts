@@ -1,15 +1,13 @@
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { SlackApp } from "slack-cloudflare-workers";
-import { recordAttendance } from "../jobs/freee/attendance";
-import { appHomeOpened, publishHomeView } from "../jobs/slack/app-home";
-import { notifyAttendanceToSlack } from "../jobs/slack/attendance-notification";
+import { appHomeOpened } from "../jobs/slack/app-home";
+import { handleAttendanceAction } from "../jobs/slack/attendance-action";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/hey-cf-workers";
 import { routeMentionEvent } from "../jobs/slack/router";
 import {
 	summaryShortcutAck,
 	summaryShortcutLazy,
 } from "../jobs/slack/save-summary";
-import { getDatabaseClient } from "../lib/db";
 
 import type { AppBindings } from "../types/bindings";
 
@@ -29,28 +27,6 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		// ボタンに `url` が設定されているため、ブラウザは自動的に開きます。
 		// ここでは単にアクションを受け取ったことを処理（実質的に何もしない）するだけでOKです。
 	});
-
-	const handleAttendanceAction =
-		(
-			type: "clock_in" | "clock_out" | "break_begin" | "break_end",
-			notificationType?: string,
-		) =>
-		async ({ context, payload, env }: any) => {
-			const userId = payload.user.id;
-			try {
-				const db = getDatabaseClient(env as any);
-				await recordAttendance(db, userId, env as any, type);
-				await publishHomeView(userId, env as any);
-				await notifyAttendanceToSlack(
-					context.client,
-					userId,
-					notificationType || type,
-				);
-			} catch (e: any) {
-				console.error(`Freee attendance error (${type}):`, e);
-				// Ideally post an ephemeral message to the user here
-			}
-		};
 
 	app.action(
 		"freee_clock_in_office",

@@ -5,7 +5,7 @@ compatibility_date = "2024-04-01"
 # Automatically bundle text files imported with `.md` extension
 [[rules]]
 type = "Text"
-globs = ["**/*.md"]
+globs = ["**/*.md", "**/*.html"]
 fallbacks = []
 fallthrough = true
 

@@ -1,10 +1,11 @@
 import type { ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
+import homeHtml from "./src/resources/home.html";
 import { Hono } from "hono";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { resolveEnv } from "./src/config/env";
 import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
-import { githubWebhookHandler } from "./src/handlers/webhook";
+import { githubApp } from "./src/handlers/webhook";
 
 import type { AppBindings } from "./src/types/bindings";
 
@@ -22,11 +23,12 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/", (c) => {
-	return c.text("Hello Hono! PR Review Agent is running.");
+	const htmlContent = typeof homeHtml === "string" ? homeHtml : (homeHtml as any).default || String(homeHtml);
+	return c.html(htmlContent as string);
 });
 
-// GitHub Webhook のエンドポイント
-app.post("/webhook/github", githubWebhookHandler);
+// GitHub関連のエンドポイント
+app.route("/github", githubApp);
 
 // Freee関連のエンドポイント
 app.route("/freee", freeeApp);
