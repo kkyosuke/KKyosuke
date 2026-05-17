@@ -1,7 +1,4 @@
-import type {
-	AnyHomeTabBlock,
-	SlackApp,
-} from "slack-cloudflare-workers";
+import type { AnyHomeTabBlock, SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../handlers/slack";
 import { getDatabaseClient } from "../../../lib/db";
 import { buildAttendanceBlocks } from "./attendance";
