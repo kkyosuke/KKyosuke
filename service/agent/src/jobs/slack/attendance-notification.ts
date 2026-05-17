@@ -22,8 +22,10 @@ function getStartOfTodayJSTUnix(): string {
 	const [year, month, day] = formatter
 		.format(new Date())
 		.split("/")
-		.map(Number);
-	return Math.floor(Date.UTC(year, month - 1, day, -9, 0, 0, 0) / 1000).toString();
+		.map(Number) as [number, number, number];
+	return Math.floor(
+		Date.UTC(year, month - 1, day, -9, 0, 0, 0) / 1000,
+	).toString();
 }
 
 const actionTypeToText: Record<string, string> = {
