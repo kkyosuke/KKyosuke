@@ -17,7 +17,7 @@ export class ReviewProgressManager {
 		private title: string,
 		private steps: ProgressStep[],
 		private modelName?: string,
-	) { }
+	) {}
 
 	async start() {
 		if (this.steps[0]) {

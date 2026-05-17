@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, unique } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
 export const progressSummaries = sqliteTable(
 	"progress_summaries",
@@ -11,9 +11,7 @@ export const progressSummaries = sqliteTable(
 		summaryText: text("summary_text").notNull(),
 		createdAt: text("created_at"),
 	},
-	(t) => [
-		unique("user_id_target_date_idx").on(t.userId, t.targetDate),
-	],
+	(t) => [unique("user_id_target_date_idx").on(t.userId, t.targetDate)],
 );
 
 export const userTokens = sqliteTable(
@@ -28,7 +26,5 @@ export const userTokens = sqliteTable(
 		createdAt: text("created_at"),
 		updatedAt: text("updated_at"),
 	},
-	(t) => [
-		unique("user_service_type_idx").on(t.userId, t.service, t.type),
-	],
+	(t) => [unique("user_service_type_idx").on(t.userId, t.service, t.type)],
 );

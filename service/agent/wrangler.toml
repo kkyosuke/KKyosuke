@@ -26,7 +26,7 @@ binding = "GITHUB_KV"
 id = "6074644670544a80a9805a8814aeeed9"
 
 [[d1_databases]]
-binding = "DATABASE"
+binding = "AI_KYOSUKE_DB"
 database_name = "ai_kyosuke"
 database_id = "33f25041-0aae-4518-a973-88005841f603"
 

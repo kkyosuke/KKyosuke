@@ -2,9 +2,9 @@ import type { ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { resolveEnv } from "./src/config/env";
+import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubWebhookHandler } from "./src/handlers/webhook";
-import { freeeApp } from "./src/handlers/freee";
 
 const app = new Hono();
 

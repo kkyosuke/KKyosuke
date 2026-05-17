@@ -25,7 +25,7 @@ const actionTypeToText: Record<string, string> = {
 export async function notifyAttendanceToSlack(
 	client: SlackAPIClient,
 	userId: string,
-	type: string
+	type: string,
 ) {
 	try {
 		const today = getTodayJST();
@@ -45,7 +45,7 @@ export async function notifyAttendanceToSlack(
 
 		// Find today's thread
 		const targetMessage = historyRes.messages.find(
-			(msg) => msg.text && msg.text.includes(threadTitle)
+			(msg) => msg.text && msg.text.includes(threadTitle),
 		);
 
 		if (targetMessage && targetMessage.ts) {

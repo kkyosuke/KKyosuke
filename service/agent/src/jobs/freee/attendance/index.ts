@@ -1,9 +1,16 @@
-import type { DBClient } from "../../../lib/db";
-import { getUserTokenByType, saveUserToken } from "../../../datasource/db/userToken";
-import { createFreeeClient } from "../../../lib/freee/index";
 import { getFreeeConfig } from "../../../config/env";
+import {
+	getUserTokenByType,
+	saveUserToken,
+} from "../../../datasource/db/userToken";
+import type { DBClient } from "../../../lib/db";
+import { createFreeeClient } from "../../../lib/freee/index";
 
-import { getAccessTokenFromKV, saveAccessTokenToKV, ensureFreeeAccessToken } from "../utils/token";
+import {
+	ensureFreeeAccessToken,
+	getAccessTokenFromKV,
+	saveAccessTokenToKV,
+} from "../utils/token";
 
 export async function recordAttendance(
 	db: DBClient,
@@ -12,9 +19,11 @@ export async function recordAttendance(
 	type: "clock_in" | "clock_out" | "break_begin" | "break_end",
 ) {
 	// 1. Get user access token from KV or refresh it
-	let accessToken = await ensureFreeeAccessToken(db, env as any, userId);
+	const accessToken = await ensureFreeeAccessToken(db, env as any, userId);
 	if (!accessToken) {
-		throw new Error("Failed to authenticate with freee. Please re-link your account.");
+		throw new Error(
+			"Failed to authenticate with freee. Please re-link your account.",
+		);
 	}
 
 	const config = getFreeeConfig(env as any);

@@ -58,15 +58,25 @@ async function executeWeeklyReport(
 
 		const dbClient = getDatabaseClient(
 			env as unknown as {
-				DATABASE?: import("@cloudflare/workers-types").D1Database;
+				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
 			},
 		);
 
-		const { getProgressSummariesByDateRange } = await import("../../../datasource/db/progressSummary");
+		const { getProgressSummariesByDateRange } = await import(
+			"../../../datasource/db/progressSummary"
+		);
 
 		// Fetch summaries
-		const lastWeekSummaries = await getProgressSummariesByDateRange(dbClient, lastWeekStartStr, lastWeekEndStr);
-		const weekBeforeLastSummaries = await getProgressSummariesByDateRange(dbClient, weekBeforeLastStartStr, weekBeforeLastEndStr);
+		const lastWeekSummaries = await getProgressSummariesByDateRange(
+			dbClient,
+			lastWeekStartStr,
+			lastWeekEndStr,
+		);
+		const weekBeforeLastSummaries = await getProgressSummariesByDateRange(
+			dbClient,
+			weekBeforeLastStartStr,
+			weekBeforeLastEndStr,
+		);
 
 		if (lastWeekSummaries.length === 0) {
 			await client.chat.postMessage({
@@ -78,13 +88,13 @@ async function executeWeeklyReport(
 		}
 
 		// Prepare LLM input
-		const formatSummary = (
-			s: typeof lastWeekSummaries[number],
-		) =>
+		const formatSummary = (s: (typeof lastWeekSummaries)[number]) =>
 			`UserID: <@${s.userId}>, Date: ${s.targetDate}, Progress: ${s.progressPercent}%, Score: ${s.evaluationScore}, Summary: ${s.summaryText}`;
 
 		const lastWeekDataStr = lastWeekSummaries.map(formatSummary).join("\n");
-		const weekBeforeLastDataStr = weekBeforeLastSummaries.map(formatSummary).join("\n");
+		const weekBeforeLastDataStr = weekBeforeLastSummaries
+			.map(formatSummary)
+			.join("\n");
 
 		// Generate AI summary
 		const result = await generateWeeklyShareSummary(

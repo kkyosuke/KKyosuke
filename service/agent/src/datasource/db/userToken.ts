@@ -1,8 +1,13 @@
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { DBClient } from "../../lib/db";
 import { userTokens } from "../../lib/db/schema";
 
-export async function getUserTokenByType(db: DBClient, userId: string, service: string, type: string) {
+export async function getUserTokenByType(
+	db: DBClient,
+	userId: string,
+	service: string,
+	type: string,
+) {
 	const result = await db
 		.select()
 		.from(userTokens)
@@ -13,7 +18,7 @@ export async function getUserTokenByType(db: DBClient, userId: string, service: 
 				eq(userTokens.type, type),
 			),
 		);
-	
+
 	return result.length > 0 ? result[0] : null;
 }
 

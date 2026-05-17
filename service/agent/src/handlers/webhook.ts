@@ -64,7 +64,9 @@ async function dispatchToQueue(
 	e: Record<string, unknown>,
 	message: ReviewQueueMessage,
 ) {
-	const queue = e.GITHUB_QUEUE as { send: (msg: any) => Promise<void> } | undefined;
+	const queue = e.GITHUB_QUEUE as
+		| { send: (msg: any) => Promise<void> }
+		| undefined;
 	if (queue && typeof queue.send === "function") {
 		try {
 			await queue.send(message);

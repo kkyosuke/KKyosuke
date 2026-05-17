@@ -38,5 +38,5 @@ export function getFreeeConfig(env: Record<string, string | undefined>) {
 		throw Error("Freee credentials are not configured");
 	}
 
-	return config
+	return config;
 }

@@ -1,8 +1,8 @@
 import type { MessageBatch } from "@cloudflare/workers-types";
 import { getBotName } from "../config/env";
 import { replyCommand, reReviewCommand } from "../jobs/github";
-import { routeCommentCommand } from "../jobs/github/router";
 import type { ReviewQueueMessage } from "../jobs/github/queue";
+import { routeCommentCommand } from "../jobs/github/router";
 import type { CommandContext } from "../jobs/github/types";
 
 export async function queueHandler(
@@ -18,7 +18,9 @@ export async function queueHandler(
 				botName: getBotName(env),
 			};
 
-			console.log(`[Queue] Processing message type: ${type} for PR #${ctx.issueNumber}`);
+			console.log(
+				`[Queue] Processing message type: ${type} for PR #${ctx.issueNumber}`,
+			);
 
 			switch (type) {
 				case "route-comment":

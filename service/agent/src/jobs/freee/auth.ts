@@ -138,10 +138,19 @@ export async function handleFreeeAuthCallback(
 		const db = getDatabaseClient(c.env as any);
 
 		// refresh token expires in 90 days
-		const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+		const expiresAt = new Date(
+			Date.now() + 90 * 24 * 60 * 60 * 1000,
+		).toISOString();
 
 		// データベースにはリフレッシュトークンのみ保存
-		await saveUserToken(db, userId, "freee", "refresh_token", tokenRes.refresh_token, expiresAt);
+		await saveUserToken(
+			db,
+			userId,
+			"freee",
+			"refresh_token",
+			tokenRes.refresh_token,
+			expiresAt,
+		);
 
 		// KVにアクセストークンを保存 (TTL 10分)
 		await saveAccessTokenToKV(c.env, userId, tokenRes.access_token);

@@ -1,12 +1,16 @@
 import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
-import type { DBClient } from "../../../lib/db";
+import { getFreeeConfig, resolveEnv } from "../../../config/env";
 import { getUserTokenByType } from "../../../datasource/db/userToken";
-
-import { resolveEnv, getFreeeConfig } from "../../../config/env";
-import { ensureFreeeAccessToken } from "../../freee/utils/token";
+import type { DBClient } from "../../../lib/db";
 import { createFreeeClient } from "../../../lib/freee/index";
+import { ensureFreeeAccessToken } from "../../freee/utils/token";
 
-export type AttendanceState = "not_linked" | "not_clocked_in" | "clocked_in" | "on_break" | "clocked_out";
+export type AttendanceState =
+	| "not_linked"
+	| "not_clocked_in"
+	| "clocked_in"
+	| "on_break"
+	| "clocked_out";
 
 function getTodayJST(): string {
 	const formatter = new Intl.DateTimeFormat("ja-JP", {
@@ -23,7 +27,12 @@ export async function buildAttendanceBlocks(
 	userId: string,
 	env: Record<string, string | undefined>,
 ): Promise<AnyHomeTabBlock[]> {
-	const freeeToken = await getUserTokenByType(db, userId, "freee", "refresh_token");
+	const freeeToken = await getUserTokenByType(
+		db,
+		userId,
+		"freee",
+		"refresh_token",
+	);
 
 	let state: AttendanceState = "not_linked";
 
@@ -34,22 +43,36 @@ export async function buildAttendanceBlocks(
 			try {
 				const config = getFreeeConfig(env as any);
 				const freee = createFreeeClient(config);
-				
+
 				const me = await freee.hr.getMe(accessToken);
 				const company = me.companies?.[0];
 				if (company) {
 					const today = getTodayJST();
-					const clocks = await freee.hr.getTimeClocks(accessToken, company.employee_id, company.id, today, today);
-					const lastClock = clocks.length > 0 ? clocks[clocks.length - 1] : null;
+					const clocks = await freee.hr.getTimeClocks(
+						accessToken,
+						company.employee_id,
+						company.id,
+						today,
+						today,
+					);
+					const lastClock =
+						clocks.length > 0 ? clocks[clocks.length - 1] : null;
 
-					const typesRes = await freee.hr.getAvailableTimeClockTypes(accessToken, company.employee_id, company.id);
+					const typesRes = await freee.hr.getAvailableTimeClockTypes(
+						accessToken,
+						company.employee_id,
+						company.id,
+					);
 					const available = typesRes.available_types;
 
 					if (available.includes("break_end")) {
 						state = "on_break";
 					} else if (lastClock && lastClock.type === "clock_out") {
 						state = "clocked_out";
-					} else if (available.includes("clock_out") || available.includes("break_begin")) {
+					} else if (
+						available.includes("clock_out") ||
+						available.includes("break_begin")
+					) {
 						state = "clocked_in";
 					} else if (available.includes("clock_in")) {
 						state = "not_clocked_in";
