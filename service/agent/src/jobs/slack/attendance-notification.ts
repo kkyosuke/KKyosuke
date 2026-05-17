@@ -60,8 +60,8 @@ export async function notifyAttendanceToSlack(
 		}
 
 		// Find today's thread
-		const targetMessage = historyRes.messages.find((msg) =>
-			msg.text?.includes(threadTitle) && msg.username === "勤怠報告",
+		const targetMessage = historyRes.messages.find(
+			(msg) => msg.text?.includes(threadTitle) && msg.username === "勤怠報告",
 		);
 
 		if (targetMessage?.ts) {

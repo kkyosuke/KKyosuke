@@ -141,7 +141,7 @@ export async function buildAttendanceBlocks(
 					},
 					value: "clock_in_remote",
 					action_id: "freee_clock_in_remote",
-				}
+				},
 			],
 		});
 	} else if (state === "clocked_in") {

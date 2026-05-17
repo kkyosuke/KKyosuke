@@ -86,9 +86,7 @@ export const githubApp = new Hono<{ Bindings: AppBindings }>();
  * @param c - Honoコンテキスト
  * @returns レスポンス
  */
-async function githubWebhookHandler(
-	c: Context<{ Bindings: AppBindings }>,
-) {
+async function githubWebhookHandler(c: Context<{ Bindings: AppBindings }>) {
 	const e = c.env;
 	const webhooks = new Webhooks({
 		secret: e.GITHUB_WEBHOOK_SECRET || "",
@@ -326,4 +324,3 @@ async function githubWebhookHandler(
 }
 
 githubApp.post("/webhook", githubWebhookHandler);
-

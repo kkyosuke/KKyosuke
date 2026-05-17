@@ -23,7 +23,10 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/", (c) => {
-	const htmlContent = typeof homeHtml === "string" ? homeHtml : (homeHtml as any).default || String(homeHtml);
+	const htmlContent =
+		typeof homeHtml === "string"
+			? homeHtml
+			: (homeHtml as any).default || String(homeHtml);
 	return c.html(htmlContent as string);
 });
 
