@@ -1,7 +1,6 @@
 import type {
 	AnyHomeTabBlock,
 	SlackApp,
-	SlackEdgeAppEnv,
 } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../handlers/slack";
 import { getDatabaseClient } from "../../../lib/db";

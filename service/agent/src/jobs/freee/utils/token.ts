@@ -50,7 +50,7 @@ export async function ensureFreeeAccessToken(
 		"freee",
 		"refresh_token",
 	);
-	if (!refreshTokenRow || !refreshTokenRow.token) return null;
+	if (!refreshTokenRow?.token) return null;
 
 	const config = getFreeeConfig(env as any);
 	const freee = createFreeeClient(config);
