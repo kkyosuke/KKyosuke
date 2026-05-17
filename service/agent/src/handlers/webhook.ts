@@ -9,7 +9,7 @@ import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
 	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
 } from "../jobs/github/constants";
-import { routeCommentCommand } from "../jobs/github/router";
+import type { ReviewQueueMessage } from "../jobs/github/queue";
 import type { CommandContext } from "../jobs/github/types";
 
 type WebhookPayload = {
@@ -58,26 +58,22 @@ function buildCommandContext(
 }
 
 /**
- * 非同期タスクをバックグラウンドで実行します。
- *
- * @param c - Honoコンテキスト
- * @param task - 実行する非同期タスク
- * @param taskName - ログ出力用のタスク名
+ * キューにメッセージを送信します
  */
-function dispatchBackgroundTask(
-	c: Context,
-	task: Promise<void>,
-	taskName: string,
+async function dispatchToQueue(
+	e: Record<string, unknown>,
+	message: ReviewQueueMessage,
 ) {
-	const safeTask = task.catch((err) =>
-		console.error(`[Webhook] ${taskName} failed critically:`, err),
-	);
-	try {
-		if (c.executionCtx && typeof c.executionCtx.waitUntil === "function") {
-			c.executionCtx.waitUntil(safeTask);
+	const queue = e.REVIEW_QUEUE as { send: (msg: any) => Promise<void> } | undefined;
+	if (queue && typeof queue.send === "function") {
+		try {
+			await queue.send(message);
+			console.log(`[Webhook] Message published to queue: ${message.type}`);
+		} catch (error) {
+			console.error(`[Webhook] Failed to publish message to queue:`, error);
 		}
-	} catch {
-		// fire and forget
+	} else {
+		console.warn(`[Webhook] REVIEW_QUEUE binding not found or invalid`);
 	}
 }
 
@@ -130,8 +126,7 @@ export async function githubWebhookHandler(c: Context) {
 
 	const action = payload.action;
 	const eventAction = `${eventName}.${action}`;
-	let routingTask: Promise<void> | undefined;
-	let taskName = "UnknownTask";
+	let queueMessage: ReviewQueueMessage | undefined;
 
 	switch (eventAction) {
 		case "issue_comment.created":
@@ -160,8 +155,19 @@ export async function githubWebhookHandler(c: Context) {
 					console.log(
 						`[Webhook] Checkbox checked for re-review on PR ${ctx.issueNumber}`,
 					);
-					routingTask = reReviewCommand.execute(ctx);
-					taskName = "ReReviewCommand";
+					queueMessage = {
+						type: "re-review",
+						payload: {
+							installationId: ctx.installationId,
+							owner: ctx.owner,
+							repo: ctx.repo,
+							issueNumber: ctx.issueNumber,
+							commentBody: ctx.commentBody,
+							commentId: ctx.commentId,
+							isReviewSummary: ctx.isReviewSummary,
+							sender: ctx.sender,
+						},
+					};
 				} else {
 					console.log(
 						`[Webhook] Ignored edited comment: checkbox not triggered`,
@@ -169,8 +175,19 @@ export async function githubWebhookHandler(c: Context) {
 				}
 			} else {
 				// created の場合は通常のメンションルーティング
-				routingTask = routeCommentCommand(ctx);
-				taskName = "RouteCommentCommand";
+				queueMessage = {
+					type: "route-comment",
+					payload: {
+						installationId: ctx.installationId,
+						owner: ctx.owner,
+						repo: ctx.repo,
+						issueNumber: ctx.issueNumber,
+						commentBody: ctx.commentBody,
+						commentId: ctx.commentId,
+						isReviewSummary: ctx.isReviewSummary,
+						sender: ctx.sender,
+					},
+				};
 			}
 			console.log(`[Webhook] Finished processing ${eventAction} event`);
 			break;
@@ -197,8 +214,19 @@ export async function githubWebhookHandler(c: Context) {
 				console.log(
 					`[Webhook] Checkbox checked for re-review on PR ${ctx.issueNumber} (Review Summary)`,
 				);
-				routingTask = reReviewCommand.execute(ctx);
-				taskName = "ReReviewCommand";
+				queueMessage = {
+					type: "re-review",
+					payload: {
+						installationId: ctx.installationId,
+						owner: ctx.owner,
+						repo: ctx.repo,
+						issueNumber: ctx.issueNumber,
+						commentBody: ctx.commentBody,
+						commentId: ctx.commentId,
+						isReviewSummary: ctx.isReviewSummary,
+						sender: ctx.sender,
+					},
+				};
 			} else {
 				console.log(`[Webhook] Ignored edited review: checkbox not triggered`);
 			}
@@ -229,8 +257,19 @@ export async function githubWebhookHandler(c: Context) {
 				console.log(
 					`[Webhook] Triggering replyCommand for review comment ${payload.comment.id}`,
 				);
-				routingTask = replyCommand.execute(ctx);
-				taskName = "ReplyCommand";
+				queueMessage = {
+					type: "reply",
+					payload: {
+						installationId: ctx.installationId,
+						owner: ctx.owner,
+						repo: ctx.repo,
+						issueNumber: ctx.issueNumber,
+						commentBody: ctx.commentBody,
+						commentId: ctx.commentId,
+						isReviewSummary: ctx.isReviewSummary,
+						sender: ctx.sender,
+					},
+				};
 			} else {
 				console.log(
 					`[Webhook] Ignored review comment: no mention and not a reply`,
@@ -273,8 +312,8 @@ export async function githubWebhookHandler(c: Context) {
 		}
 	}
 
-	if (routingTask) {
-		dispatchBackgroundTask(c, routingTask, taskName);
+	if (queueMessage) {
+		await dispatchToQueue(e, queueMessage);
 	}
 
 	// GitHub Webhook に即座に200を返す
