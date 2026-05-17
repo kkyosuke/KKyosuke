@@ -2,11 +2,13 @@ import type { ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { resolveEnv } from "./src/config/env";
+import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubWebhookHandler } from "./src/handlers/webhook";
-import { freeeApp } from "./src/handlers/freee";
 
-const app = new Hono();
+import type { AppBindings } from "./src/types/bindings";
+
+const app = new Hono<{ Bindings: AppBindings }>();
 
 // APIの実行時間を測定しログに出力するミドルウェア
 app.use("*", async (c, next) => {

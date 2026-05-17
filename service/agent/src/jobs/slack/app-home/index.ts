@@ -1,8 +1,8 @@
-import type { SlackApp, SlackEdgeAppEnv, AnyHomeTabBlock } from "slack-cloudflare-workers";
+import type { AnyHomeTabBlock, SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../handlers/slack";
-import { buildWelcomeBlocks } from "./welcome";
-import { buildAttendanceBlocks } from "./attendance";
 import { getDatabaseClient } from "../../../lib/db";
+import { buildAttendanceBlocks } from "./attendance";
+import { buildWelcomeBlocks } from "./welcome";
 
 export const appHomeOpened = async (
 	req: Parameters<Parameters<SlackApp<CustomAppEnv>["event"]>[1]>[0],

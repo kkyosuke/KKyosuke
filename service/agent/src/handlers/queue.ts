@@ -18,7 +18,9 @@ export async function queueHandler(
 				botName: getBotName(env),
 			};
 
-			console.log(`[Queue] Processing message type: ${type} for PR #${ctx.issueNumber}`);
+			console.log(
+				`[Queue] Processing message type: ${type} for PR #${ctx.issueNumber}`,
+			);
 
 			switch (type) {
 				case "route-comment":

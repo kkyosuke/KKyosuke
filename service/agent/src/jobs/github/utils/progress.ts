@@ -99,7 +99,7 @@ export class ReviewProgressManager {
 	}
 
 	async checkCancellation() {
-		const kv = (this.env as Record<string, unknown>).KKYOSUKE_GITHUB_APP_KV as
+		const kv = (this.env as Record<string, unknown>).GITHUB_KV as
 			| KVBinding
 			| undefined;
 		if (!kv) return;

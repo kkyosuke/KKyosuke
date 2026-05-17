@@ -1,21 +1,34 @@
-import { getKVClient } from "../../../lib/kv";
-import type { DBClient } from "../../../lib/db";
-import { getUserTokenByType, saveUserToken } from "../../../datasource/db/userToken";
-import { createFreeeClient } from "../../../lib/freee/index";
 import { getFreeeConfig } from "../../../config/env";
+import {
+	getUserTokenByType,
+	saveUserToken,
+} from "../../../datasource/db/userToken";
+import type { DBClient } from "../../../lib/db";
+import { createFreeeClient } from "../../../lib/freee/index";
+import { getKVClient } from "../../../lib/kv";
 
 /**
  * KVにfreeeのアクセストークンを保存します
  */
-export async function saveAccessTokenToKV(env: Record<string, any>, userId: string, accessToken: string, expiresIn: number = 600): Promise<void> {
+export async function saveAccessTokenToKV(
+	env: Record<string, any>,
+	userId: string,
+	accessToken: string,
+	expiresIn: number = 600,
+): Promise<void> {
 	const kv = getKVClient(env);
-	await kv.put(`freee:access_token:${userId}`, accessToken, { expirationTtl: expiresIn });
+	await kv.put(`freee:access_token:${userId}`, accessToken, {
+		expirationTtl: expiresIn,
+	});
 }
 
 /**
  * KVからfreeeのアクセストークンを取得します
  */
-export async function getAccessTokenFromKV(env: Record<string, any>, userId: string): Promise<string | null> {
+export async function getAccessTokenFromKV(
+	env: Record<string, any>,
+	userId: string,
+): Promise<string | null> {
 	const kv = getKVClient(env);
 	return await kv.get(`freee:access_token:${userId}`);
 }
@@ -23,12 +36,21 @@ export async function getAccessTokenFromKV(env: Record<string, any>, userId: str
 /**
  * 有効なアクセストークンを取得またはリフレッシュします
  */
-export async function ensureFreeeAccessToken(db: DBClient, env: Record<string, any>, userId: string): Promise<string | null> {
+export async function ensureFreeeAccessToken(
+	db: DBClient,
+	env: Record<string, any>,
+	userId: string,
+): Promise<string | null> {
 	let accessToken = await getAccessTokenFromKV(env, userId);
 	if (accessToken) return accessToken;
 
-	const refreshTokenRow = await getUserTokenByType(db, userId, "freee", "refresh_token");
-	if (!refreshTokenRow || !refreshTokenRow.token) return null;
+	const refreshTokenRow = await getUserTokenByType(
+		db,
+		userId,
+		"freee",
+		"refresh_token",
+	);
+	if (!refreshTokenRow?.token) return null;
 
 	const config = getFreeeConfig(env as any);
 	const freee = createFreeeClient(config);
@@ -36,13 +58,22 @@ export async function ensureFreeeAccessToken(db: DBClient, env: Record<string, a
 	try {
 		const tokenRes = await freee.refreshAccessToken(refreshTokenRow.token);
 		accessToken = tokenRes.access_token;
-		
-		// refresh token expires in 90 days
-		const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
-		await saveUserToken(db, userId, "freee", "refresh_token", tokenRes.refresh_token, expiresAt);
+		// refresh token expires in 90 days
+		const expiresAt = new Date(
+			Date.now() + 90 * 24 * 60 * 60 * 1000,
+		).toISOString();
+
+		await saveUserToken(
+			db,
+			userId,
+			"freee",
+			"refresh_token",
+			tokenRes.refresh_token,
+			expiresAt,
+		);
 		await saveAccessTokenToKV(env, userId, accessToken, tokenRes.expires_in);
-		
+
 		return accessToken;
 	} catch (e) {
 		console.error("Failed to refresh token", e);

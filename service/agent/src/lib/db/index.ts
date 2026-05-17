@@ -1,14 +1,12 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { drizzle as drizzleD1 } from "drizzle-orm/d1";
+import type { AppBindings } from "../../types/bindings";
 import * as schema from "./schema";
 
 export * from "./schema";
 
 export type DBClient = ReturnType<typeof getDatabaseClient>;
 
-export function getDatabaseClient(env: {
-	AI_KYOSUKE_DB?: D1Database;
-}) {
+export function getDatabaseClient(env: Partial<AppBindings>) {
 	if (env.AI_KYOSUKE_DB) {
 		return drizzleD1(env.AI_KYOSUKE_DB, { schema });
 	}

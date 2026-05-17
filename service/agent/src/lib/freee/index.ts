@@ -1,5 +1,10 @@
 import { buildAuthFunction } from "./auth";
-import { getMe, postTimeClock, getAvailableTimeClockTypes, getTimeClocks } from "./hr";
+import {
+	getAvailableTimeClockTypes,
+	getMe,
+	getTimeClocks,
+	postTimeClock,
+} from "./hr";
 
 export interface FreeeConfig {
 	clientId: string;

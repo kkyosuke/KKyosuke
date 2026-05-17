@@ -61,7 +61,9 @@ export function buildAuthFunction(config: FreeeConfig) {
 		/**
 		 * リフレッシュトークンを利用してfreeeの新しいアクセストークンを取得します。
 		 */
-		async refreshAccessToken(refreshToken: string): Promise<FreeeTokenResponse> {
+		async refreshAccessToken(
+			refreshToken: string,
+		): Promise<FreeeTokenResponse> {
 			const params = new URLSearchParams({
 				grant_type: "refresh_token",
 				client_id: config.clientId,

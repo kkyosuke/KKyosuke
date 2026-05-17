@@ -20,7 +20,11 @@ export function getMemoryKVClient(): KVClient {
 
 			return entry.value;
 		},
-		async put(key: string, value: string, options?: { expirationTtl?: number }) {
+		async put(
+			key: string,
+			value: string,
+			options?: { expirationTtl?: number },
+		) {
 			let expiresAt = null;
 			if (options?.expirationTtl) {
 				// expirationTtl is in seconds

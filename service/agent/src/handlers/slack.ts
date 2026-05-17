@@ -1,22 +1,19 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { SlackApp } from "slack-cloudflare-workers";
-import { appHomeOpened } from "../jobs/slack/app-home";
+import { recordAttendance } from "../jobs/freee/attendance";
+import { appHomeOpened, publishHomeView } from "../jobs/slack/app-home";
+import { notifyAttendanceToSlack } from "../jobs/slack/attendance-notification";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/hey-cf-workers";
 import { routeMentionEvent } from "../jobs/slack/router";
 import {
 	summaryShortcutAck,
 	summaryShortcutLazy,
 } from "../jobs/slack/save-summary";
-
 import { getDatabaseClient } from "../lib/db";
-import { recordAttendance } from "../jobs/freee/attendance";
-import { publishHomeView } from "../jobs/slack/app-home";
-import { notifyAttendanceToSlack } from "../jobs/slack/attendance-notification";
 
-export interface CustomAppEnv extends SlackEdgeAppEnv {
-	AI_KYOSUKE_DB: D1Database;
-}
+import type { AppBindings } from "../types/bindings";
+
+export interface CustomAppEnv extends SlackEdgeAppEnv, AppBindings {}
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 	const app = new SlackApp({ env });
@@ -33,22 +30,40 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		// ここでは単にアクションを受け取ったことを処理（実質的に何もしない）するだけでOKです。
 	});
 
-	const handleAttendanceAction = (type: "clock_in" | "clock_out" | "break_begin" | "break_end", notificationType?: string) => async ({ context, payload, env }: any) => {
-		const userId = payload.user.id;
-		try {
-			const db = getDatabaseClient(env as any);
-			await recordAttendance(db, userId, env as any, type);
-			await publishHomeView(userId, env as any);
-			await notifyAttendanceToSlack(context.client, userId, notificationType || type);
-		} catch (e: any) {
-			console.error(`Freee attendance error (${type}):`, e);
-			// Ideally post an ephemeral message to the user here
-		}
-	};
+	const handleAttendanceAction =
+		(
+			type: "clock_in" | "clock_out" | "break_begin" | "break_end",
+			notificationType?: string,
+		) =>
+		async ({ context, payload, env }: any) => {
+			const userId = payload.user.id;
+			try {
+				const db = getDatabaseClient(env as any);
+				await recordAttendance(db, userId, env as any, type);
+				await publishHomeView(userId, env as any);
+				await notifyAttendanceToSlack(
+					context.client,
+					userId,
+					notificationType || type,
+				);
+			} catch (e: any) {
+				console.error(`Freee attendance error (${type}):`, e);
+				// Ideally post an ephemeral message to the user here
+			}
+		};
 
-	app.action("freee_clock_in_office", handleAttendanceAction("clock_in", "clock_in_office"));
-	app.action("freee_clock_in_remote", handleAttendanceAction("clock_in", "clock_in_remote"));
-	app.action("freee_clock_in_other", handleAttendanceAction("clock_in", "clock_in_other"));
+	app.action(
+		"freee_clock_in_office",
+		handleAttendanceAction("clock_in", "clock_in_office"),
+	);
+	app.action(
+		"freee_clock_in_remote",
+		handleAttendanceAction("clock_in", "clock_in_remote"),
+	);
+	app.action(
+		"freee_clock_in_other",
+		handleAttendanceAction("clock_in", "clock_in_other"),
+	);
 	app.action("freee_clock_out", handleAttendanceAction("clock_out"));
 	app.action("freee_break_begin", handleAttendanceAction("break_begin"));
 	app.action("freee_break_end", handleAttendanceAction("break_end"));

@@ -40,7 +40,10 @@ export function initLocalDb(sqlite: any) {
 						sqlite.run(sql);
 					}
 				} catch (fileError) {
-					console.warn(`Failed to apply migration ${file} to local db:`, fileError);
+					console.warn(
+						`Failed to apply migration ${file} to local db:`,
+						fileError,
+					);
 					hasError = true;
 				}
 			}
