@@ -58,7 +58,7 @@ async function executeWeeklyReport(
 
 		const dbClient = getDatabaseClient(
 			env as unknown as {
-				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
+				DATABASE?: import("@cloudflare/workers-types").D1Database;
 			},
 		);
 

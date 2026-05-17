@@ -132,10 +132,10 @@ async function executeSummary(
 
 		const dbClient = getDatabaseClient(
 			env as unknown as {
-				AI_KYOSUKE_DB?: import("@cloudflare/workers-types").D1Database;
+				DATABASE?: import("@cloudflare/workers-types").D1Database;
 			},
 		);
-		
+
 		const { saveProgressSummary } = await import("../../../datasource/db/progressSummary");
 		for (const userSummary of summaryData.summary) {
 			// D1（またはローカルSQLite）に進捗として保存

@@ -15,7 +15,7 @@ import { publishHomeView } from "../jobs/slack/app-home";
 import { notifyAttendanceToSlack } from "../jobs/slack/attendance-notification";
 
 export interface CustomAppEnv extends SlackEdgeAppEnv {
-	AI_KYOSUKE_DB: D1Database;
+	DATABASE: D1Database;
 }
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {

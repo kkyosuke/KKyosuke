@@ -7,10 +7,10 @@ export * from "./schema";
 export type DBClient = ReturnType<typeof getDatabaseClient>;
 
 export function getDatabaseClient(env: {
-	AI_KYOSUKE_DB?: D1Database;
+	DATABASE?: D1Database;
 }) {
-	if (env.AI_KYOSUKE_DB) {
-		return drizzleD1(env.AI_KYOSUKE_DB, { schema });
+	if (env.DATABASE) {
+		return drizzleD1(env.DATABASE, { schema });
 	}
 
 	// ローカル環境等でD1がバインドされていない場合、Bun SQLite実装を動的に利用する
