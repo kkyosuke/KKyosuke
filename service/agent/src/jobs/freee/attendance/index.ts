@@ -1,16 +1,8 @@
 import { getFreeeConfig } from "../../../config/env";
-import {
-	getUserTokenByType,
-	saveUserToken,
-} from "../../../datasource/db/userToken";
 import type { DBClient } from "../../../lib/db";
 import { createFreeeClient } from "../../../lib/freee/index";
 
-import {
-	ensureFreeeAccessToken,
-	getAccessTokenFromKV,
-	saveAccessTokenToKV,
-} from "../utils/token";
+import { ensureFreeeAccessToken } from "../utils/token";
 
 export async function recordAttendance(
 	db: DBClient,
