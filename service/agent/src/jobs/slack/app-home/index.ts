@@ -37,7 +37,7 @@ export async function publishHomeView(userId: string, env: CustomAppEnv) {
 
 	const slackToken = env.SLACK_BOT_TOKEN;
 	if (slackToken) {
-		await fetch("https://slack.com/api/views.publish", {
+		const res = await fetch("https://slack.com/api/views.publish", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -51,5 +51,8 @@ export async function publishHomeView(userId: string, env: CustomAppEnv) {
 				},
 			}),
 		});
+		if (!res.ok) {
+			console.error("Failed to publish home view:", await res.text());
+		}
 	}
 }
