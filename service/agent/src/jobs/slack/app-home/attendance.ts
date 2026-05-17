@@ -12,16 +12,6 @@ export type AttendanceState =
 	| "on_break"
 	| "clocked_out";
 
-function getTodayJST(): string {
-	const formatter = new Intl.DateTimeFormat("ja-JP", {
-		timeZone: "Asia/Tokyo",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	});
-	return formatter.format(new Date()).replace(/\//g, "-");
-}
-
 export async function buildAttendanceBlocks(
 	db: DBClient,
 	userId: string,
@@ -47,23 +37,24 @@ export async function buildAttendanceBlocks(
 				const me = await freee.hr.getMe(accessToken);
 				const company = me.companies?.[0];
 				if (company) {
-					const today = getTodayJST();
-					const clocks = await freee.hr.getTimeClocks(
-						accessToken,
-						company.employee_id,
-						company.id,
-						today,
-						today,
-					);
-					const lastClock =
-						clocks.length > 0 ? clocks[clocks.length - 1] : null;
-
 					const typesRes = await freee.hr.getAvailableTimeClockTypes(
 						accessToken,
 						company.employee_id,
 						company.id,
 					);
 					const available = typesRes.available_types;
+					const baseDate = typesRes.base_date;
+
+					const clocks = await freee.hr.getTimeClocks(
+						accessToken,
+						company.employee_id,
+						company.id,
+						baseDate,
+						baseDate,
+					);
+					const todayClocks = clocks.filter((c) => c.date === baseDate);
+					const lastClock =
+						todayClocks.length > 0 ? todayClocks[todayClocks.length - 1] : null;
 
 					if (available.includes("break_end")) {
 						state = "on_break";
