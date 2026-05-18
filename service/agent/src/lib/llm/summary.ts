@@ -20,8 +20,7 @@ export const summarySchema = z.object({
 				progress: z
 					.number()
 					.min(0)
-					.max(100)
-					.describe("進捗状況のパーセンテージ（0〜100）"),
+					.describe("進捗状況のパーセンテージ（100%を超える場合もあります）"),
 				score: z
 					.number()
 					.min(1)
@@ -57,11 +56,28 @@ export async function summarizeThread(
 		threadContent,
 	);
 
-	const { object } = await generateObject({
-		model,
-		schema: summarySchema,
-		prompt,
-	});
+	console.log("[LLM:summarizeThread] Sending prompt:\n", prompt);
 
-	return object;
+	try {
+		const { object, usage } = await generateObject({
+			model,
+			schema: summarySchema,
+			prompt,
+		});
+
+		console.log(
+			"[LLM:summarizeThread] Generated object:\n",
+			JSON.stringify(object, null, 2),
+		);
+		console.log("[LLM:summarizeThread] Usage:\n", usage);
+
+		return object;
+	} catch (error: unknown) {
+		const err = error as Error & { text?: string };
+		console.error("[LLM:summarizeThread] Error:", err.message || String(error));
+		if (err.text) {
+			console.error("[LLM:summarizeThread] Raw Text:", err.text);
+		}
+		throw error;
+	}
 }
