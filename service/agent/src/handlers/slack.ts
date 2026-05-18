@@ -45,14 +45,18 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		const { handlePaidHolidayModalOpen } = await import(
 			"../jobs/slack/paid-holiday-action"
 		);
-		return handlePaidHolidayModalOpen(args as any);
+		return handlePaidHolidayModalOpen(
+			args as unknown as Parameters<typeof handlePaidHolidayModalOpen>[0],
+		);
 	});
 
 	app.view("freee_paid_holiday_modal", async (args) => {
 		const { handlePaidHolidaySubmission } = await import(
 			"../jobs/slack/paid-holiday-action"
 		);
-		return handlePaidHolidaySubmission(args as any);
+		return handlePaidHolidaySubmission(
+			args as unknown as Parameters<typeof handlePaidHolidaySubmission>[0],
+		);
 	});
 
 	return app;

@@ -2,7 +2,6 @@ import type { SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
 import { getDatabaseClient } from "../../../lib/db";
 import { summarizeThread } from "../../../lib/llm/summary";
-import type { AppBindings } from "../../../types/bindings";
 
 type ShortcutHandlerArgs = Parameters<SlackApp<CustomAppEnv>["shortcut"]>;
 type AckFn = ShortcutHandlerArgs[1];

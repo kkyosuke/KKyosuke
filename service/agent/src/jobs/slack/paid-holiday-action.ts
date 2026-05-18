@@ -5,6 +5,7 @@ import { ensureFreeeAccessToken } from "../freee/utils/token";
 
 import type { CustomAppEnv } from "../../config/env";
 import { getFreeeErrorMessage } from "./utils/freee";
+import type { PaidHolidayRequest } from "../../lib/freee/hr";
 
 export const handlePaidHolidayModalOpen = async ({
 	context,
@@ -214,7 +215,22 @@ export const handlePaidHolidaySubmission = async ({
 	context: { client: import("slack-cloudflare-workers").SlackAPIClient };
 	payload: {
 		user: { id: string };
-		view: { state: { values: any }; private_metadata: string };
+		view: {
+			state: {
+				values: Record<
+					string,
+					Record<
+						string,
+						{
+							value?: string;
+							selected_option?: { value: string };
+							selected_date?: string;
+						}
+					>
+				>;
+			};
+			private_metadata: string;
+		};
 	};
 	env: CustomAppEnv;
 }) => {
@@ -222,10 +238,11 @@ export const handlePaidHolidaySubmission = async ({
 	const values = payload.view.state.values;
 
 	const leaveType =
-		values.leave_type_block.leave_type_select.selected_option.value;
-	const startDate = values.start_date_block.start_date_picker.selected_date;
-	const endDate = values.end_date_block.end_date_picker.selected_date;
-	const reason = values.reason_block.reason_input.value || "";
+		values.leave_type_block?.leave_type_select?.selected_option?.value ?? "";
+	const startDate =
+		values.start_date_block?.start_date_picker?.selected_date ?? "";
+	const endDate = values.end_date_block?.end_date_picker?.selected_date ?? "";
+	const reason = values.reason_block?.reason_input?.value ?? "";
 
 	try {
 		const metadata = JSON.parse(payload.view.private_metadata);
@@ -245,7 +262,7 @@ export const handlePaidHolidaySubmission = async ({
 			applicant_id: metadata.employeeId,
 			approval_flow_id: metadata.approvalFlowId,
 			values: {
-				type: leaveType as any,
+				type: leaveType as PaidHolidayRequest["values"]["type"],
 				start_date: startDate,
 				end_date: endDate,
 				reason: reason,
