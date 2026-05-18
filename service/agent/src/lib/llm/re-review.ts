@@ -3,7 +3,6 @@ import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
 import type { CustomAppEnv } from "../../config/env";
 import { buildReReviewPrompt } from "../../prompts/re-review/prompt";
-import { REVIEW_MODEL_NAME } from "./cost";
 
 /**
  * 再レビュー生成時に必要なコンテキスト
@@ -60,12 +59,13 @@ export type ReReviewResult = z.infer<typeof reReviewSchema>;
 export async function generateReReview(
 	env: Partial<CustomAppEnv>,
 	context: ReReviewContext,
+	modelName: string,
 ): Promise<{ output: ReReviewResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic(REVIEW_MODEL_NAME);
+	const model = anthropic(modelName);
 
 	const prompt = buildReReviewPrompt(context);
 

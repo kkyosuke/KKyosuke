@@ -1,10 +1,7 @@
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
 import { createReview, getIssueComments } from "../../../lib/github";
-import {
-	calculateCost,
-	generateCodeReview,
-	REVIEW_MODEL_NAME,
-} from "../../../lib/llm";
+import { calculateCost, generateCodeReview } from "../../../lib/llm";
 import instruction from "../../../prompts/review/instruction.md" with {
 	type: "text",
 };
@@ -40,6 +37,26 @@ export async function runReviewAgent(
 	botName: string,
 	sender: string,
 ) {
+	const settings = new SettingsManager(env);
+	const reviewModelName = await settings.getReviewModel();
+	const autoReviewEnabled = await settings.isAutoReviewEnabled();
+
+	if (!autoReviewEnabled) {
+		console.log(
+			`[ReviewAgent] Auto review is disabled globally. Aborting review for ${owner}/${repo}#${pullNumber}`,
+		);
+		const { createPlaceholderComment } = await import("../../../lib/github");
+		await createPlaceholderComment(
+			env,
+			installationId,
+			owner,
+			repo,
+			pullNumber,
+			"🤖 **PR Review Agent:**\n現在メンテナンス中のため、レビュー機能は一時停止されています。",
+		);
+		return;
+	}
+
 	const steps: ProgressStep[] = [
 		{ name: "PRの情報を取得中", status: "pending" },
 		{ name: "AIによるレビューを生成中", status: "pending" },
@@ -54,12 +71,12 @@ export async function runReviewAgent(
 		pullNumber,
 		"Review in Progress",
 		steps,
-		REVIEW_MODEL_NAME,
+		reviewModelName,
 	);
 
 	try {
 		console.log(
-			`[ReviewAgent] Starting review for ${owner}/${repo}#${pullNumber}`,
+			`[ReviewAgent] Starting review for ${owner}/${repo}#${pullNumber} with model ${reviewModelName}`,
 		);
 		await progress.start();
 
@@ -99,14 +116,18 @@ export async function runReviewAgent(
 		console.log(
 			`[ReviewAgent] Requesting LLM for ${owner}/${repo}#${pullNumber}`,
 		);
-		const { output: reviewResult, usage } = await generateCodeReview(env, {
-			title: pr.title,
-			body: pr.body,
-			diff: diff,
-			comments: commentsText,
-			instruction: finalInstruction,
-			template: template,
-		});
+		const { output: reviewResult, usage } = await generateCodeReview(
+			env,
+			{
+				title: pr.title,
+				body: pr.body,
+				diff: diff,
+				comments: commentsText,
+				instruction: finalInstruction,
+				template: template,
+			},
+			reviewModelName,
+		);
 
 		// 制限: 指摘事項は最大10個まで
 		const feedbacks = reviewResult.feedback.slice(0, 10);
@@ -143,7 +164,7 @@ export async function runReviewAgent(
 		console.log(
 			`[ReviewAgent] Submitting review for ${owner}/${repo}#${pullNumber}`,
 		);
-		const cost = calculateCost(usage, REVIEW_MODEL_NAME);
+		const cost = calculateCost(usage, reviewModelName);
 		const finalReport = `@${sender}\n\n${markdownReport}`;
 
 		await createReview(

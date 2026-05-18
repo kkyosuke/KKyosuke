@@ -1,5 +1,7 @@
 import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
+import { getGithubApp } from "../../../lib/github";
 
 export const buildSettingsBlocks = async (
 	userId: string,
@@ -25,6 +27,52 @@ export const buildSettingsBlocks = async (
 			return []; // プライマリーオーナー以外には何も表示しない
 		}
 
+		const settings = new SettingsManager(env);
+
+		// 設定マネージャーから現在の設定を取得
+		const defaultModel = await settings.getReviewModel();
+		const autoReviewEnabled = await settings.isAutoReviewEnabled();
+		const logLevel = await settings.getLogLevel();
+
+		// ステータス確認
+		let githubStatus = "❌ エラー";
+		try {
+			const app = getGithubApp(env);
+			const { data } = await app.octokit.rest.apps.getAuthenticated();
+			if (data?.id) {
+				githubStatus = "✅ 正常";
+			}
+		} catch (e) {
+			console.error("GitHub App status check failed:", e);
+		}
+
+		let llmStatus = "❌ 未設定";
+		if (settings.anthropicApiKey) {
+			llmStatus = settings.anthropicApiKey.startsWith("sk-ant-")
+				? "✅ 正常"
+				: "⚠️ フォーマット不正";
+		}
+
+		let d1Status = "❌ エラー";
+		try {
+			if (settings.database) {
+				await settings.database.prepare("SELECT 1").first();
+				d1Status = "✅ 正常";
+			} else {
+				d1Status = "❌ 未設定 (バインディングなし)";
+			}
+		} catch (e) {
+			console.error("D1 Database status check failed:", e);
+		}
+
+		const logOptionMap: Record<string, string> = {
+			debug: "Debug",
+			info: "Info",
+			warn: "Warn",
+			error: "Error",
+		};
+		const currentLogLabel = logOptionMap[logLevel] || "Info";
+
 		return [
 			{
 				type: "divider",
@@ -33,7 +81,7 @@ export const buildSettingsBlocks = async (
 				type: "header",
 				text: {
 					type: "plain_text",
-					text: "⚙️ システム設定",
+					text: "⚙️ システム設定 (PR Review Agent)",
 					emoji: true,
 				},
 			},
@@ -41,7 +89,134 @@ export const buildSettingsBlocks = async (
 				type: "section",
 				text: {
 					type: "mrkdwn",
-					text: "*ステータス: 未定 (TBD)*\n設定画面に表示する具体的な項目や内容については、現在未定です。今後要件が固まり次第追加されます。",
+					text: "🤖 *LLMモデルの選択*\nレビューで使用するデフォルトのモデルを選択します。",
+				},
+				accessory: {
+					type: "static_select",
+					action_id: "settings_pr_review_model_changed",
+					placeholder: {
+						type: "plain_text",
+						text: "モデルを選択",
+					},
+					initial_option: {
+						text: {
+							type: "plain_text",
+							text: defaultModel,
+						},
+						value: defaultModel,
+					},
+					options: [
+						{
+							text: {
+								type: "plain_text",
+								text: "claude-haiku-4-5",
+							},
+							value: "claude-haiku-4-5",
+						},
+						{
+							text: {
+								type: "plain_text",
+								text: "claude-sonnet-4-5",
+							},
+							value: "claude-sonnet-4-5",
+						},
+						{
+							text: {
+								type: "plain_text",
+								text: "claude-opus-4-6",
+							},
+							value: "claude-opus-4-6",
+						},
+					],
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "🛑 *自動レビューの全体ON/OFF*\nメンテナンス時などにレビュー発火を一時停止します。",
+				},
+				accessory: {
+					type: "checkboxes",
+					action_id: "settings_pr_review_auto_enabled_changed",
+					options: [
+						{
+							text: {
+								type: "mrkdwn",
+								text: "自動レビューを有効にする",
+							},
+							value: "enabled",
+						},
+					],
+					...(autoReviewEnabled
+						? {
+								initial_options: [
+									{
+										text: {
+											type: "mrkdwn",
+											text: "自動レビューを有効にする",
+										},
+										value: "enabled",
+									},
+								],
+							}
+						: {}),
+				},
+			},
+			{
+				type: "divider",
+			},
+			{
+				type: "header",
+				text: {
+					type: "plain_text",
+					text: "⚙️ システム・運用ステータス (Admin/Debug)",
+					emoji: true,
+				},
+			},
+			{
+				type: "section",
+				fields: [
+					{
+						type: "mrkdwn",
+						text: `*GitHub App*\n${githubStatus}`,
+					},
+					{
+						type: "mrkdwn",
+						text: `*LLM API*\n${llmStatus}`,
+					},
+					{
+						type: "mrkdwn",
+						text: `*D1 Database*\n${d1Status}`,
+					},
+				],
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "📝 *ログ出力レベル*\nエージェントのログレベルを指定します。",
+				},
+				accessory: {
+					type: "static_select",
+					action_id: "settings_log_level_changed",
+					placeholder: {
+						type: "plain_text",
+						text: "ログレベル",
+					},
+					initial_option: {
+						text: {
+							type: "plain_text",
+							text: currentLogLabel,
+						},
+						value: logLevel,
+					},
+					options: [
+						{ text: { type: "plain_text", text: "Debug" }, value: "debug" },
+						{ text: { type: "plain_text", text: "Info" }, value: "info" },
+						{ text: { type: "plain_text", text: "Warn" }, value: "warn" },
+						{ text: { type: "plain_text", text: "Error" }, value: "error" },
+					],
 				},
 			},
 		];

@@ -1,6 +1,6 @@
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
 import { createReview, getReviewThreads } from "../../../lib/github";
-import { REVIEW_MODEL_NAME } from "../../../lib/llm";
 import instruction from "../../../prompts/re-review/instruction.md" with {
 	type: "text",
 };
@@ -49,6 +49,38 @@ export async function runReReviewAgent(
 	triggerCommentBody?: string,
 	isReviewSummary?: boolean,
 ) {
+	const settings = new SettingsManager(env);
+	const reviewModelName = await settings.getReviewModel();
+	const autoReviewEnabled = await settings.isAutoReviewEnabled();
+
+	if (!autoReviewEnabled) {
+		console.log(
+			`[ReReviewAgent] Auto review is disabled globally. Aborting re-review for ${owner}/${repo}#${pullNumber}`,
+		);
+		const { createPlaceholderComment } = await import("../../../lib/github");
+		await createPlaceholderComment(
+			env,
+			installationId,
+			owner,
+			repo,
+			pullNumber,
+			"🤖 **PR Review Agent:**\n現在メンテナンス中のため、再レビュー機能は一時停止されています。",
+		);
+
+		await updateTriggerCommentState(
+			env,
+			installationId,
+			owner,
+			repo,
+			pullNumber,
+			triggerCommentId,
+			triggerCommentBody,
+			isReviewSummary,
+			"reverted",
+		);
+		return;
+	}
+
 	const lockKey = `lock-rereview-${owner}-${repo}-${pullNumber}`;
 
 	await withKvLock(env, lockKey, 600, async () => {
@@ -67,7 +99,7 @@ export async function runReReviewAgent(
 			pullNumber,
 			"Re-Review in Progress",
 			steps,
-			REVIEW_MODEL_NAME,
+			reviewModelName,
 		);
 
 		try {
@@ -171,6 +203,7 @@ export async function runReReviewAgent(
 					finalInstruction,
 					template,
 					hasUnresolvedBotThreads,
+					reviewModelName,
 				);
 
 				totalCost += fullReviewResult.cost;

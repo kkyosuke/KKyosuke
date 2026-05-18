@@ -58,5 +58,29 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		);
 	});
 
+	app.action("settings_pr_review_model_changed", async (args) => {
+		const { handleModelChange } = await import("../jobs/slack/settings-action");
+		return handleModelChange(
+			args as unknown as Parameters<typeof handleModelChange>[0],
+		);
+	});
+	app.action("settings_pr_review_auto_enabled_changed", async (args) => {
+		const { handleAutoReviewEnabledChange } = await import(
+			"../jobs/slack/settings-action"
+		);
+		return handleAutoReviewEnabledChange(
+			args as unknown as Parameters<typeof handleAutoReviewEnabledChange>[0],
+		);
+	});
+
+	app.action("settings_log_level_changed", async (args) => {
+		const { handleLogLevelChange } = await import(
+			"../jobs/slack/settings-action"
+		);
+		return handleLogLevelChange(
+			args as unknown as Parameters<typeof handleLogLevelChange>[0],
+		);
+	});
+
 	return app;
 }
