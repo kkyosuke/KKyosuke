@@ -1,9 +1,9 @@
+import type { CustomAppEnv } from "../../../config/env";
 import {
 	createReplyForReviewComment,
 	type ReviewThread,
 	resolveReviewThread,
 } from "../../../lib/github";
-import type { CustomAppEnv } from "../../../config/env";
 import {
 	calculateCost,
 	evaluateReviewThread,

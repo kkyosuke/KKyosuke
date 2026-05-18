@@ -1,5 +1,5 @@
-import { createReview, getIssueComments } from "../../../lib/github";
 import type { CustomAppEnv } from "../../../config/env";
+import { createReview, getIssueComments } from "../../../lib/github";
 import {
 	calculateCost,
 	generateCodeReview,

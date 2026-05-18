@@ -1,5 +1,5 @@
-import { createReview, getReviewThreads } from "../../../lib/github";
 import type { CustomAppEnv } from "../../../config/env";
+import { createReview, getReviewThreads } from "../../../lib/github";
 import { REVIEW_MODEL_NAME } from "../../../lib/llm";
 import instruction from "../../../prompts/re-review/instruction.md" with {
 	type: "text",

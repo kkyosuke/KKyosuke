@@ -1,10 +1,10 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { z } from "zod";
+import type { CustomAppEnv } from "../../config/env";
 import shareSummaryPromptTemplate from "../../prompts/weekly-report/prompt.md" with {
 	type: "text",
 };
-import type { CustomAppEnv } from "../../config/env";
 import { REVIEW_MODEL_NAME } from "./cost";
 
 export const weeklyReportSchema = z.object({

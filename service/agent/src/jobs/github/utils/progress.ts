@@ -1,5 +1,5 @@
-import { createPlaceholderComment, updateComment } from "../../../lib/github";
 import type { CustomAppEnv } from "../../../config/env";
+import { createPlaceholderComment, updateComment } from "../../../lib/github";
 import type { KVBinding } from "../../common/types";
 import { getInProgressComment, type ProgressStep } from "../constants";
 

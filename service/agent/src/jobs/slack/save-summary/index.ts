@@ -158,13 +158,18 @@ async function executeSummary(
 		const summarizedUsersList = await Promise.all(
 			summaryData.summary.map(async (userSummary) => {
 				try {
-					const userInfo = await client.users.info({ user: userSummary.user_id });
-					const name = userInfo.user?.real_name || userInfo.user?.name || userSummary.user_id;
+					const userInfo = await client.users.info({
+						user: userSummary.user_id,
+					});
+					const name =
+						userInfo.user?.real_name ||
+						userInfo.user?.name ||
+						userSummary.user_id;
 					return `- ${name}`;
-				} catch (e) {
+				} catch (_e) {
 					return `- ${userSummary.user_id}`;
 				}
-			})
+			}),
 		);
 		const summarizedUsersListText = summarizedUsersList.join("\n");
 

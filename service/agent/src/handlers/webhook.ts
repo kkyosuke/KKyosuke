@@ -1,6 +1,7 @@
 import { Webhooks } from "@octokit/webhooks";
-import { Hono, type Context } from "hono";
+import { type Context, Hono } from "hono";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
+import type { CustomAppEnv } from "../config/env";
 import { getBotName } from "../config/env";
 import type { KVBinding } from "../jobs/common/types";
 import {
@@ -9,7 +10,6 @@ import {
 } from "../jobs/github/constants";
 import type { ReviewQueueMessage } from "../jobs/github/queue";
 import type { CommandContext } from "../jobs/github/types";
-import type { CustomAppEnv } from "../config/env";
 
 type WebhookPayload = {
 	action?: string;

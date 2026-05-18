@@ -1,8 +1,8 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
-import { buildThreadPrompt } from "../../prompts/thread/prompt";
 import type { CustomAppEnv } from "../../config/env";
+import { buildThreadPrompt } from "../../prompts/thread/prompt";
 import { REVIEW_MODEL_NAME } from "./cost";
 
 /**

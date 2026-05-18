@@ -1,5 +1,5 @@
-import { updateComment, updateReview } from "../../../lib/github";
 import type { CustomAppEnv } from "../../../config/env";
+import { updateComment, updateReview } from "../../../lib/github";
 import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
 	RE_REVIEW_CHECKBOX_COMPLETED,

@@ -1,4 +1,5 @@
 import { SlackApp } from "slack-cloudflare-workers";
+import type { CustomAppEnv } from "../config/env";
 import { appHomeOpened } from "../jobs/slack/app-home";
 import { handleAttendanceAction } from "../jobs/slack/attendance-action";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/hey-cf-workers";
@@ -7,8 +8,6 @@ import {
 	summaryShortcutAck,
 	summaryShortcutLazy,
 } from "../jobs/slack/save-summary";
-
-import type { CustomAppEnv } from "../config/env";
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 	const app = new SlackApp({ env });

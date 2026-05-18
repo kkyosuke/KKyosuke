@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slack Home Tab 設定画面 設計書</title>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9fafb;
+    }
+    h1, h2, h3 {
+      color: #111827;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    ul, ol {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .bg-note {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Slack Home Tab 設定画面 設計書</h1>
+  
+  <h2>概要 (Overview)</h2>
+  <p>SlackアプリのHome Tab（ホームタブ）内に、システムの設定を管理するための画面を設けます。</p>
+  
+  <h2>表示制御 (Access Control)</h2>
+  <ul>
+    <li><strong>対象ユーザー</strong>: Slackの Primary Owner（プライマリーオーナー）にのみ表示します。</li>
+    <li><strong>権限確認</strong>: Home Tabを開いた際 (<code>app_home_opened</code> イベント時) にユーザーの権限を確認し、Primary Owner以外には設定画面を表示しないよう制御します。</li>
+  </ul>
+
+  <h2>設定内容 (Settings Content)</h2>
+  <div class="bg-note">
+    <strong>ステータス: 未定 (TBD)</strong><br>
+    設定画面に表示する具体的な項目や内容については、現在未定です。要件が確定次第、ここに追記・更新します。
+  </div>
+
+</body>
+</html>

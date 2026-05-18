@@ -2,8 +2,8 @@ import type { MessageBatch } from "@cloudflare/workers-types";
 import type { CustomAppEnv } from "../config/env";
 import { getBotName } from "../config/env";
 import { replyCommand, reReviewCommand } from "../jobs/github";
-import { routeCommentCommand } from "../jobs/github/router";
 import type { ReviewQueueMessage } from "../jobs/github/queue";
+import { routeCommentCommand } from "../jobs/github/router";
 import type { CommandContext } from "../jobs/github/types";
 
 export async function queueHandler(
