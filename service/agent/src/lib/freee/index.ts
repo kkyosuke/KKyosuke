@@ -1,8 +1,10 @@
 import { buildAuthFunction } from "./auth";
 import {
+	getApprovalFlows,
 	getAvailableTimeClockTypes,
 	getMe,
 	getTimeClocks,
+	postPaidHolidayRequest,
 	postTimeClock,
 } from "./hr";
 
@@ -20,6 +22,8 @@ export function createFreeeClient(config: FreeeConfig) {
 			postTimeClock,
 			getAvailableTimeClockTypes,
 			getTimeClocks,
+			getApprovalFlows,
+			postPaidHolidayRequest,
 		},
 	};
 	return freee;

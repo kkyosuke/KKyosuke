@@ -1,3 +1,5 @@
+import { FreeeAPIError } from "./error";
+
 export interface FreeeMeResponse {
 	id: number;
 	companies: {
@@ -21,8 +23,11 @@ export async function getMe(accessToken: string): Promise<FreeeMeResponse> {
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get user info from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get user info from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
@@ -59,8 +64,11 @@ export async function postTimeClock(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to post time clock to freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to post time clock to freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 }
@@ -88,8 +96,11 @@ export async function getAvailableTimeClockTypes(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get available time clock types from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get available time clock types from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
@@ -125,10 +136,87 @@ export async function getTimeClocks(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get time clocks from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get time clocks from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
 	return (await response.json()) as TimeClock[];
+}
+
+export interface ApprovalFlow {
+	id: number;
+	name: string;
+	description: string;
+}
+
+export async function getApprovalFlows(
+	accessToken: string,
+	companyId: number,
+): Promise<ApprovalFlow[]> {
+	const response = await fetch(
+		`https://api.freee.co.jp/hr/api/v1/approval_flows?company_id=${companyId}`,
+		{
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				Accept: "application/json",
+			},
+		},
+	);
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new FreeeAPIError(
+			"Failed to get approval flows from freee",
+			response.status,
+			response.statusText,
+			errorText,
+		);
+	}
+
+	return (await response.json()) as ApprovalFlow[];
+}
+
+export interface PaidHolidayRequest {
+	company_id: number;
+	applicant_id: number;
+	approval_flow_id: number;
+	values: {
+		type: "full" | "half" | "morning_off" | "afternoon_off" | "hour";
+		start_date: string;
+		end_date: string;
+		reason?: string;
+	};
+}
+
+export async function postPaidHolidayRequest(
+	accessToken: string,
+	request: PaidHolidayRequest,
+): Promise<void> {
+	const response = await fetch(
+		`https://api.freee.co.jp/hr/api/v1/approval_requests/paid_holidays`,
+		{
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+				Accept: "application/json",
+			},
+			body: JSON.stringify(request),
+		},
+	);
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new FreeeAPIError(
+			"Failed to post paid holiday request to freee",
+			response.status,
+			response.statusText,
+			errorText,
+		);
+	}
 }

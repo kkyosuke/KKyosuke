@@ -2,7 +2,6 @@ import type { SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
 import { getDatabaseClient } from "../../../lib/db";
 import { summarizeThread } from "../../../lib/llm/summary";
-import type { AppBindings } from "../../../types/bindings";
 
 type ShortcutHandlerArgs = Parameters<SlackApp<CustomAppEnv>["shortcut"]>;
 type AckFn = ShortcutHandlerArgs[1];
@@ -126,10 +125,7 @@ async function executeSummary(
 		const threadContent = `【スレッドの最初のメッセージ（スレッド名）】\n${threadTitleText}\n\n【参加者の投稿一覧】\n${allContent}`;
 
 		// 要約の生成
-		const summaryData = await summarizeThread(
-			env,
-			threadContent,
-		);
+		const summaryData = await summarizeThread(env, threadContent);
 
 		const dbClient = getDatabaseClient(env);
 

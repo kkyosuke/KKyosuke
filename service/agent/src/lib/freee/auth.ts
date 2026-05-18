@@ -1,3 +1,4 @@
+import { FreeeAPIError } from "./error";
 import type { FreeeConfig } from "./index";
 
 export interface FreeeTokenResponse {
@@ -50,8 +51,11 @@ export function buildAuthFunction(config: FreeeConfig) {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				throw new Error(
-					`Failed to get freee access token: ${response.status} ${response.statusText} - ${errorText}`,
+				throw new FreeeAPIError(
+					`Failed to get freee access token`,
+					response.status,
+					response.statusText,
+					errorText,
 				);
 			}
 
@@ -84,8 +88,11 @@ export function buildAuthFunction(config: FreeeConfig) {
 
 			if (!response.ok) {
 				const errorText = await response.text();
-				throw new Error(
-					`Failed to refresh freee access token: ${response.status} ${response.statusText} - ${errorText}`,
+				throw new FreeeAPIError(
+					`Failed to refresh freee access token`,
+					response.status,
+					response.statusText,
+					errorText,
 				);
 			}
 

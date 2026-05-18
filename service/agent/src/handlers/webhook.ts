@@ -59,10 +59,7 @@ function buildCommandContext(
 /**
  * キューにメッセージを送信します
  */
-async function dispatchToQueue(
-	e: CustomAppEnv,
-	message: ReviewQueueMessage,
-) {
+async function dispatchToQueue(e: CustomAppEnv, message: ReviewQueueMessage) {
 	const queue = e.GITHUB_QUEUE;
 	if (queue && typeof queue.send === "function") {
 		try {

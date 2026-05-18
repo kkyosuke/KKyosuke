@@ -55,11 +55,7 @@ export default {
 		}
 
 		// それ以外はHonoで処理する
-		return await app.fetch(
-			request,
-			appEnv,
-			ctx,
-		);
+		return await app.fetch(request, appEnv, ctx);
 	},
 	async queue(
 		batch: MessageBatch<import("./src/jobs/github/queue").ReviewQueueMessage>,

@@ -1,4 +1,5 @@
 import { getFreeeConfig } from "../../../config/env";
+import { FreeeAPIError } from "../../../lib/freee/error";
 import {
 	getUserTokenByType,
 	saveUserToken,
@@ -79,6 +80,13 @@ export async function ensureFreeeAccessToken(
 		return accessToken;
 	} catch (e) {
 		console.error("Failed to refresh token", e);
-		return null;
+		if (e instanceof FreeeAPIError) {
+			if (e.status >= 400 && e.status < 500) {
+				// トークンが無効・期限切れなどの場合はnullを返す
+				return null;
+			}
+		}
+		// 503などのサーバーエラーやネットワークエラーの場合は例外を投げる
+		throw e;
 	}
 }

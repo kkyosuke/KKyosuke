@@ -32,12 +32,12 @@ export const executeWithReaction = async (
 			await client.reactions.remove({
 				channel: channelId,
 				timestamp: ts,
-				name: "running",
+				name: "running-pikachu",
 			});
 			await client.reactions.add({
 				channel: channelId,
 				timestamp: ts,
-				name: "check",
+				name: "white_check_mark",
 			});
 		} catch (e) {
 			console.error("[SlackRouter] Failed to update reaction to success", e);

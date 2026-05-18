@@ -22,7 +22,7 @@ features:
       description: このスレッドの内容を要約して進捗として保存します
   slash_commands:
     - command: /hey-cf-workers
-      url: https://ai.kyosuke.dev/slack/
+      url: https://local.kyosuke.dev/slack/
       description: Say hi to CF Workers
       usage_hint: Say hi to CF Workers
       should_escape: false
@@ -36,18 +36,19 @@ oauth_config:
       - commands
       - groups:history
       - im:history
+      - reactions:write
   pkce_enabled: false
 settings:
   event_subscriptions:
-    request_url: https://ai.kyosuke.dev/slack/
+    request_url: https://local.kyosuke.dev/slack/
     bot_events:
       - app_mention
       - message.im
       - app_home_opened
   interactivity:
     is_enabled: true
-    request_url: https://ai.kyosuke.dev/slack/
-    message_menu_options_url: https://ai.kyosuke.dev/slack/
+    request_url: https://local.kyosuke.dev/slack/
+    message_menu_options_url: https://local.kyosuke.dev/slack/
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

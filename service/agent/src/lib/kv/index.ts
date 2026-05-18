@@ -14,7 +14,7 @@ export function getKVClient(env: Partial<AppBindings>): KVClient {
 		// Cloudflare KV
 		return {
 			async get(key: string) {
-				return await env.GITHUB_KV?.get(key) ?? null;
+				return (await env.GITHUB_KV?.get(key)) ?? null;
 			},
 			async put(
 				key: string,
