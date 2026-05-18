@@ -3,7 +3,7 @@ import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
 import type { CustomAppEnv } from "../../config/env";
 import { buildThreadPrompt } from "../../prompts/thread/prompt";
-import { REVIEW_MODEL_NAME } from "./cost";
+import { DEFAULT_REVIEW_MODEL_NAME } from "./cost";
 
 /**
  * レビュースレッド評価時に必要なコンテキスト
@@ -44,7 +44,7 @@ export async function evaluateReviewThread(
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic(REVIEW_MODEL_NAME);
+	const model = anthropic(DEFAULT_REVIEW_MODEL_NAME);
 
 	const prompt = buildThreadPrompt(context);
 

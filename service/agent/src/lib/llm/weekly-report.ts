@@ -5,7 +5,7 @@ import type { CustomAppEnv } from "../../config/env";
 import shareSummaryPromptTemplate from "../../prompts/weekly-report/prompt.md" with {
 	type: "text",
 };
-import { REVIEW_MODEL_NAME } from "./cost";
+import { DEFAULT_REVIEW_MODEL_NAME } from "./cost";
 
 export const weeklyReportSchema = z.object({
 	summaries: z
@@ -40,7 +40,7 @@ export async function generateWeeklyShareSummary(
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic(REVIEW_MODEL_NAME);
+	const model = anthropic(DEFAULT_REVIEW_MODEL_NAME);
 
 	const prompt = shareSummaryPromptTemplate
 		.replace("{{weekBeforeLastData}}", weekBeforeLastData)

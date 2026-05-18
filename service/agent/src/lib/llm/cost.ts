@@ -3,7 +3,7 @@ import type { LanguageModelUsage } from "ai";
 /**
  * レビューに使用するLLMのモデル名
  */
-export const REVIEW_MODEL_NAME = "claude-haiku-4-5";
+export const DEFAULT_REVIEW_MODEL_NAME = "claude-haiku-4-5";
 
 type PricingRates = {
 	baseInput: number;

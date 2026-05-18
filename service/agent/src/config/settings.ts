@@ -1,4 +1,4 @@
-import { REVIEW_MODEL_NAME } from "../lib/llm/cost";
+import { DEFAULT_REVIEW_MODEL_NAME } from "../lib/llm/cost";
 import type { CustomAppEnv } from "./env";
 
 export class SettingsManager {
@@ -36,7 +36,7 @@ export class SettingsManager {
 			);
 			if (model) return model;
 		}
-		return REVIEW_MODEL_NAME;
+		return DEFAULT_REVIEW_MODEL_NAME;
 	}
 
 	async setReviewModel(model: string): Promise<void> {

@@ -6,8 +6,8 @@ import {
 } from "../../../lib/github";
 import {
 	calculateCost,
+	DEFAULT_REVIEW_MODEL_NAME,
 	evaluateReviewThread,
-	REVIEW_MODEL_NAME,
 } from "../../../lib/llm";
 import threadInstruction from "../../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
@@ -94,7 +94,7 @@ export async function runReplyAgent(
 			},
 		);
 
-		const cost = calculateCost(evalUsage, REVIEW_MODEL_NAME);
+		const cost = calculateCost(evalUsage, DEFAULT_REVIEW_MODEL_NAME);
 		console.log(
 			`[ReplyAgent] Action: ${evalResult.action}, Cost: $${cost.toFixed(4)}`,
 		);
