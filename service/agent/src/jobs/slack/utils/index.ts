@@ -47,7 +47,7 @@ export const executeWithReaction = async (
 			await client.reactions.remove({
 				channel: channelId,
 				timestamp: ts,
-				name: "running",
+				name: "running-pikachu",
 			});
 			await client.reactions.add({
 				channel: channelId,
