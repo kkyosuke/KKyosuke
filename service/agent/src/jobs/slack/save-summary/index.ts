@@ -131,7 +131,7 @@ async function executeSummary(
 			threadContent,
 		);
 
-		const dbClient = getDatabaseClient(env as unknown as Partial<AppBindings>);
+		const dbClient = getDatabaseClient(env);
 
 		const { saveProgressSummary } = await import(
 			"../../../datasource/db/progressSummary"

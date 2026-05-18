@@ -1,4 +1,3 @@
-import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { SlackApp } from "slack-cloudflare-workers";
 import { appHomeOpened } from "../jobs/slack/app-home";
 import { handleAttendanceAction } from "../jobs/slack/attendance-action";

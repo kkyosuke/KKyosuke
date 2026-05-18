@@ -3,6 +3,8 @@ import { recordAttendance } from "../freee/attendance";
 import { publishHomeView } from "./app-home";
 import { notifyAttendanceToSlack } from "./attendance-notification";
 
+import type { CustomAppEnv } from "../../config/env";
+
 export const handleAttendanceAction =
 	(
 		type: "clock_in" | "clock_out" | "break_begin" | "break_end",
@@ -15,7 +17,7 @@ export const handleAttendanceAction =
 	}: {
 		context: { client: import("slack-cloudflare-workers").SlackAPIClient };
 		payload: { user: { id: string } };
-		env: import("../../config/env").CustomAppEnv;
+		env: CustomAppEnv;
 	}) => {
 		const userId = payload.user.id;
 		try {

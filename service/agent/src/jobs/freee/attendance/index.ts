@@ -4,10 +4,12 @@ import { createFreeeClient } from "../../../lib/freee/index";
 
 import { ensureFreeeAccessToken } from "../utils/token";
 
+import type { CustomAppEnv } from "../../../config/env";
+
 export async function recordAttendance(
 	db: DBClient,
 	userId: string,
-	env: Partial<import("../../../config/env").CustomAppEnv>,
+	env: Partial<CustomAppEnv>,
 	type: "clock_in" | "clock_out" | "break_begin" | "break_end",
 ) {
 	// 1. Get user access token from KV or refresh it

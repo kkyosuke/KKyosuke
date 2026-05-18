@@ -4,6 +4,7 @@ import { z } from "zod";
 import shareSummaryPromptTemplate from "../../prompts/weekly-report/prompt.md" with {
 	type: "text",
 };
+import type { CustomAppEnv } from "../../config/env";
 import { REVIEW_MODEL_NAME } from "./cost";
 
 export const weeklyReportSchema = z.object({
@@ -31,7 +32,7 @@ export type WeeklyReportSummary = z.infer<typeof weeklyReportSchema>;
  * 先週と先々週の進捗データを基に、週次進捗まとめを生成します。
  */
 export async function generateWeeklyShareSummary(
-	env: Partial<import("../../config/env").CustomAppEnv>,
+	env: Partial<CustomAppEnv>,
 	weekBeforeLastData: string,
 	lastWeekData: string,
 ): Promise<WeeklyReportSummary> {

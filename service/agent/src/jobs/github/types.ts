@@ -1,8 +1,10 @@
+import type { CustomAppEnv } from "../../config/env";
+
 /**
  * コマンド実行時のコンテキスト
  */
 export interface CommandContext {
-	env: Partial<import("../../config/env").CustomAppEnv>;
+	env: Partial<CustomAppEnv>;
 	installationId: number;
 	owner: string;
 	repo: string;

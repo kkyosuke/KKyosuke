@@ -4,6 +4,7 @@ import { z } from "zod";
 import summaryPromptTemplate from "../../prompts/summary/prompt.md" with {
 	type: "text",
 };
+import type { CustomAppEnv } from "../../config/env";
 import { REVIEW_MODEL_NAME } from "./cost";
 
 export const summarySchema = z.object({
@@ -42,7 +43,7 @@ export type ThreadSummary = z.infer<typeof summarySchema>;
  * Slackのスレッド内容を要約します。
  */
 export async function summarizeThread(
-	env: Partial<import("../../config/env").CustomAppEnv>,
+	env: Partial<CustomAppEnv>,
 	threadContent: string,
 ): Promise<ThreadSummary> {
 	const anthropic = createAnthropic({

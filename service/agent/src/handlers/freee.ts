@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { CustomAppEnv } from "../config/env";
 import {
 	handleFreeeAuthCallback,
 	handleFreeeAuthRedirect,
@@ -6,7 +7,7 @@ import {
 } from "../jobs/freee/auth";
 
 export const freeeApp = new Hono<{
-	Bindings: import("../config/env").CustomAppEnv;
+	Bindings: CustomAppEnv;
 }>();
 
 freeeApp.get("/auth/start", handleFreeeAuthStart);

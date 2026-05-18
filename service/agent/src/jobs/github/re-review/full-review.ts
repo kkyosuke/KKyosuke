@@ -3,6 +3,7 @@ import {
 	generateReReview,
 	REVIEW_MODEL_NAME,
 } from "../../../lib/llm";
+import type { CustomAppEnv } from "../../../config/env";
 import { getNextStepsSection } from "../constants";
 
 /**
@@ -18,7 +19,7 @@ import { getNextStepsSection } from "../constants";
  * @returns 再レビューの結果とコスト
  */
 export async function performFullReReview(
-	env: Partial<import("../../../config/env").CustomAppEnv>,
+	env: Partial<CustomAppEnv>,
 	pr: { title: string; body: string | null },
 	diff: string,
 	finalInstruction: string,

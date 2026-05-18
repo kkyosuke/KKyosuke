@@ -3,6 +3,7 @@ import {
 	type ReviewThread,
 	resolveReviewThread,
 } from "../../../lib/github";
+import type { CustomAppEnv } from "../../../config/env";
 import {
 	calculateCost,
 	evaluateReviewThread,
@@ -26,7 +27,7 @@ import threadInstruction from "../../../prompts/re-review/thread-instruction.md"
  * @returns LLMの消費コスト
  */
 export async function processReviewThreads(
-	env: Partial<import("../../../config/env").CustomAppEnv>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

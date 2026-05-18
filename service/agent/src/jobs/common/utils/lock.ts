@@ -1,10 +1,11 @@
 import type { KVBinding } from "../types";
+import type { CustomAppEnv } from "../../../config/env";
 
 /**
  * KVを使用した排他制御を行います。
  */
 export async function withKvLock(
-	env: Partial<import("../../../config/env").CustomAppEnv>,
+	env: Partial<CustomAppEnv>,
 	key: string,
 	ttlSeconds: number,
 	callback: () => Promise<void>,
