@@ -20,8 +20,7 @@ export const summarySchema = z.object({
 				progress: z
 					.number()
 					.min(0)
-					.max(100)
-					.describe("進捗状況のパーセンテージ（0〜100）"),
+					.describe("進捗状況のパーセンテージ（100%を超える場合もあります）"),
 				score: z
 					.number()
 					.min(1)
@@ -57,11 +56,37 @@ export async function summarizeThread(
 		threadContent,
 	);
 
-	const { object } = await generateObject({
-		model,
-		schema: summarySchema,
-		prompt,
-	});
+	console.log("[LLM:summarizeThread] Sending prompt:\n", prompt);
 
-	return object;
+	try {
+		const { object, usage } = await generateObject({
+			model,
+			schema: summarySchema,
+			prompt,
+		});
+
+		console.log(
+			"[LLM:summarizeThread] Generated object:\n",
+			JSON.stringify(object, null, 2),
+		);
+		console.log("[LLM:summarizeThread] Usage:\n", usage);
+
+		return object;
+	} catch (error: any) {
+		console.error("[LLM:summarizeThread] Error generating object:");
+		console.error("Error Message:", error.message);
+
+		// エラーの原因（TypeValidationError や ZodError など）を深く掘り下げてログ出力
+		let currentError = error;
+		while (currentError.cause) {
+			console.error("Caused by:", currentError.cause);
+			currentError = currentError.cause;
+		}
+
+		// エラー時にLLMが返してきた生のテキストがあれば出力
+		if (error.text) {
+			console.error("Raw Text Output:", error.text);
+		}
+		throw error;
+	}
 }

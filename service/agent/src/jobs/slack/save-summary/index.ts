@@ -148,7 +148,7 @@ async function executeSummary(
 				id,
 				userId: userSummary.user_id,
 				targetDate: summaryData.target_date,
-				progressPercent: userSummary.progress,
+				progressPercent: Math.min(userSummary.progress, 100),
 				evaluationScore: userSummary.score,
 				summaryText: userSummary.text,
 			});
