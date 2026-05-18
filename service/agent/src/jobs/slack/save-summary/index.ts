@@ -127,6 +127,15 @@ async function executeSummary(
 		// 要約の生成
 		const summaryData = await summarizeThread(env, threadContent);
 
+		if (summaryData.summary.length === 0) {
+			await client.chat.postMessage({
+				channel: channel_id,
+				thread_ts: thread_ts,
+				text: "📝 要約できる進捗情報が見つかりませんでした。",
+			});
+			return;
+		}
+
 		const dbClient = getDatabaseClient(env);
 
 		const { saveProgressSummary } = await import(
