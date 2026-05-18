@@ -1,8 +1,8 @@
 import type { SlackMentionCommand, SlackMentionContext } from "../types";
 
 const REACTIONS = {
-	RUNNING_PIKACHU: "running-pikachu",
-	SUCCESS: "white_check_mark",
+	RUNNING: "mew-running",
+	SUCCESS: "mew-done",
 	FAILURE: "x",
 } as const;
 
@@ -25,7 +25,7 @@ export const executeWithReaction = async (
 		await client.reactions.add({
 			channel: channelId,
 			timestamp: ts,
-			name: REACTIONS.RUNNING_PIKACHU,
+			name: REACTIONS.RUNNING,
 		});
 	} catch (e) {
 		console.error("[SlackRouter] Failed to add running reaction", e);
@@ -38,7 +38,7 @@ export const executeWithReaction = async (
 			await client.reactions.remove({
 				channel: channelId,
 				timestamp: ts,
-				name: REACTIONS.RUNNING_PIKACHU,
+				name: REACTIONS.RUNNING,
 			});
 			await client.reactions.add({
 				channel: channelId,
@@ -53,7 +53,7 @@ export const executeWithReaction = async (
 			await client.reactions.remove({
 				channel: channelId,
 				timestamp: ts,
-				name: REACTIONS.RUNNING_PIKACHU,
+				name: REACTIONS.RUNNING,
 			});
 			await client.reactions.add({
 				channel: channelId,
