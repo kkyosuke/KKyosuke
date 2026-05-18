@@ -73,19 +73,9 @@ export async function summarizeThread(
 
 		return object;
 	} catch (error: any) {
-		console.error("[LLM:summarizeThread] Error generating object:");
-		console.error("Error Message:", error.message);
-
-		// エラーの原因（TypeValidationError や ZodError など）を深く掘り下げてログ出力
-		let currentError = error;
-		while (currentError.cause) {
-			console.error("Caused by:", currentError.cause);
-			currentError = currentError.cause;
-		}
-
-		// エラー時にLLMが返してきた生のテキストがあれば出力
+		console.error("[LLM:summarizeThread] Error:", error.message);
 		if (error.text) {
-			console.error("Raw Text Output:", error.text);
+			console.error("[LLM:summarizeThread] Raw Text:", error.text);
 		}
 		throw error;
 	}
