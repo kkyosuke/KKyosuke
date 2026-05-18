@@ -7,6 +7,8 @@ import { ensureFreeeAccessToken } from "../../freee/utils/token";
 
 import type { CustomAppEnv } from "../../../config/env";
 
+import { formatFreeeErrorForSlack } from "../utils/freee";
+
 export type AttendanceState =
 	| "not_linked"
 	| "not_clocked_in"
@@ -14,7 +16,7 @@ export type AttendanceState =
 	| "on_break"
 	| "clocked_out";
 
-export async function buildAttendanceBlocks(
+export async function buildFreeeBlocks(
 	db: DBClient,
 	userId: string,
 	env: Partial<CustomAppEnv>,
@@ -27,12 +29,13 @@ export async function buildAttendanceBlocks(
 	);
 
 	let state: AttendanceState = "not_linked";
+	let errorState: Error | null = null;
 
 	if (freeeToken) {
 		state = "not_clocked_in"; // default if linked
-		const accessToken = await ensureFreeeAccessToken(db, env, userId);
-		if (accessToken) {
-			try {
+		try {
+			const accessToken = await ensureFreeeAccessToken(db, env, userId);
+			if (accessToken) {
 				const config = getFreeeConfig(env);
 				const freee = createFreeeClient(config);
 
@@ -71,9 +74,10 @@ export async function buildAttendanceBlocks(
 						state = "not_clocked_in";
 					}
 				}
-			} catch (e) {
-				console.error("Failed to fetch freee attendance state", e);
 			}
+		} catch (e) {
+			console.warn("Failed to fetch freee attendance state", e);
+			errorState = e instanceof Error ? e : new Error(String(e));
 		}
 	}
 
@@ -87,6 +91,28 @@ export async function buildAttendanceBlocks(
 			},
 		},
 	];
+
+	if (errorState) {
+		const safeMessage = formatFreeeErrorForSlack(errorState);
+		blocks.push({
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "⚠️ *freeeとの通信中にエラーが発生しました*\n一時的な障害やメンテナンス中の可能性があります。時間をおいてから再度お試しください。",
+			},
+		});
+		blocks.push({
+			type: "context",
+			elements: [
+				{
+					type: "plain_text",
+					text: `詳細: ${safeMessage}`,
+					emoji: true,
+				},
+			],
+		});
+		return blocks;
+	}
 
 	if (state === "not_linked") {
 		blocks.push({
@@ -213,6 +239,30 @@ export async function buildAttendanceBlocks(
 			},
 		});
 	}
+
+	// 休暇申請セクションを追加
+	blocks.push(
+		{
+			type: "divider",
+		},
+		{
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "休暇申請",
+			},
+			accessory: {
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "有給休暇を申請する",
+					emoji: true,
+				},
+				value: "apply_paid_holiday",
+				action_id: "freee_apply_paid_holiday_open",
+			},
+		}
+	);
 
 	return blocks;
 }

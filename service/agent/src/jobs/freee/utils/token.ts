@@ -79,6 +79,6 @@ export async function ensureFreeeAccessToken(
 		return accessToken;
 	} catch (e) {
 		console.error("Failed to refresh token", e);
-		return null;
+		throw e;
 	}
 }
