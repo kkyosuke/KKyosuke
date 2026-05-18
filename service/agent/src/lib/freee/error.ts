@@ -7,7 +7,7 @@ export class FreeeAPIError extends Error {
 	) {
 		super(message);
 		this.name = "FreeeAPIError";
-		
+
 		// maintain proper stack trace
 		if (Error.captureStackTrace) {
 			Error.captureStackTrace(this, FreeeAPIError);

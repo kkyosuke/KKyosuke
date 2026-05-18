@@ -92,11 +92,20 @@ export const handlePaidHolidayModalOpen = async ({
 							options: [
 								{ text: { type: "plain_text", text: "全休" }, value: "full" },
 								{ text: { type: "plain_text", text: "半休" }, value: "half" },
-								{ text: { type: "plain_text", text: "午前休" }, value: "morning_off" },
-								{ text: { type: "plain_text", text: "午後休" }, value: "afternoon_off" },
+								{
+									text: { type: "plain_text", text: "午前休" },
+									value: "morning_off",
+								},
+								{
+									text: { type: "plain_text", text: "午後休" },
+									value: "afternoon_off",
+								},
 								{ text: { type: "plain_text", text: "時間休" }, value: "hour" },
 							],
-							initial_option: { text: { type: "plain_text", text: "全休" }, value: "full" },
+							initial_option: {
+								text: { type: "plain_text", text: "全休" },
+								value: "full",
+							},
 						},
 						label: {
 							type: "plain_text",
@@ -155,7 +164,7 @@ export const handlePaidHolidayModalOpen = async ({
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
 		console.error("Error handling paid holiday modal open:", err);
-		
+
 		try {
 			const errorMessage = getFreeeErrorMessage(e);
 			await context.client.views.open({

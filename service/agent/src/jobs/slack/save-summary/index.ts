@@ -126,10 +126,7 @@ async function executeSummary(
 		const threadContent = `【スレッドの最初のメッセージ（スレッド名）】\n${threadTitleText}\n\n【参加者の投稿一覧】\n${allContent}`;
 
 		// 要約の生成
-		const summaryData = await summarizeThread(
-			env,
-			threadContent,
-		);
+		const summaryData = await summarizeThread(env, threadContent);
 
 		const dbClient = getDatabaseClient(env);
 

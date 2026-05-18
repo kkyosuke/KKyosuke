@@ -305,7 +305,7 @@ export async function buildFreeeBlocks(
 				value: "apply_paid_holiday",
 				action_id: "freee_apply_paid_holiday_open",
 			},
-		}
+		},
 	);
 
 	return blocks;
