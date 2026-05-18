@@ -154,11 +154,25 @@ async function executeSummary(
 			});
 		}
 
+		// まとめた対象者のリストを作成 (メンションを飛ばさないように名前を取得)
+		const summarizedUsersList = await Promise.all(
+			summaryData.summary.map(async (userSummary) => {
+				try {
+					const userInfo = await client.users.info({ user: userSummary.user_id });
+					const name = userInfo.user?.real_name || userInfo.user?.name || userSummary.user_id;
+					return `- ${name}`;
+				} catch (e) {
+					return `- ${userSummary.user_id}`;
+				}
+			})
+		);
+		const summarizedUsersListText = summarizedUsersList.join("\n");
+
 		// Slackのスレッドに結果を返信
 		await client.chat.postMessage({
 			channel: channel_id,
 			thread_ts: thread_ts,
-			text: `📝 進捗をまとめて保存しました！`,
+			text: `📝 進捗をまとめて保存しました！\n\n対象者\n${summarizedUsersListText}`,
 		});
 	} catch (error) {
 		console.error("executeSummary Error:", error);
