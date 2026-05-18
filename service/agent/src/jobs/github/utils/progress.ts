@@ -9,7 +9,7 @@ export class ReviewProgressManager {
 	private placeholderCommentId: number | null = null;
 
 	constructor(
-		private env: Record<string, string | undefined>,
+		private env: Partial<import("../../../config/env").CustomAppEnv>,
 		private installationId: number,
 		private owner: string,
 		private repo: string,

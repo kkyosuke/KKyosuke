@@ -6,7 +6,7 @@ import {
 } from "../jobs/freee/auth";
 
 export const freeeApp = new Hono<{
-	Bindings: Record<string, string | undefined>;
+	Bindings: import("../config/env").CustomAppEnv;
 }>();
 
 freeeApp.get("/auth/start", handleFreeeAuthStart);

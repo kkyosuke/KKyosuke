@@ -2,7 +2,7 @@
  * コマンド実行時のコンテキスト
  */
 export interface CommandContext {
-	env: Record<string, string | undefined>;
+	env: Partial<import("../../config/env").CustomAppEnv>;
 	installationId: number;
 	owner: string;
 	repo: string;

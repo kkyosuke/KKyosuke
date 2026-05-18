@@ -27,7 +27,7 @@ import {
  * @param commentId - 対象のコメントID
  */
 export async function runReplyAgent(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

@@ -83,7 +83,7 @@ export type ReviewResult = z.infer<typeof reviewSchema>;
  * PR全体のコードレビューを生成します。
  */
 export async function generateCodeReview(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../config/env").CustomAppEnv>,
 	context: ReviewContext,
 ): Promise<{ output: ReviewResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({

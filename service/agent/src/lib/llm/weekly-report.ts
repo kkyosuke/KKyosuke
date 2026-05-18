@@ -31,7 +31,7 @@ export type WeeklyReportSummary = z.infer<typeof weeklyReportSchema>;
  * 先週と先々週の進捗データを基に、週次進捗まとめを生成します。
  */
 export async function generateWeeklyShareSummary(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../config/env").CustomAppEnv>,
 	weekBeforeLastData: string,
 	lastWeekData: string,
 ): Promise<WeeklyReportSummary> {

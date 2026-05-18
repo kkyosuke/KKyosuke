@@ -57,7 +57,7 @@ export type ReReviewResult = z.infer<typeof reReviewSchema>;
  * PR全体の再レビューを生成します。
  */
 export async function generateReReview(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../config/env").CustomAppEnv>,
 	context: ReReviewContext,
 ): Promise<{ output: ReReviewResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({

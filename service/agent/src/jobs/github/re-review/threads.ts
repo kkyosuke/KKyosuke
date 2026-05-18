@@ -26,7 +26,7 @@ import threadInstruction from "../../../prompts/re-review/thread-instruction.md"
  * @returns LLMの消費コスト
  */
 export async function processReviewThreads(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

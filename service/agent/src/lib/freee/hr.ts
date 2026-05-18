@@ -36,7 +36,7 @@ export async function postTimeClock(
 	type: "clock_in" | "clock_out" | "break_begin" | "break_end",
 	baseDate?: string,
 ): Promise<void> {
-	const body: any = {
+	const body: Record<string, string | number> = {
 		company_id: companyId,
 		type: type,
 	};

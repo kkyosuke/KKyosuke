@@ -1,5 +1,5 @@
 import type { SlackApp } from "slack-cloudflare-workers";
-import type { CustomAppEnv } from "../../handlers/slack";
+import type { CustomAppEnv } from "../../config/env";
 
 export type SlackEventRequest = Parameters<
 	Parameters<SlackApp<CustomAppEnv>["event"]>[1]

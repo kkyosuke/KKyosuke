@@ -5,6 +5,8 @@ import type { DBClient } from "../../../lib/db";
 import { createFreeeClient } from "../../../lib/freee/index";
 import { ensureFreeeAccessToken } from "../../freee/utils/token";
 
+import type { CustomAppEnv } from "../../../config/env";
+
 export type AttendanceState =
 	| "not_linked"
 	| "not_clocked_in"
@@ -15,7 +17,7 @@ export type AttendanceState =
 export async function buildAttendanceBlocks(
 	db: DBClient,
 	userId: string,
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 ): Promise<AnyHomeTabBlock[]> {
 	const freeeToken = await getUserTokenByType(
 		db,
@@ -31,7 +33,7 @@ export async function buildAttendanceBlocks(
 		const accessToken = await ensureFreeeAccessToken(db, env, userId);
 		if (accessToken) {
 			try {
-				const config = getFreeeConfig(env as any);
+				const config = getFreeeConfig(env);
 				const freee = createFreeeClient(config);
 
 				const me = await freee.hr.getMe(accessToken);

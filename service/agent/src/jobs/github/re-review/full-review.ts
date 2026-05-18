@@ -18,7 +18,7 @@ import { getNextStepsSection } from "../constants";
  * @returns 再レビューの結果とコスト
  */
 export async function performFullReReview(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	pr: { title: string; body: string | null },
 	diff: string,
 	finalInstruction: string,

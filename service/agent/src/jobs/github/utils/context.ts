@@ -9,7 +9,7 @@ import {
  * PRの情報や差分、ガイドラインを取得します。
  */
 export async function fetchReviewContext(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

@@ -9,7 +9,7 @@ import {
  * トリガーとなったコメントのチェックボックス状態を更新します。
  */
 export async function updateTriggerCommentState(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

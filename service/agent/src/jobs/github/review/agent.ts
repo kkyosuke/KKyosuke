@@ -31,7 +31,7 @@ import { ReviewProgressManager } from "../utils/progress";
  * @param sender - イベントをトリガーしたユーザー
  */
 export async function runReviewAgent(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

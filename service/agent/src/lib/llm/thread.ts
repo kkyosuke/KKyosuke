@@ -36,7 +36,7 @@ export type ThreadReplyResult = z.infer<typeof threadReplySchema>;
  * レビュースレッドの内容を評価し、アクションと返信を生成します。
  */
 export async function evaluateReviewThread(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../config/env").CustomAppEnv>,
 	context: ThreadEvaluationContext,
 ): Promise<{ output: ThreadReplyResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({

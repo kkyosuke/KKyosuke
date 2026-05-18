@@ -37,7 +37,7 @@ import { processReviewThreads } from "./threads";
  * @param isReviewSummary - レビューサマリからのトリガーかどうか
  */
 export async function runReReviewAgent(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

@@ -7,7 +7,7 @@ import type { CommandContext } from "../jobs/github/types";
 
 export async function queueHandler(
 	batch: MessageBatch<ReviewQueueMessage>,
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 ): Promise<void> {
 	for (const msg of batch.messages) {
 		try {

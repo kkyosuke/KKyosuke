@@ -14,14 +14,14 @@ export function getKVClient(env: Partial<AppBindings>): KVClient {
 		// Cloudflare KV
 		return {
 			async get(key: string) {
-				return await env.GITHUB_KV!.get(key);
+				return await env.GITHUB_KV?.get(key) ?? null;
 			},
 			async put(
 				key: string,
 				value: string,
 				options?: { expirationTtl?: number },
 			) {
-				await env.GITHUB_KV!.put(key, value, options);
+				await env.GITHUB_KV?.put(key, value, options);
 			},
 		};
 	}

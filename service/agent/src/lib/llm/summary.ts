@@ -42,7 +42,7 @@ export type ThreadSummary = z.infer<typeof summarySchema>;
  * Slackのスレッド内容を要約します。
  */
 export async function summarizeThread(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../config/env").CustomAppEnv>,
 	threadContent: string,
 ): Promise<ThreadSummary> {
 	const anthropic = createAnthropic({

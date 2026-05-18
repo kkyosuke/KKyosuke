@@ -1,4 +1,4 @@
-import type { CustomAppEnv } from "../../../handlers/slack";
+import type { CustomAppEnv } from "../../../config/env";
 import { getDatabaseClient } from "../../../lib/db";
 import { generateWeeklyShareSummary } from "../../../lib/llm/weekly-report";
 import type { AppBindings } from "../../../types/bindings";
@@ -95,7 +95,7 @@ async function executeWeeklyReport(
 
 		// Generate AI summary
 		const result = await generateWeeklyShareSummary(
-			env as unknown as Record<string, string | undefined>,
+			env,
 			weekBeforeLastDataStr,
 			lastWeekDataStr,
 		);

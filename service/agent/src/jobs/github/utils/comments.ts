@@ -13,7 +13,7 @@ import { createReviewComment } from "../../../lib/github";
  * @param prefixMessage - コメントタイトルに追加するプレフィックス
  */
 export async function postInlineComments(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../../../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

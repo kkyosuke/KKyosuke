@@ -7,7 +7,7 @@ class Logger {
 		this.moduleName = moduleName;
 	}
 
-	private formatMessage(level: LogLevel, message: string, meta?: any) {
+	private formatMessage(level: LogLevel, message: string, meta?: unknown) {
 		const timestamp = new Date().toISOString();
 		const prefix = this.moduleName ? `[${this.moduleName}] ` : "";
 
@@ -18,7 +18,7 @@ class Logger {
 			} else if (typeof meta === "object") {
 				try {
 					metaString = ` ${JSON.stringify(meta)}`;
-				} catch (e) {
+				} catch (_e) {
 					metaString = " [Unserializable Meta]";
 				}
 			} else {
@@ -29,19 +29,19 @@ class Logger {
 		return `${timestamp} [${level.toUpperCase()}] ${prefix}${message}${metaString}`;
 	}
 
-	info(message: string, meta?: any) {
+	info(message: string, meta?: unknown) {
 		console.log(this.formatMessage("info", message, meta));
 	}
 
-	error(message: string, error?: any) {
+	error(message: string, error?: unknown) {
 		console.error(this.formatMessage("error", message, error));
 	}
 
-	warn(message: string, meta?: any) {
+	warn(message: string, meta?: unknown) {
 		console.warn(this.formatMessage("warn", message, meta));
 	}
 
-	debug(message: string, meta?: any) {
+	debug(message: string, meta?: unknown) {
 		console.debug(this.formatMessage("debug", message, meta));
 	}
 }

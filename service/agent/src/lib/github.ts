@@ -25,7 +25,7 @@ export interface ReviewThread {
 /**
  * GitHub Appのインスタンスを取得します。
  */
-export function getGithubApp(env: Record<string, string | undefined>) {
+export function getGithubApp(env: Partial<import("../config/env").CustomAppEnv>) {
 	return new App({
 		appId: env.GITHUB_APP_ID || "",
 		privateKey: env.GITHUB_PRIVATE_KEY?.replace(/\\n/g, "\n") || "",
@@ -37,7 +37,7 @@ export function getGithubApp(env: Record<string, string | undefined>) {
  * PRの詳細情報を取得します。
  */
 export async function getPullRequest(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -57,7 +57,7 @@ export async function getPullRequest(
  * PRの差分(diff)を取得します。
  */
 export async function getPullRequestDiff(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -80,7 +80,7 @@ export async function getPullRequestDiff(
  * Issue（PR）のコメント一覧を取得します。
  */
 export async function getIssueComments(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -100,7 +100,7 @@ export async function getIssueComments(
  * PRのレビューコメント一覧を取得します。
  */
 export async function getReviewComments(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -120,7 +120,7 @@ export async function getReviewComments(
  * 進捗状況などを表示するためのプレースホルダーコメントを作成します。
  */
 export async function createPlaceholderComment(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -142,7 +142,7 @@ export async function createPlaceholderComment(
  * 既存のコメントを更新します。
  */
 export async function updateComment(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -164,7 +164,7 @@ export async function updateComment(
  * 既存のレビュー（サマリ）を更新します。
  */
 export async function updateReview(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -188,7 +188,7 @@ export async function updateReview(
  * コードの特定の行に対するインラインコメント（レビューコメント）を作成します。
  */
 export async function createReviewComment(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -216,7 +216,7 @@ export async function createReviewComment(
  * PRに対する全体レビュー（APPROVE, REQUEST_CHANGES等）を作成します。
  */
 export async function createReview(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -240,7 +240,7 @@ export async function createReview(
  * コメントを削除します。
  */
 export async function deleteComment(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -260,7 +260,7 @@ export async function deleteComment(
  * PRのレビュースレッド一覧を取得します（ボットが作成したもののみ）。
  */
 export async function getReviewThreads(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -316,7 +316,7 @@ export async function getReviewThreads(
  * レビュースレッドを解決済み（Resolved）にします。
  */
 export async function resolveReviewThread(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	threadId: string,
 ) {
@@ -336,7 +336,7 @@ export async function resolveReviewThread(
  * 既存のレビューコメントに対して返信を作成します。
  */
 export async function createReplyForReviewComment(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
@@ -360,7 +360,7 @@ export async function createReplyForReviewComment(
  * リポジトリ内の特定ファイルの内容を取得します。
  */
 export async function getRepositoryFile(
-	env: Record<string, string | undefined>,
+	env: Partial<import("../config/env").CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,
