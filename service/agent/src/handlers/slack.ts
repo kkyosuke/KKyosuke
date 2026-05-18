@@ -1,4 +1,3 @@
-import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import { SlackApp } from "slack-cloudflare-workers";
 import { appHomeOpened } from "../jobs/slack/app-home";
 import { handleAttendanceAction } from "../jobs/slack/attendance-action";
@@ -9,9 +8,7 @@ import {
 	summaryShortcutLazy,
 } from "../jobs/slack/save-summary";
 
-import type { AppBindings } from "../types/bindings";
-
-export interface CustomAppEnv extends SlackEdgeAppEnv, AppBindings {}
+import type { CustomAppEnv } from "../config/env";
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 	const app = new SlackApp({ env });

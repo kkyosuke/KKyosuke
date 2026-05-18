@@ -7,9 +7,9 @@ import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubApp } from "./src/handlers/webhook";
 
-import type { AppBindings } from "./src/types/bindings";
+import type { CustomAppEnv } from "./src/config/env";
 
-const app = new Hono<{ Bindings: AppBindings }>();
+const app = new Hono<{ Bindings: CustomAppEnv }>();
 
 // APIの実行時間を測定しログに出力するミドルウェア
 app.use("*", async (c, next) => {
@@ -23,7 +23,10 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/", (c) => {
-	const htmlContent = typeof homeHtml === "string" ? homeHtml : (homeHtml as any).default || String(homeHtml);
+	const htmlContent =
+		typeof homeHtml === "string"
+			? homeHtml
+			: (homeHtml as { default?: string }).default || String(homeHtml);
 	return c.html(htmlContent as string);
 });
 
@@ -43,29 +46,26 @@ export default {
 	): Promise<Response> {
 		const url = new URL(request.url);
 
-		// 実行環境（Cloudflare / ローカル）の違いを吸収して env を取得する
-		const appEnv = resolveEnv(env) as unknown as SlackEdgeAppEnv;
+		const appEnv = resolveEnv(env);
 
 		// SlackからのリクエストはSlackAppで処理する
 		if (url.pathname.startsWith("/slack")) {
-			const slackApp = createSlackApp(
-				appEnv as unknown as import("./src/handlers/slack").CustomAppEnv,
-			);
+			const slackApp = createSlackApp(appEnv);
 			return await slackApp.run(request, ctx);
 		}
 
 		// それ以外はHonoで処理する
 		return await app.fetch(
 			request,
-			appEnv as unknown as Record<string, unknown>,
+			appEnv,
 			ctx,
 		);
 	},
 	async queue(
 		batch: MessageBatch<import("./src/jobs/github/queue").ReviewQueueMessage>,
-		env: Record<string, string | undefined>,
+		env: Partial<CustomAppEnv>,
 	): Promise<void> {
 		const appEnv = resolveEnv(env);
-		await queueHandler(batch, appEnv as Record<string, string | undefined>);
+		await queueHandler(batch, appEnv);
 	},
 };

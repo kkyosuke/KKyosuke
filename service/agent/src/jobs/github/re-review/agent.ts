@@ -1,4 +1,5 @@
 import { createReview, getReviewThreads } from "../../../lib/github";
+import type { CustomAppEnv } from "../../../config/env";
 import { REVIEW_MODEL_NAME } from "../../../lib/llm";
 import instruction from "../../../prompts/re-review/instruction.md" with {
 	type: "text",
@@ -37,7 +38,7 @@ import { processReviewThreads } from "./threads";
  * @param isReviewSummary - レビューサマリからのトリガーかどうか
  */
 export async function runReReviewAgent(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

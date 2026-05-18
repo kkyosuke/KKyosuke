@@ -1,4 +1,5 @@
 import { updateComment, updateReview } from "../../../lib/github";
+import type { CustomAppEnv } from "../../../config/env";
 import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN,
 	RE_REVIEW_CHECKBOX_COMPLETED,
@@ -9,7 +10,7 @@ import {
  * トリガーとなったコメントのチェックボックス状態を更新します。
  */
 export async function updateTriggerCommentState(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

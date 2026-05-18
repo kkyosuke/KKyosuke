@@ -7,11 +7,13 @@ import type { DBClient } from "../../../lib/db";
 import { createFreeeClient } from "../../../lib/freee/index";
 import { getKVClient } from "../../../lib/kv";
 
+import type { CustomAppEnv } from "../../../config/env";
+
 /**
  * KVにfreeeのアクセストークンを保存します
  */
 export async function saveAccessTokenToKV(
-	env: Record<string, any>,
+	env: Partial<CustomAppEnv>,
 	userId: string,
 	accessToken: string,
 	expiresIn: number = 600,
@@ -26,7 +28,7 @@ export async function saveAccessTokenToKV(
  * KVからfreeeのアクセストークンを取得します
  */
 export async function getAccessTokenFromKV(
-	env: Record<string, any>,
+	env: Partial<CustomAppEnv>,
 	userId: string,
 ): Promise<string | null> {
 	const kv = getKVClient(env);
@@ -38,7 +40,7 @@ export async function getAccessTokenFromKV(
  */
 export async function ensureFreeeAccessToken(
 	db: DBClient,
-	env: Record<string, any>,
+	env: Partial<CustomAppEnv>,
 	userId: string,
 ): Promise<string | null> {
 	let accessToken = await getAccessTokenFromKV(env, userId);
@@ -52,7 +54,7 @@ export async function ensureFreeeAccessToken(
 	);
 	if (!refreshTokenRow?.token) return null;
 
-	const config = getFreeeConfig(env as any);
+	const config = getFreeeConfig(env);
 	const freee = createFreeeClient(config);
 
 	try {

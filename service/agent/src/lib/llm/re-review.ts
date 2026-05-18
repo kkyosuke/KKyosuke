@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
 import { buildReReviewPrompt } from "../../prompts/re-review/prompt";
+import type { CustomAppEnv } from "../../config/env";
 import { REVIEW_MODEL_NAME } from "./cost";
 
 /**
@@ -57,7 +58,7 @@ export type ReReviewResult = z.infer<typeof reReviewSchema>;
  * PR全体の再レビューを生成します。
  */
 export async function generateReReview(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	context: ReReviewContext,
 ): Promise<{ output: ReReviewResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({

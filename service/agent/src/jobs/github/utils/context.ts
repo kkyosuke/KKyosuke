@@ -1,4 +1,5 @@
 import { REPOSITORY_GUIDELINES_PATH } from "../../../config";
+import type { CustomAppEnv } from "../../../config/env";
 import {
 	getPullRequest,
 	getPullRequestDiff,
@@ -9,7 +10,7 @@ import {
  * PRの情報や差分、ガイドラインを取得します。
  */
 export async function fetchReviewContext(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

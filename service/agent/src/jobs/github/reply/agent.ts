@@ -3,6 +3,7 @@ import {
 	getReviewThreads,
 	resolveReviewThread,
 } from "../../../lib/github";
+import type { CustomAppEnv } from "../../../config/env";
 import {
 	calculateCost,
 	evaluateReviewThread,
@@ -27,7 +28,7 @@ import {
  * @param commentId - 対象のコメントID
  */
 export async function runReplyAgent(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

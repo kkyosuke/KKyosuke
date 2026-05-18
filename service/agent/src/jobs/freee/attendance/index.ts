@@ -4,21 +4,23 @@ import { createFreeeClient } from "../../../lib/freee/index";
 
 import { ensureFreeeAccessToken } from "../utils/token";
 
+import type { CustomAppEnv } from "../../../config/env";
+
 export async function recordAttendance(
 	db: DBClient,
 	userId: string,
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	type: "clock_in" | "clock_out" | "break_begin" | "break_end",
 ) {
 	// 1. Get user access token from KV or refresh it
-	const accessToken = await ensureFreeeAccessToken(db, env as any, userId);
+	const accessToken = await ensureFreeeAccessToken(db, env, userId);
 	if (!accessToken) {
 		throw new Error(
 			"Failed to authenticate with freee. Please re-link your account.",
 		);
 	}
 
-	const config = getFreeeConfig(env as any);
+	const config = getFreeeConfig(env);
 	const freee = createFreeeClient(config);
 
 	// 2. Get company_id and employee_id

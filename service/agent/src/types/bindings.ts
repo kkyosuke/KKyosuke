@@ -6,6 +6,10 @@ export interface AppBindings {
 	FREEE_CLIENT_ID: string;
 	FREEE_CLIENT_SECRET?: string;
 	GITHUB_WEBHOOK_SECRET?: string;
+	BOT_NAME?: string;
+	GITHUB_APP_ID?: string;
+	GITHUB_PRIVATE_KEY?: string;
+	ANTHROPIC_API_KEY?: string;
 
 	// KV Namespaces
 	GITHUB_KV: KVNamespace;

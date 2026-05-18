@@ -1,5 +1,5 @@
 import type { SlackApp } from "slack-cloudflare-workers";
-import type { CustomAppEnv } from "../../../handlers/slack";
+import type { CustomAppEnv } from "../../../config/env";
 import { getDatabaseClient } from "../../../lib/db";
 import { summarizeThread } from "../../../lib/llm/summary";
 import type { AppBindings } from "../../../types/bindings";
@@ -127,11 +127,11 @@ async function executeSummary(
 
 		// 要約の生成
 		const summaryData = await summarizeThread(
-			env as unknown as Record<string, string | undefined>,
+			env,
 			threadContent,
 		);
 
-		const dbClient = getDatabaseClient(env as unknown as Partial<AppBindings>);
+		const dbClient = getDatabaseClient(env);
 
 		const { saveProgressSummary } = await import(
 			"../../../datasource/db/progressSummary"

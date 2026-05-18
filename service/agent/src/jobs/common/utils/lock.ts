@@ -1,17 +1,16 @@
 import type { KVBinding } from "../types";
+import type { CustomAppEnv } from "../../../config/env";
 
 /**
  * KVを使用した排他制御を行います。
  */
 export async function withKvLock(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	key: string,
 	ttlSeconds: number,
 	callback: () => Promise<void>,
 ) {
-	const kv = (env as Record<string, unknown>).GITHUB_KV as
-		| KVBinding
-		| undefined;
+	const kv = env.GITHUB_KV as KVBinding | undefined;
 	if (!kv) {
 		// KVが設定されていない場合はそのまま実行
 		await callback();

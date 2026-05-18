@@ -1,4 +1,5 @@
 import { createReview, getIssueComments } from "../../../lib/github";
+import type { CustomAppEnv } from "../../../config/env";
 import {
 	calculateCost,
 	generateCodeReview,
@@ -31,7 +32,7 @@ import { ReviewProgressManager } from "../utils/progress";
  * @param sender - イベントをトリガーしたユーザー
  */
 export async function runReviewAgent(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

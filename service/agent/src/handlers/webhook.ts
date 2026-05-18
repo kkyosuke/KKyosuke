@@ -9,7 +9,7 @@ import {
 } from "../jobs/github/constants";
 import type { ReviewQueueMessage } from "../jobs/github/queue";
 import type { CommandContext } from "../jobs/github/types";
-import type { AppBindings } from "../types/bindings";
+import type { CustomAppEnv } from "../config/env";
 
 type WebhookPayload = {
 	action?: string;
@@ -32,7 +32,7 @@ type WebhookPayload = {
  * @returns コマンドコンテキスト、または失敗時にnull
  */
 function buildCommandContext(
-	e: Record<string, string | undefined> | AppBindings,
+	e: CustomAppEnv,
 	payload: WebhookPayload,
 	commentInfo: { body: string; id: number; isReviewSummary?: boolean },
 ): CommandContext | null {
@@ -43,7 +43,7 @@ function buildCommandContext(
 	}
 
 	return {
-		env: e as Record<string, string | undefined>,
+		env: e,
 		installationId,
 		owner: payload.repository.owner.login,
 		repo: payload.repository.name,
@@ -51,7 +51,7 @@ function buildCommandContext(
 		commentBody: commentInfo.body,
 		commentId: commentInfo.id,
 		isReviewSummary: commentInfo.isReviewSummary,
-		botName: getBotName(e as Record<string, string | undefined>),
+		botName: getBotName(e),
 		sender: payload.sender.login,
 	};
 }
@@ -60,12 +60,10 @@ function buildCommandContext(
  * キューにメッセージを送信します
  */
 async function dispatchToQueue(
-	e: Record<string, unknown> | AppBindings,
+	e: CustomAppEnv,
 	message: ReviewQueueMessage,
 ) {
-	const queue = e.GITHUB_QUEUE as
-		| { send: (msg: any) => Promise<void> }
-		| undefined;
+	const queue = e.GITHUB_QUEUE;
 	if (queue && typeof queue.send === "function") {
 		try {
 			await queue.send(message);
@@ -78,7 +76,7 @@ async function dispatchToQueue(
 	}
 }
 
-export const githubApp = new Hono<{ Bindings: AppBindings }>();
+export const githubApp = new Hono<{ Bindings: CustomAppEnv }>();
 
 /**
  * GitHub Webhookのリクエストを受け取り、適切なジョブにルーティングします。
@@ -86,9 +84,7 @@ export const githubApp = new Hono<{ Bindings: AppBindings }>();
  * @param c - Honoコンテキスト
  * @returns レスポンス
  */
-async function githubWebhookHandler(
-	c: Context<{ Bindings: AppBindings }>,
-) {
+async function githubWebhookHandler(c: Context<{ Bindings: CustomAppEnv }>) {
 	const e = c.env;
 	const webhooks = new Webhooks({
 		secret: e.GITHUB_WEBHOOK_SECRET || "",
@@ -292,9 +288,7 @@ async function githubWebhookHandler(
 			const repo = payload.repository.name;
 			const pullNumber = payload.pull_request.number;
 
-			const kv = (e as unknown as Record<string, unknown>).GITHUB_KV as
-				| KVBinding
-				| undefined;
+			const kv = e.GITHUB_KV as KVBinding | undefined;
 			if (kv) {
 				const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
 				console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);
@@ -326,4 +320,3 @@ async function githubWebhookHandler(
 }
 
 githubApp.post("/webhook", githubWebhookHandler);
-

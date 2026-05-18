@@ -1,3 +1,4 @@
+import type { CustomAppEnv } from "../../../config/env";
 import { createReviewComment } from "../../../lib/github";
 
 /**
@@ -13,7 +14,7 @@ import { createReviewComment } from "../../../lib/github";
  * @param prefixMessage - コメントタイトルに追加するプレフィックス
  */
 export async function postInlineComments(
-	env: Record<string, string | undefined>,
+	env: Partial<CustomAppEnv>,
 	installationId: number,
 	owner: string,
 	repo: string,

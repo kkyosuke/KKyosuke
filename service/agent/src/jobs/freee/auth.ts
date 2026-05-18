@@ -7,8 +7,10 @@ import { createFreeeClient } from "../../lib/freee/index";
 import { publishHomeView } from "../slack/app-home/index";
 import { saveAccessTokenToKV } from "./utils/token";
 
+import type { CustomAppEnv } from "../../config/env";
+
 export async function handleFreeeAuthStart(
-	c: Context<{ Bindings: Record<string, string | undefined> }>,
+	c: Context<{ Bindings: CustomAppEnv }>,
 ) {
 	const userId = c.req.query("user_id");
 	if (!userId) {
@@ -80,14 +82,14 @@ export async function handleFreeeAuthStart(
 }
 
 export async function handleFreeeAuthRedirect(
-	c: Context<{ Bindings: Record<string, string | undefined> }>,
+	c: Context<{ Bindings: CustomAppEnv }>,
 ) {
 	const userId = c.req.query("user_id");
 	if (!userId) {
 		return c.text("user_id parameter is required", 400);
 	}
 
-	const config = getFreeeConfig(c.env as any);
+	const config = getFreeeConfig(c.env);
 
 	// stateにユーザーIDを含めるか、Cookieで管理する
 	// CSRF対策としてランダムな文字列を生成し、ユーザーIDと組み合わせる
@@ -107,7 +109,7 @@ export async function handleFreeeAuthRedirect(
 }
 
 export async function handleFreeeAuthCallback(
-	c: Context<{ Bindings: Record<string, string | undefined> }>,
+	c: Context<{ Bindings: CustomAppEnv }>,
 ) {
 	const code = c.req.query("code");
 	const state = c.req.query("state");
@@ -128,14 +130,14 @@ export async function handleFreeeAuthCallback(
 		return c.text("Invalid state format", 400);
 	}
 
-	const config = getFreeeConfig(c.env as any);
+	const config = getFreeeConfig(c.env);
 
 	try {
 		// 得られた認可コードを取得してアクセストークンを取得
 		const freee = createFreeeClient(config);
 		const tokenRes = await freee.getAccessToken(code);
 
-		const db = getDatabaseClient(c.env as any);
+		const db = getDatabaseClient(c.env);
 
 		// refresh token expires in 90 days
 		const expiresAt = new Date(
@@ -156,7 +158,7 @@ export async function handleFreeeAuthCallback(
 		await saveAccessTokenToKV(c.env, userId, tokenRes.access_token);
 
 		// 連携が完了したのでSlackのホームタブを更新する
-		await publishHomeView(userId, c.env as any);
+		await publishHomeView(userId, c.env);
 
 		return c.html(`
 			<!DOCTYPE html>
@@ -216,8 +218,9 @@ export async function handleFreeeAuthCallback(
 			</body>
 			</html>
 		`);
-	} catch (e: any) {
-		console.error("Freee authentication error:", e);
-		return c.text(`Authentication failed: ${e.message}`, 500);
+	} catch (e: unknown) {
+		const err = e instanceof Error ? e : new Error(String(e));
+		console.error("Freee authentication error:", err);
+		return c.text(`Authentication failed: ${err.message}`, 500);
 	}
 }

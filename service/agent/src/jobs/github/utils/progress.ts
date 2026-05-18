@@ -1,4 +1,5 @@
 import { createPlaceholderComment, updateComment } from "../../../lib/github";
+import type { CustomAppEnv } from "../../../config/env";
 import type { KVBinding } from "../../common/types";
 import { getInProgressComment, type ProgressStep } from "../constants";
 
@@ -9,7 +10,7 @@ export class ReviewProgressManager {
 	private placeholderCommentId: number | null = null;
 
 	constructor(
-		private env: Record<string, string | undefined>,
+		private env: Partial<CustomAppEnv>,
 		private installationId: number,
 		private owner: string,
 		private repo: string,
