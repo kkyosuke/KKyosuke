@@ -4,7 +4,7 @@ import { createFreeeClient } from "../../lib/freee";
 import { ensureFreeeAccessToken } from "../freee/utils/token";
 
 import type { CustomAppEnv } from "../../config/env";
-import { formatFreeeErrorForSlack } from "./utils/freee";
+import { getFreeeErrorMessage } from "./utils/freee";
 
 export const handlePaidHolidayModalOpen = async ({
 	context,
@@ -157,7 +157,7 @@ export const handlePaidHolidayModalOpen = async ({
 		console.error("Error handling paid holiday modal open:", err);
 		
 		try {
-			const safeMessage = formatFreeeErrorForSlack(err);
+			const errorMessage = getFreeeErrorMessage(e);
 			await context.client.views.open({
 				trigger_id: payload.trigger_id,
 				view: {
@@ -183,7 +183,7 @@ export const handlePaidHolidayModalOpen = async ({
 							elements: [
 								{
 									type: "plain_text",
-									text: `詳細: ${safeMessage}...`,
+									text: `詳細: ${errorMessage}`,
 									emoji: true,
 								},
 							],
@@ -251,10 +251,10 @@ export const handlePaidHolidaySubmission = async ({
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
 		console.error("Error submitting paid holiday request:", err);
-		const safeMessage = formatFreeeErrorForSlack(err);
+		const errorMessage = getFreeeErrorMessage(e);
 		await context.client.chat.postMessage({
 			channel: userId,
-			text: `有給休暇の申請中にエラーが発生しました。\n詳細: ${safeMessage}...\n時間を置いて再度お試しください。`,
+			text: `有給休暇の申請中にエラーが発生しました。\n詳細: ${errorMessage}\n時間を置いて再度お試しください。`,
 		});
 	}
 };

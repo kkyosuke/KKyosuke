@@ -1,11 +1,14 @@
+import { FreeeAPIError } from "../../../lib/freee/error";
+
 /**
- * freeeのAPIエラーメッセージから、Slackで安全に表示できる短いメッセージを抽出します。
- * (例: <!DOCTYPE html> などの余分なHTMLタグや改行を排除します)
+ * freeeのエラーからSlack表示用のメッセージを抽出します。
  */
-export function formatFreeeErrorForSlack(e: unknown): string {
-	const err = e instanceof Error ? e : new Error(String(e));
-	const safeMessage = (
-		(err.message.split("\n")[0] || "").split(" - <")[0] || ""
-	).substring(0, 150);
-	return safeMessage;
+export function getFreeeErrorMessage(e: unknown): string {
+	if (e instanceof FreeeAPIError) {
+		return `${e.message} (${e.status} ${e.statusText})`;
+	}
+	if (e instanceof Error) {
+		return e.message;
+	}
+	return String(e);
 }

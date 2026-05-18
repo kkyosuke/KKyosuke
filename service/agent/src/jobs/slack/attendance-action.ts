@@ -4,7 +4,7 @@ import { publishHomeView } from "./app-home";
 import { notifyAttendanceToSlack } from "./attendance-notification";
 
 import type { CustomAppEnv } from "../../config/env";
-import { formatFreeeErrorForSlack } from "./utils/freee";
+import { getFreeeErrorMessage } from "./utils/freee";
 
 export const handleAttendanceAction =
 	(
@@ -35,10 +35,10 @@ export const handleAttendanceAction =
 				console.error(`Freee attendance error (${type}):`, err);
 
 				try {
-					const safeMessage = formatFreeeErrorForSlack(err);
+					const errorMessage = getFreeeErrorMessage(e);
 					await context.client.chat.postMessage({
 						channel: userId,
-						text: `打刻中にエラーが発生しました。\n詳細: ${safeMessage}`,
+						text: `打刻中にエラーが発生しました。\n詳細: ${errorMessage}`,
 					});
 				} catch (postErr) {
 					console.error("Failed to post error message:", postErr);

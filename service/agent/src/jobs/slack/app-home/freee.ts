@@ -7,10 +7,10 @@ import { ensureFreeeAccessToken } from "../../freee/utils/token";
 
 import type { CustomAppEnv } from "../../../config/env";
 
-import { formatFreeeErrorForSlack } from "../utils/freee";
+import { getFreeeErrorMessage } from "../utils/freee";
 
 export type AttendanceState =
-	| "not_linked"
+	| "unknown"
 	| "not_clocked_in"
 	| "clocked_in"
 	| "on_break"
@@ -21,100 +21,28 @@ export async function buildFreeeBlocks(
 	userId: string,
 	env: Partial<CustomAppEnv>,
 ): Promise<AnyHomeTabBlock[]> {
+	const blocks: AnyHomeTabBlock[] = [
+		{
+			type: "header",
+			text: {
+				type: "plain_text",
+				text: "freee",
+				emoji: true,
+			},
+		},
+	];
+
+	// 1. DBからトークン取得 (連携の有無を確認)
 	const freeeToken = await getUserTokenByType(
 		db,
 		userId,
 		"freee",
 		"refresh_token",
 	);
+	const isLinked = !!freeeToken;
 
-	let state: AttendanceState = "not_linked";
-	let errorState: Error | null = null;
-
-	if (freeeToken) {
-		state = "not_clocked_in"; // default if linked
-		try {
-			const accessToken = await ensureFreeeAccessToken(db, env, userId);
-			if (accessToken) {
-				const config = getFreeeConfig(env);
-				const freee = createFreeeClient(config);
-
-				const me = await freee.hr.getMe(accessToken);
-				const company = me.companies?.[0];
-				if (company) {
-					const typesRes = await freee.hr.getAvailableTimeClockTypes(
-						accessToken,
-						company.employee_id,
-						company.id,
-					);
-					const available = typesRes.available_types;
-					const baseDate = typesRes.base_date;
-
-					const clocks = await freee.hr.getTimeClocks(
-						accessToken,
-						company.employee_id,
-						company.id,
-						baseDate,
-						baseDate,
-					);
-					const todayClocks = clocks.filter((c) => c.date === baseDate);
-					const lastClock =
-						todayClocks.length > 0 ? todayClocks[todayClocks.length - 1] : null;
-
-					if (available.includes("break_end")) {
-						state = "on_break";
-					} else if (lastClock && lastClock.type === "clock_out") {
-						state = "clocked_out";
-					} else if (
-						available.includes("clock_out") ||
-						available.includes("break_begin")
-					) {
-						state = "clocked_in";
-					} else if (available.includes("clock_in")) {
-						state = "not_clocked_in";
-					}
-				}
-			}
-		} catch (e) {
-			console.warn("Failed to fetch freee attendance state", e);
-			errorState = e instanceof Error ? e : new Error(String(e));
-		}
-	}
-
-	const blocks: AnyHomeTabBlock[] = [
-		{
-			type: "header",
-			text: {
-				type: "plain_text",
-				text: "freee 打刻",
-				emoji: true,
-			},
-		},
-	];
-
-	if (errorState) {
-		const safeMessage = formatFreeeErrorForSlack(errorState);
-		blocks.push({
-			type: "section",
-			text: {
-				type: "mrkdwn",
-				text: "⚠️ *freeeとの通信中にエラーが発生しました*\n一時的な障害やメンテナンス中の可能性があります。時間をおいてから再度お試しください。",
-			},
-		});
-		blocks.push({
-			type: "context",
-			elements: [
-				{
-					type: "plain_text",
-					text: `詳細: ${safeMessage}`,
-					emoji: true,
-				},
-			],
-		});
-		return blocks;
-	}
-
-	if (state === "not_linked") {
+	// 連携されていない場合は連携画面を表示してreturn
+	if (!isLinked) {
 		blocks.push({
 			type: "section",
 			text: {
@@ -137,8 +65,124 @@ export async function buildFreeeBlocks(
 		return blocks;
 	}
 
-	// 連携済みの場合
-	if (state === "not_clocked_in") {
+	// 2. アクセストークン取得 などセットアップ
+	let accessToken: string | null = null;
+	try {
+		accessToken = await ensureFreeeAccessToken(db, env, userId);
+	} catch (e) {
+		// 503エラーなどの場合
+		console.warn("Failed to fetch freee access token", e);
+		const errorMessage = getFreeeErrorMessage(e);
+		blocks.push({
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "⚠️ *freeeとの通信中にエラーが発生しました*\n一時的な障害やメンテナンス中の可能性があります。時間をおいてから再度お試しください。",
+			},
+		});
+		blocks.push({
+			type: "context",
+			elements: [
+				{
+					type: "plain_text",
+					text: `詳細: ${errorMessage}`,
+					emoji: true,
+				},
+			],
+		});
+		return blocks;
+	}
+
+	// トークンの取得失敗や更新失敗(400, 401など)でnullが返ってきた場合
+	if (!accessToken) {
+		blocks.push({
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "⚠️ *freeeの連携が無効になっています*\nお手数ですが、再度連携を行ってください。",
+			},
+			accessory: {
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "再連携する",
+					emoji: true,
+				},
+				value: "link_freee",
+				action_id: "freee_link_action",
+				style: "primary",
+				url: `${resolveEnv(env).APP_URL || "http://localhost:3000"}/freee/auth/start?user_id=${userId}`,
+			},
+		});
+		return blocks;
+	}
+
+	// 3. トークンが有効であれば、打刻状態の取得処理を行う
+	let attendanceState: AttendanceState = "not_clocked_in"; // default
+	try {
+		const config = getFreeeConfig(env);
+		const freee = createFreeeClient(config);
+
+		const me = await freee.hr.getMe(accessToken);
+		const company = me.companies?.[0];
+		if (company) {
+			const typesRes = await freee.hr.getAvailableTimeClockTypes(
+				accessToken,
+				company.employee_id,
+				company.id,
+			);
+			const available = typesRes.available_types;
+			const baseDate = typesRes.base_date;
+
+			const clocks = await freee.hr.getTimeClocks(
+				accessToken,
+				company.employee_id,
+				company.id,
+				baseDate,
+				baseDate,
+			);
+			const todayClocks = clocks.filter((c) => c.date === baseDate);
+			const lastClock =
+				todayClocks.length > 0 ? todayClocks[todayClocks.length - 1] : null;
+
+			if (available.includes("break_end")) {
+				attendanceState = "on_break";
+			} else if (lastClock && lastClock.type === "clock_out") {
+				attendanceState = "clocked_out";
+			} else if (
+				available.includes("clock_out") ||
+				available.includes("break_begin")
+			) {
+				attendanceState = "clocked_in";
+			} else if (available.includes("clock_in")) {
+				attendanceState = "not_clocked_in";
+			}
+		}
+	} catch (e) {
+		console.warn("Failed to fetch freee attendance state", e);
+		const errorMessage = getFreeeErrorMessage(e);
+		blocks.push({
+			type: "section",
+			text: {
+				type: "mrkdwn",
+				text: "⚠️ *freeeとの通信中にエラーが発生しました*\n打刻状態の取得に失敗しました。時間をおいてから再度お試しください。",
+			},
+		});
+		blocks.push({
+			type: "context",
+			elements: [
+				{
+					type: "plain_text",
+					text: `詳細: ${errorMessage}`,
+					emoji: true,
+				},
+			],
+		});
+		return blocks;
+	}
+
+	// 4. 打刻のUI処理
+	if (attendanceState === "not_clocked_in") {
 		blocks.push({
 			type: "section",
 			text: {
@@ -172,7 +216,7 @@ export async function buildFreeeBlocks(
 				},
 			],
 		});
-	} else if (state === "clocked_in") {
+	} else if (attendanceState === "clocked_in") {
 		blocks.push({
 			type: "section",
 			text: {
@@ -206,7 +250,7 @@ export async function buildFreeeBlocks(
 				},
 			],
 		});
-	} else if (state === "on_break") {
+	} else if (attendanceState === "on_break") {
 		blocks.push({
 			type: "section",
 			text: {
@@ -230,7 +274,7 @@ export async function buildFreeeBlocks(
 				},
 			],
 		});
-	} else if (state === "clocked_out") {
+	} else if (attendanceState === "clocked_out") {
 		blocks.push({
 			type: "section",
 			text: {
@@ -240,7 +284,7 @@ export async function buildFreeeBlocks(
 		});
 	}
 
-	// 休暇申請セクションを追加
+	// 5. 有給申請の処理
 	blocks.push(
 		{
 			type: "divider",

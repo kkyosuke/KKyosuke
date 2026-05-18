@@ -1,3 +1,5 @@
+import { FreeeAPIError } from "./error";
+
 export interface FreeeMeResponse {
 	id: number;
 	companies: {
@@ -21,8 +23,11 @@ export async function getMe(accessToken: string): Promise<FreeeMeResponse> {
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get user info from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get user info from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
@@ -59,8 +64,11 @@ export async function postTimeClock(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to post time clock to freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to post time clock to freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 }
@@ -88,8 +96,11 @@ export async function getAvailableTimeClockTypes(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get available time clock types from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get available time clock types from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
@@ -125,8 +136,11 @@ export async function getTimeClocks(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get time clocks from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get time clocks from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
@@ -156,8 +170,11 @@ export async function getApprovalFlows(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to get approval flows from freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to get approval flows from freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 
@@ -195,8 +212,11 @@ export async function postPaidHolidayRequest(
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(
-			`Failed to post paid holiday request to freee: ${response.status} ${response.statusText} - ${errorText}`,
+		throw new FreeeAPIError(
+			"Failed to post paid holiday request to freee",
+			response.status,
+			response.statusText,
+			errorText,
 		);
 	}
 }
