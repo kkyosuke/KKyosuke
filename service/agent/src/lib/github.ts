@@ -1,6 +1,5 @@
 import { App } from "@octokit/app";
 import { Octokit } from "@octokit/rest";
-
 import type { CustomAppEnv } from "../config/env";
 import { getBotName } from "../config/env";
 import {
