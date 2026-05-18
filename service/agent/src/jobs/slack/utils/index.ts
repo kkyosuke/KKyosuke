@@ -1,5 +1,11 @@
 import type { SlackMentionCommand, SlackMentionContext } from "../types";
 
+const REACTIONS = {
+	RUNNING_PIKACHU: "running-pikachu",
+	SUCCESS: "white_check_mark",
+	FAILURE: "x",
+} as const;
+
 export const executeWithReaction = async (
 	ctx: SlackMentionContext,
 	command: SlackMentionCommand,
@@ -19,7 +25,7 @@ export const executeWithReaction = async (
 		await client.reactions.add({
 			channel: channelId,
 			timestamp: ts,
-			name: "running",
+			name: REACTIONS.RUNNING_PIKACHU,
 		});
 	} catch (e) {
 		console.error("[SlackRouter] Failed to add running reaction", e);
@@ -32,12 +38,12 @@ export const executeWithReaction = async (
 			await client.reactions.remove({
 				channel: channelId,
 				timestamp: ts,
-				name: "running-pikachu",
+				name: REACTIONS.RUNNING_PIKACHU,
 			});
 			await client.reactions.add({
 				channel: channelId,
 				timestamp: ts,
-				name: "white_check_mark",
+				name: REACTIONS.SUCCESS,
 			});
 		} catch (e) {
 			console.error("[SlackRouter] Failed to update reaction to success", e);
@@ -47,12 +53,12 @@ export const executeWithReaction = async (
 			await client.reactions.remove({
 				channel: channelId,
 				timestamp: ts,
-				name: "running-pikachu",
+				name: REACTIONS.RUNNING_PIKACHU,
 			});
 			await client.reactions.add({
 				channel: channelId,
 				timestamp: ts,
-				name: "x",
+				name: REACTIONS.FAILURE,
 			});
 		} catch (e) {
 			console.error("[SlackRouter] Failed to update reaction to failure", e);
