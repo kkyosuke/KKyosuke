@@ -72,10 +72,11 @@ export async function summarizeThread(
 		console.log("[LLM:summarizeThread] Usage:\n", usage);
 
 		return object;
-	} catch (error: any) {
-		console.error("[LLM:summarizeThread] Error:", error.message);
-		if (error.text) {
-			console.error("[LLM:summarizeThread] Raw Text:", error.text);
+	} catch (error: unknown) {
+		const err = error as Error & { text?: string };
+		console.error("[LLM:summarizeThread] Error:", err.message || String(error));
+		if (err.text) {
+			console.error("[LLM:summarizeThread] Raw Text:", err.text);
 		}
 		throw error;
 	}
