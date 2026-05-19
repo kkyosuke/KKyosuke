@@ -83,7 +83,7 @@ export class SettingsManager {
 
 	async getLogLevel(): Promise<string> {
 		if (this.env.GITHUB_KV) {
-			const level = await this.env.GITHUB_KV.get("pr_review:global:log_level");
+			const level = await this.env.GITHUB_KV.get("agent:global:log_level");
 			if (level) return level;
 		}
 		return "info";
@@ -91,7 +91,7 @@ export class SettingsManager {
 
 	async setLogLevel(level: string): Promise<void> {
 		if (this.env.GITHUB_KV) {
-			await this.env.GITHUB_KV.put("pr_review:global:log_level", level);
+			await this.env.GITHUB_KV.put("agent:global:log_level", level);
 		}
 	}
 }

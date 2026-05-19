@@ -22,7 +22,7 @@ APP_URL = "https://ai.kyosuke.dev"
 FREEE_CLIENT_ID = "728756541310561"
 
 [[kv_namespaces]]
-binding = "GITHUB_KV"
+binding = "AI_KYOSUKE_KV"
 id = "6074644670544a80a9805a8814aeeed9"
 
 [[d1_databases]]
