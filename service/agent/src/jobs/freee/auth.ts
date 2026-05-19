@@ -1,13 +1,12 @@
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
+import type { CustomAppEnv } from "../../config/env";
 import { getFreeeConfig } from "../../config/env";
 import { saveUserToken } from "../../datasource/db/userToken";
 import { getDatabaseClient } from "../../lib/db";
 import { createFreeeClient } from "../../lib/freee/index";
 import { publishHomeView } from "../slack/app-home/index";
 import { saveAccessTokenToKV } from "./utils/token";
-
-import type { CustomAppEnv } from "../../config/env";
 
 export async function handleFreeeAuthStart(
 	c: Context<{ Bindings: CustomAppEnv }>,

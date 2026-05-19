@@ -21,6 +21,10 @@
 			},
 			"style": {
 				"noNonNullAssertion": "error"
+			},
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error"
 			}
 		}
 	},
@@ -33,7 +37,12 @@
 		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": {
+					"level": "on",
+					"options": {
+						"groups": [":NODE:", ":PACKAGE:", "../**", "./**"]
+					}
+				}
 			}
 		}
 	}

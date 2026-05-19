@@ -1,11 +1,10 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { z } from "zod";
+import type { CustomAppEnv } from "../../config/env";
 import shareSummaryPromptTemplate from "../../prompts/weekly-report/prompt.md" with {
 	type: "text",
 };
-import type { CustomAppEnv } from "../../config/env";
-import { REVIEW_MODEL_NAME } from "./cost";
 
 export const weeklyReportSchema = z.object({
 	summaries: z
@@ -35,12 +34,13 @@ export async function generateWeeklyShareSummary(
 	env: Partial<CustomAppEnv>,
 	weekBeforeLastData: string,
 	lastWeekData: string,
+	modelName: string,
 ): Promise<WeeklyReportSummary> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic(REVIEW_MODEL_NAME);
+	const model = anthropic(modelName);
 
 	const prompt = shareSummaryPromptTemplate
 		.replace("{{weekBeforeLastData}}", weekBeforeLastData)

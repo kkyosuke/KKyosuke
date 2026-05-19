@@ -1,5 +1,6 @@
 import type { SlackApp } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
 import { getDatabaseClient } from "../../../lib/db";
 import { summarizeThread } from "../../../lib/llm/summary";
 
@@ -125,7 +126,9 @@ async function executeSummary(
 		const threadContent = `【スレッドの最初のメッセージ（スレッド名）】\n${threadTitleText}\n\n【参加者の投稿一覧】\n${allContent}`;
 
 		// 要約の生成
-		const summaryData = await summarizeThread(env, threadContent);
+		const settings = new SettingsManager(env);
+		const reportModel = await settings.getReportModel();
+		const summaryData = await summarizeThread(env, threadContent, reportModel);
 
 		if (summaryData.summary.length === 0) {
 			await client.chat.postMessage({
@@ -158,13 +161,18 @@ async function executeSummary(
 		const summarizedUsersList = await Promise.all(
 			summaryData.summary.map(async (userSummary) => {
 				try {
-					const userInfo = await client.users.info({ user: userSummary.user_id });
-					const name = userInfo.user?.real_name || userInfo.user?.name || userSummary.user_id;
+					const userInfo = await client.users.info({
+						user: userSummary.user_id,
+					});
+					const name =
+						userInfo.user?.real_name ||
+						userInfo.user?.name ||
+						userSummary.user_id;
 					return `- ${name}`;
-				} catch (e) {
+				} catch (_e) {
 					return `- ${userSummary.user_id}`;
 				}
-			})
+			}),
 		);
 		const summarizedUsersListText = summarizedUsersList.join("\n");
 

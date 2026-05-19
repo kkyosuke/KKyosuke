@@ -1,9 +1,8 @@
+import type { CustomAppEnv } from "../../config/env";
 import { getDatabaseClient } from "../../lib/db";
 import { recordAttendance } from "../freee/attendance";
 import { publishHomeView } from "./app-home";
 import { notifyAttendanceToSlack } from "./attendance-notification";
-
-import type { CustomAppEnv } from "../../config/env";
 import { getFreeeErrorMessage } from "./utils/freee";
 
 export const handleAttendanceAction =

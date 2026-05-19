@@ -1,9 +1,8 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type LanguageModelUsage, Output } from "ai";
 import { z } from "zod";
-import { buildThreadPrompt } from "../../prompts/thread/prompt";
 import type { CustomAppEnv } from "../../config/env";
-import { REVIEW_MODEL_NAME } from "./cost";
+import { buildThreadPrompt } from "../../prompts/thread/prompt";
 
 /**
  * レビュースレッド評価時に必要なコンテキスト
@@ -39,12 +38,13 @@ export type ThreadReplyResult = z.infer<typeof threadReplySchema>;
 export async function evaluateReviewThread(
 	env: Partial<CustomAppEnv>,
 	context: ThreadEvaluationContext,
+	modelName: string,
 ): Promise<{ output: ThreadReplyResult; usage: LanguageModelUsage }> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic(REVIEW_MODEL_NAME);
+	const model = anthropic(modelName);
 
 	const prompt = buildThreadPrompt(context);
 

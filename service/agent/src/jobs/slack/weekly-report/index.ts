@@ -1,4 +1,5 @@
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
 import { getDatabaseClient } from "../../../lib/db";
 import { generateWeeklyShareSummary } from "../../../lib/llm/weekly-report";
 import type { AppBindings } from "../../../types/bindings";
@@ -94,10 +95,14 @@ async function executeWeeklyReport(
 			.join("\n");
 
 		// Generate AI summary
+		const settings = new SettingsManager(env);
+		const reportModel = await settings.getReportModel();
+
 		const result = await generateWeeklyShareSummary(
 			env,
 			weekBeforeLastDataStr,
 			lastWeekDataStr,
+			reportModel,
 		);
 
 		// Format output for Slack

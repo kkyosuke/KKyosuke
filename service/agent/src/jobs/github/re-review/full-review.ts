@@ -1,9 +1,5 @@
-import {
-	calculateCost,
-	generateReReview,
-	REVIEW_MODEL_NAME,
-} from "../../../lib/llm";
 import type { CustomAppEnv } from "../../../config/env";
+import { calculateCost, generateReReview } from "../../../lib/llm";
 import { getNextStepsSection } from "../constants";
 
 /**
@@ -25,16 +21,21 @@ export async function performFullReReview(
 	finalInstruction: string,
 	template: string,
 	hasUnresolvedBotThreads: boolean,
+	reviewModelName: string,
 ) {
-	const { output: result, usage: reReviewUsage } = await generateReReview(env, {
-		title: pr.title,
-		body: pr.body,
-		diff: diff,
-		instruction: finalInstruction,
-		template: template,
-	});
+	const { output: result, usage: reReviewUsage } = await generateReReview(
+		env,
+		{
+			title: pr.title,
+			body: pr.body,
+			diff: diff,
+			instruction: finalInstruction,
+			template: template,
+		},
+		reviewModelName,
+	);
 
-	const cost = calculateCost(reReviewUsage, REVIEW_MODEL_NAME);
+	const cost = calculateCost(reReviewUsage, reviewModelName);
 
 	const newFeedbacks = result.newFeedback.slice(0, 10);
 	const generalNewFeedback = newFeedbacks.filter(

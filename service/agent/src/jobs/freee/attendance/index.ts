@@ -1,10 +1,8 @@
+import type { CustomAppEnv } from "../../../config/env";
 import { getFreeeConfig } from "../../../config/env";
 import type { DBClient } from "../../../lib/db";
 import { createFreeeClient } from "../../../lib/freee/index";
-
 import { ensureFreeeAccessToken } from "../utils/token";
-
-import type { CustomAppEnv } from "../../../config/env";
 
 export async function recordAttendance(
 	db: DBClient,

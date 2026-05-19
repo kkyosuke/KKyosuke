@@ -1,13 +1,12 @@
 import type { ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
-import homeHtml from "./src/resources/home.html";
 import { Hono } from "hono";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
+import type { CustomAppEnv } from "./src/config/env";
 import { resolveEnv } from "./src/config/env";
 import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubApp } from "./src/handlers/webhook";
-
-import type { CustomAppEnv } from "./src/config/env";
+import homeHtml from "./src/resources/home.html";
 
 const app = new Hono<{ Bindings: CustomAppEnv }>();
 
