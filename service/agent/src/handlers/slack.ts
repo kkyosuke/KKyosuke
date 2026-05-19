@@ -59,7 +59,8 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 		return handlePaidHolidaySubmission(args);
 	});
 
-	app.action("leave_type_select", async (args: any) => {
+	app.action("leave_type_select", async (args) => {
+		// @ts-expect-error slack-cloudflare-workers generic payload types
 		return handleLeaveTypeSelect(args);
 	});
 

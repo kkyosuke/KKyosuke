@@ -9,7 +9,7 @@ export function buildPaidHolidayModalView({
 	employeeId: number;
 	selectedType?: string;
 }): ModalView {
-	const blocks: any[] = [
+	const blocks: ModalView["blocks"] = [
 		{
 			type: "input",
 			block_id: "leave_type_block",
@@ -37,15 +37,30 @@ export function buildPaidHolidayModalView({
 				initial_option: (() => {
 					switch (selectedType) {
 						case "half":
-							return { text: { type: "plain_text", text: "半休" }, value: "half" };
+							return {
+								text: { type: "plain_text", text: "半休" },
+								value: "half",
+							};
 						case "morning_off":
-							return { text: { type: "plain_text", text: "午前休" }, value: "morning_off" };
+							return {
+								text: { type: "plain_text", text: "午前休" },
+								value: "morning_off",
+							};
 						case "afternoon_off":
-							return { text: { type: "plain_text", text: "午後休" }, value: "afternoon_off" };
+							return {
+								text: { type: "plain_text", text: "午後休" },
+								value: "afternoon_off",
+							};
 						case "hour":
-							return { text: { type: "plain_text", text: "時間休" }, value: "hour" };
+							return {
+								text: { type: "plain_text", text: "時間休" },
+								value: "hour",
+							};
 						default:
-							return { text: { type: "plain_text", text: "全休" }, value: "full" };
+							return {
+								text: { type: "plain_text", text: "全休" },
+								value: "full",
+							};
 					}
 				})(),
 			},
@@ -105,7 +120,7 @@ export function buildPaidHolidayModalView({
 					type: "plain_text",
 					text: "終了時間",
 				},
-			}
+			},
 		);
 	}
 

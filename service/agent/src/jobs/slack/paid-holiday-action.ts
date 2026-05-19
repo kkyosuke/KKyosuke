@@ -150,11 +150,13 @@ export const handleLeaveTypeSelect = async ({
 }: {
 	context: { client: import("slack-cloudflare-workers").SlackAPIClient };
 	payload: {
-		view: { id: string; private_metadata: string };
-		actions: { selected_option: { value: string } }[];
+		view?: { id: string; private_metadata: string };
+		actions: { selected_option?: { value: string } }[];
 	};
 }) => {
-	const selectedType = payload.actions[0]?.selected_option.value;
+	if (!payload.view) return;
+
+	const selectedType = payload.actions[0]?.selected_option?.value;
 	const metadata = JSON.parse(payload.view.private_metadata);
 
 	await context.client.views.update({
