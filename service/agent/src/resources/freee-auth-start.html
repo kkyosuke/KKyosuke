@@ -52,8 +52,8 @@
   </div>
   <script>
     // 1秒後に実際の認証エンドポイントへリダイレクト
-    setTimeout(function() {
-      window.location.href = "/freee/auth?user_id=" + encodeURIComponent("{{userId}}");
+    setTimeout(() => {
+      window.location.href = `/freee/auth?user_id=${encodeURIComponent("{{userId}}")}`;
     }, 1000);
   </script>
 </body>

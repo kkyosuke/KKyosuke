@@ -43,12 +43,12 @@
   </div>
   <script>
     // 1秒後にSlackアプリを前面に呼び出す（OSのディープリンク機能を使用）
-    setTimeout(function() {
+    setTimeout(() => {
       window.location.href = "slack://open";
     }, 1000);
 
     // その後、タブ自体を閉じる
-    setTimeout(function() {
+    setTimeout(() => {
       window.close();
     }, 3000);
   </script>

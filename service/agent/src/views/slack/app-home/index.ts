@@ -47,7 +47,7 @@ export async function publishHomeView(userId: string, env: CustomAppEnv) {
 				},
 			}),
 		});
-		const data = await res.json() as any;
+		const data = (await res.json()) as { ok: boolean };
 		if (!data.ok) {
 			console.error("Failed to publish home view:", JSON.stringify(data, null, 2));
 		}
