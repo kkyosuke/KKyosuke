@@ -1,6 +1,6 @@
 import type { CustomAppEnv } from "../../../config/env";
 import { createPlaceholderComment, updateComment } from "../../../lib/github";
-import type { KVBinding } from "../../common/types";
+import { getKVClient } from "../../../lib/kv";
 import { getInProgressComment, type ProgressStep } from "../constants";
 
 /**
@@ -100,10 +100,7 @@ export class ReviewProgressManager {
 	}
 
 	async checkCancellation() {
-		const kv = (this.env as Record<string, unknown>).GITHUB_KV as
-			| KVBinding
-			| undefined;
-		if (!kv) return;
+		const kv = getKVClient(this.env);
 
 		const cancelKey = `cancel-review-${this.owner}-${this.repo}-${this.pullNumber}`;
 		const isCancelled = await kv.get(cancelKey);

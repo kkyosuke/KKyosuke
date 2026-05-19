@@ -32,5 +32,8 @@ export function getMemoryKVClient(): KVClient {
 			}
 			store.set(key, { value, expiresAt });
 		},
+		async delete(key: string) {
+			store.delete(key);
+		},
 	};
 }

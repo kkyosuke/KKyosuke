@@ -12,7 +12,7 @@ export interface AppBindings {
 	ANTHROPIC_API_KEY?: string;
 
 	// KV Namespaces
-	GITHUB_KV: KVNamespace;
+	AI_KYOSUKE_KV: KVNamespace;
 
 	// D1 Databases
 	AI_KYOSUKE_DB: D1Database;
