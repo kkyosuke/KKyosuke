@@ -3,11 +3,9 @@ import type { ModalView } from "slack-cloudflare-workers";
 export function buildPaidHolidayModalView({
 	companyId,
 	employeeId,
-	approvalFlowId,
 }: {
 	companyId: number;
 	employeeId: number;
-	approvalFlowId: number;
 }): ModalView {
 	return {
 		type: "modal",
@@ -15,7 +13,6 @@ export function buildPaidHolidayModalView({
 		private_metadata: JSON.stringify({
 			companyId,
 			employeeId,
-			approvalFlowId,
 		}),
 		title: {
 			type: "plain_text",
@@ -65,34 +62,52 @@ export function buildPaidHolidayModalView({
 			},
 			{
 				type: "input",
-				block_id: "start_date_block",
+				block_id: "target_date_block",
 				element: {
 					type: "datepicker",
-					action_id: "start_date_picker",
+					action_id: "target_date_picker",
 					placeholder: {
 						type: "plain_text",
-						text: "開始日を選択",
+						text: "対象日を選択",
 					},
 				},
 				label: {
 					type: "plain_text",
-					text: "開始日",
+					text: "日付",
 				},
 			},
 			{
 				type: "input",
-				block_id: "end_date_block",
+				block_id: "start_time_block",
+				optional: true,
 				element: {
-					type: "datepicker",
-					action_id: "end_date_picker",
+					type: "timepicker",
+					action_id: "start_time_picker",
 					placeholder: {
 						type: "plain_text",
-						text: "終了日を選択",
+						text: "開始時間を選択 (時間休の場合)",
 					},
 				},
 				label: {
 					type: "plain_text",
-					text: "終了日",
+					text: "開始時間",
+				},
+			},
+			{
+				type: "input",
+				block_id: "end_time_block",
+				optional: true,
+				element: {
+					type: "timepicker",
+					action_id: "end_time_picker",
+					placeholder: {
+						type: "plain_text",
+						text: "終了時間を選択 (時間休の場合)",
+					},
+				},
+				label: {
+					type: "plain_text",
+					text: "終了時間",
 				},
 			},
 			{

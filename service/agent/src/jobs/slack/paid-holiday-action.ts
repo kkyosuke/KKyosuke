@@ -10,6 +10,12 @@ import {
 } from "../freee/paid-holiday";
 import { getFreeeErrorMessage } from "./utils/freee";
 
+/**
+ * freeeの人事労務で設定されている「有給休暇」の申請経路ID
+ * 参照: 部門役職データ連携を利用した申請経路はAPIから取得・操作できない制限があるため、固定値を指定しています。
+ */
+const FREEE_APPROVAL_FLOW_ID = 1388164;
+
 export const handlePaidHolidayModalOpen = async ({
 	context,
 	payload,
@@ -35,7 +41,6 @@ export const handlePaidHolidayModalOpen = async ({
 			view: buildPaidHolidayModalView({
 				companyId: modalContext.companyId,
 				employeeId: modalContext.employeeId,
-				approvalFlowId: modalContext.approvalFlowId,
 			}),
 		});
 	} catch (e: unknown) {
@@ -85,6 +90,7 @@ export const handlePaidHolidaySubmission = async ({
 							value?: string;
 							selected_option?: { value: string };
 							selected_date?: string;
+							selected_time?: string;
 						}
 					>
 				>;
@@ -99,9 +105,11 @@ export const handlePaidHolidaySubmission = async ({
 
 	const leaveType =
 		values.leave_type_block?.leave_type_select?.selected_option?.value ?? "";
-	const startDate =
-		values.start_date_block?.start_date_picker?.selected_date ?? "";
-	const endDate = values.end_date_block?.end_date_picker?.selected_date ?? "";
+	const targetDate =
+		values.target_date_block?.target_date_picker?.selected_date ?? "";
+	const startTime =
+		values.start_time_block?.start_time_picker?.selected_time ?? "";
+	const endTime = values.end_time_block?.end_time_picker?.selected_time ?? "";
 	const reason = values.reason_block?.reason_input?.value ?? "";
 
 	try {
@@ -112,17 +120,18 @@ export const handlePaidHolidaySubmission = async ({
 		await submitPaidHoliday(db, env, userId, {
 			companyId: metadata.companyId,
 			employeeId: metadata.employeeId,
-			approvalFlowId: metadata.approvalFlowId,
+			approvalFlowId: FREEE_APPROVAL_FLOW_ID,
 			leaveType,
-			startDate,
-			endDate,
+			targetDate,
+			startTime,
+			endTime,
 			reason,
 		});
 
 		// Notify user on slack
 		await context.client.chat.postMessage({
 			channel: userId,
-			text: `有給休暇の申請が完了しました。(${startDate} 〜 ${endDate})`,
+			text: `有給休暇の申請が完了しました。(${targetDate})`,
 		});
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
