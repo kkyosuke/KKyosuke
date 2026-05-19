@@ -4,25 +4,25 @@ display_information:
   description: ai of kyosuke
   background_color: "#473b45"
 features:
-  bot_user:
-    display_name: kyosuke.ai
-    always_online: true
   app_home:
     home_tab_enabled: true
     messages_tab_enabled: true
     messages_tab_read_only_enabled: false
+  bot_user:
+    display_name: kyosuke.ai
+    always_online: true
   shortcuts:
-    - name: Hey Cloudflare Wokers!
-      type: global
-      callback_id: hey-cf-workers
-      description: Say hi to CF Workers
     - name: スレッドを進捗として保存
       type: message
       callback_id: save-summary
       description: このスレッドの内容を要約して進捗として保存します
+    - name: Hey Cloudflare Wokers!
+      type: global
+      callback_id: hey-cf-workers
+      description: Say hi to CF Workers
   slash_commands:
     - command: /hey-cf-workers
-      url: https://local.kyosuke.dev/slack/
+      url: https://ai.kyosuke.dev/slack/
       description: Say hi to CF Workers
       usage_hint: Say hi to CF Workers
       should_escape: false
@@ -37,18 +37,19 @@ oauth_config:
       - groups:history
       - im:history
       - reactions:write
+      - users:read
   pkce_enabled: false
 settings:
   event_subscriptions:
-    request_url: https://local.kyosuke.dev/slack/
+    request_url: https://ai.kyosuke.dev/slack/
     bot_events:
       - app_mention
       - message.im
       - app_home_opened
   interactivity:
     is_enabled: true
-    request_url: https://local.kyosuke.dev/slack/
-    message_menu_options_url: https://local.kyosuke.dev/slack/
+    request_url: https://ai.kyosuke.dev/slack/
+    message_menu_options_url: https://ai.kyosuke.dev/slack/
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

@@ -1,7 +1,7 @@
 import type { CustomAppEnv } from "../../config/env";
 import { getDatabaseClient } from "../../lib/db";
 import { recordAttendance } from "../freee/attendance";
-import { publishHomeView } from "./app-home";
+import { publishHomeView } from "../../views/slack/app-home";
 import { notifyAttendanceToSlack } from "./attendance-notification";
 import { getFreeeErrorMessage } from "./utils/freee";
 

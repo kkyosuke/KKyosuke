@@ -3,6 +3,7 @@ import { SettingsManager } from "../../../config/settings";
 import { getDatabaseClient } from "../../../lib/db";
 import { generateWeeklyShareSummary } from "../../../lib/llm/weekly-report";
 import type { AppBindings } from "../../../types/bindings";
+import { buildWeeklyReportBlocks } from "../../../views/slack/weekly-report";
 import type { SlackMentionCommand } from "../types";
 
 export const weeklyReportMentionCommand: SlackMentionCommand = {
@@ -106,33 +107,11 @@ async function executeWeeklyReport(
 		);
 
 		// Format output for Slack
-		// biome-ignore lint/suspicious/noExplicitAny: slack api blocks type
-		const blocks: any[] = [
-			{
-				type: "header",
-				text: {
-					type: "plain_text",
-					text: `📊 先週の進捗まとめ (${lastWeekStartStr} ~ ${lastWeekEndStr})`,
-					emoji: true,
-				},
-			},
-			{
-				type: "divider",
-			},
-		];
-
-		for (const userSummary of result.summaries) {
-			blocks.push({
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: `*<@${userSummary.user_id}> さんの進捗*\n\n*📈 先々週との比較*\n${userSummary.ratio_text}\n\n*📝 まとめ*\n${userSummary.summary_text}\n\n*🚀 今週の頑張り*\n${userSummary.next_action_text}`,
-				},
-			});
-			blocks.push({
-				type: "divider",
-			});
-		}
+		const blocks = buildWeeklyReportBlocks(
+			lastWeekStartStr,
+			lastWeekEndStr,
+			result.summaries,
+		);
 
 		// Slackのスレッドまたはチャンネルに結果を返信
 		await client.chat.postMessage({
