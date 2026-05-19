@@ -1,13 +1,13 @@
 import type { CustomAppEnv } from "../../config/env";
-import { getFreeeConfig } from "../../config/env";
 import { getDatabaseClient } from "../../lib/db";
-import { createFreeeClient } from "../../lib/freee";
-import type { PaidHolidayRequest } from "../../lib/freee/hr";
-import { ensureFreeeAccessToken } from "../freee/utils/token";
 import {
 	buildErrorModalView,
 	buildPaidHolidayModalView,
 } from "../../views/slack/paid-holiday";
+import {
+	getPaidHolidayModalContext,
+	submitPaidHoliday,
+} from "../freee/paid-holiday";
 import { getFreeeErrorMessage } from "./utils/freee";
 
 export const handlePaidHolidayModalOpen = async ({
@@ -22,40 +22,10 @@ export const handlePaidHolidayModalOpen = async ({
 	const userId = payload.user.id;
 	try {
 		const db = getDatabaseClient(env);
-		const accessToken = await ensureFreeeAccessToken(db, env, userId);
-		if (!accessToken) {
+
+		const modalContext = await getPaidHolidayModalContext(db, env, userId);
+		if (!modalContext) {
 			console.error("Freee access token not found for user", userId);
-			return;
-		}
-
-		const config = getFreeeConfig(env);
-		const freee = createFreeeClient(config);
-
-		const me = await freee.hr.getMe(accessToken);
-		const company = me.companies?.[0];
-		if (!company) {
-			console.error("User has no company in freee");
-			return;
-		}
-
-		// Fetch approval flows to get the default one
-		const flows = await freee.hr.getApprovalFlows(accessToken, company.id);
-		if (flows.length === 0) {
-			console.error("No approval flows found");
-			await context.client.chat.postMessage({
-				channel: userId,
-				text: "申請経路が見つかりませんでした。freee人事労務の設定をご確認ください。",
-			});
-			return;
-		}
-
-		const defaultFlow = flows[0];
-		if (!defaultFlow) {
-			console.error("No approval flows found (undefined)");
-			await context.client.chat.postMessage({
-				channel: userId,
-				text: "申請経路が見つかりませんでした。freee人事労務の設定をご確認ください。",
-			});
 			return;
 		}
 
@@ -63,14 +33,27 @@ export const handlePaidHolidayModalOpen = async ({
 		await context.client.views.open({
 			trigger_id: payload.trigger_id,
 			view: buildPaidHolidayModalView({
-				companyId: company.id,
-				employeeId: company.employee_id,
-				approvalFlowId: defaultFlow.id,
+				companyId: modalContext.companyId,
+				employeeId: modalContext.employeeId,
+				approvalFlowId: modalContext.approvalFlowId,
 			}),
 		});
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
 		console.error("Error handling paid holiday modal open:", err);
+
+		// Specific error string matched from getPaidHolidayModalContext
+		if (err.message.includes("申請経路が見つかりませんでした")) {
+			try {
+				await context.client.chat.postMessage({
+					channel: userId,
+					text: err.message,
+				});
+			} catch (msgErr) {
+				console.error("Failed to post message:", msgErr);
+			}
+			return;
+		}
 
 		try {
 			const errorMessage = getFreeeErrorMessage(e);
@@ -125,25 +108,15 @@ export const handlePaidHolidaySubmission = async ({
 		const metadata = JSON.parse(payload.view.private_metadata);
 
 		const db = getDatabaseClient(env);
-		const accessToken = await ensureFreeeAccessToken(db, env, userId);
-		if (!accessToken) {
-			console.error("Freee access token not found for user", userId);
-			return;
-		}
 
-		const config = getFreeeConfig(env);
-		const freee = createFreeeClient(config);
-
-		await freee.hr.postPaidHolidayRequest(accessToken, {
-			company_id: metadata.companyId,
-			applicant_id: metadata.employeeId,
-			approval_flow_id: metadata.approvalFlowId,
-			values: {
-				type: leaveType as PaidHolidayRequest["values"]["type"],
-				start_date: startDate,
-				end_date: endDate,
-				reason: reason,
-			},
+		await submitPaidHoliday(db, env, userId, {
+			companyId: metadata.companyId,
+			employeeId: metadata.employeeId,
+			approvalFlowId: metadata.approvalFlowId,
+			leaveType,
+			startDate,
+			endDate,
+			reason,
 		});
 
 		// Notify user on slack

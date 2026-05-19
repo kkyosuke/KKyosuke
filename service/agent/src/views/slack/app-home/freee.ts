@@ -2,10 +2,10 @@ import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
 import { getFreeeConfig, resolveEnv } from "../../../config/env";
 import { getUserTokenByType } from "../../../datasource/db/userToken";
-import type { DBClient } from "../../../lib/db";
-import { createFreeeClient } from "../../../lib/freee/index";
 import { ensureFreeeAccessToken } from "../../../jobs/freee/utils/token";
 import { getFreeeErrorMessage } from "../../../jobs/slack/utils/freee";
+import type { DBClient } from "../../../lib/db";
+import { createFreeeClient } from "../../../lib/freee/index";
 
 export type AttendanceState =
 	| "unknown"

@@ -32,15 +32,23 @@ export const buildSettingsBlocks = async (
 
 		// 設定マネージャーから現在の設定を取得
 		let defaultModel = await settings.getReviewModel();
-		if (!AVAILABLE_MODELS.includes(defaultModel as typeof AVAILABLE_MODELS[number])) {
+		if (
+			!AVAILABLE_MODELS.includes(
+				defaultModel as (typeof AVAILABLE_MODELS)[number],
+			)
+		) {
 			defaultModel = AVAILABLE_MODELS[0];
 		}
-		
+
 		let reportModel = await settings.getReportModel();
-		if (!AVAILABLE_MODELS.includes(reportModel as typeof AVAILABLE_MODELS[number])) {
+		if (
+			!AVAILABLE_MODELS.includes(
+				reportModel as (typeof AVAILABLE_MODELS)[number],
+			)
+		) {
 			reportModel = AVAILABLE_MODELS[0];
 		}
-		
+
 		const autoReviewEnabled = await settings.isAutoReviewEnabled();
 		const logLevel = await settings.getLogLevel();
 
@@ -96,48 +104,8 @@ export const buildSettingsBlocks = async (
 				type: "header",
 				text: {
 					type: "plain_text",
-					text: "⚙️ システム設定 (PR Review Agent)",
+					text: "⚙️ システム設定",
 					emoji: true,
-				},
-			},
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "🤖 *Review Agent モデルの選択*\nPRレビューおよびスレッドの自動返信で使用するモデルを選択します。",
-				},
-				accessory: {
-					type: "static_select",
-					action_id: "settings_pr_review_model_changed",
-					placeholder: {
-						type: "plain_text",
-						text: "モデルを選択",
-					},
-					initial_option: {
-						text: { type: "plain_text", text: defaultModel },
-						value: defaultModel,
-					},
-					options: modelOptions,
-				},
-			},
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "📝 *Report Agent モデルの選択*\n日報や週次まとめで使用するモデルを選択します。",
-				},
-				accessory: {
-					type: "static_select",
-					action_id: "settings_report_model_changed",
-					placeholder: {
-						type: "plain_text",
-						text: "モデルを選択",
-					},
-					initial_option: {
-						text: { type: "plain_text", text: reportModel },
-						value: reportModel,
-					},
-					options: modelOptions,
 				},
 			},
 			{
@@ -174,14 +142,68 @@ export const buildSettingsBlocks = async (
 				},
 			},
 			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "🤖 *Agent*\nエージェントが使用するモデルを選択します。",
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "> *Review*\n> PRレビューおよびスレッドの自動返信",
+				},
+				accessory: {
+					type: "static_select",
+					action_id: "settings_pr_review_model_changed",
+					placeholder: {
+						type: "plain_text",
+						text: "モデルを選択",
+					},
+					initial_option: {
+						text: { type: "plain_text", text: defaultModel },
+						value: defaultModel,
+					},
+					options: modelOptions,
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "> *Report*\n> 日報や週次まとめ",
+				},
+				accessory: {
+					type: "static_select",
+					action_id: "settings_report_model_changed",
+					placeholder: {
+						type: "plain_text",
+						text: "モデルを選択",
+					},
+					initial_option: {
+						text: { type: "plain_text", text: reportModel },
+						value: reportModel,
+					},
+					options: modelOptions,
+				},
+			},
+			{
 				type: "divider",
 			},
 			{
 				type: "header",
 				text: {
 					type: "plain_text",
-					text: "⚙️ システム・運用ステータス (Admin/Debug)",
+					text: "📊 運用状況",
 					emoji: true,
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "🛠️ *サービス*\n現在の接続ステータス",
 				},
 			},
 			{
@@ -189,15 +211,15 @@ export const buildSettingsBlocks = async (
 				fields: [
 					{
 						type: "mrkdwn",
-						text: `*GitHub App*\n${githubStatus}`,
+						text: `> *GitHub App*\n> ${githubStatus}`,
 					},
 					{
 						type: "mrkdwn",
-						text: `*LLM API*\n${llmStatus}`,
+						text: `> *LLM API*\n> ${llmStatus}`,
 					},
 					{
 						type: "mrkdwn",
-						text: `*D1 Database*\n${d1Status}`,
+						text: `> *D1 Database*\n> ${d1Status}`,
 					},
 				],
 			},
@@ -205,7 +227,14 @@ export const buildSettingsBlocks = async (
 				type: "section",
 				text: {
 					type: "mrkdwn",
-					text: "📝 *ログ出力レベル*\nエージェントのログレベルを指定します。",
+					text: "📝 *ログ*\nエージェントのログ設定",
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "> *レベル*",
 				},
 				accessory: {
 					type: "static_select",
