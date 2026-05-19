@@ -3,7 +3,7 @@ import { type Context, Hono } from "hono";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import type { CustomAppEnv } from "../config/env";
 import { getBotName } from "../config/env";
-import type { KVBinding } from "../jobs/common/types";
+
 import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
 	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
