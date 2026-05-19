@@ -12,8 +12,6 @@ export interface SelectedNews {
 	comment: string;
 }
 
-
-
 /**
  * YahooニュースのITトピックス（RSS）を取得し、タイトルとURLのリストを返します。
  */
@@ -28,7 +26,8 @@ export async function fetchITNews(): Promise<NewsItem[]> {
 
 		// 正規表現による簡易XMLパース
 		// <item> ... <title>...</title> ... <link>...</link> ... </item>
-		const itemRegexSimple = /<item>[\s\S]*?<title>(.*?)<\/title>[\s\S]*?<link>(.*?)<\/link>[\s\S]*?<\/item>/g;
+		const itemRegexSimple =
+			/<item>[\s\S]*?<title>(.*?)<\/title>[\s\S]*?<link>(.*?)<\/link>[\s\S]*?<\/item>/g;
 
 		const items: NewsItem[] = [];
 		let match: RegExpExecArray | null = itemRegexSimple.exec(xmlText);
@@ -78,11 +77,16 @@ export async function getDailyNews(
 		const selected = await selectInterestingNews(env, items);
 		if (selected) {
 			// TTL 86400秒 (1日) でKVに保存
-			await kv.put(cacheKey, JSON.stringify(selected), { expirationTtl: 86400 });
+			await kv.put(cacheKey, JSON.stringify(selected), {
+				expirationTtl: 86400,
+			});
 			return selected;
 		}
 	} catch (error) {
-		console.error("[getDailyNews] Error accessing KV or generating news:", error);
+		console.error(
+			"[getDailyNews] Error accessing KV or generating news:",
+			error,
+		);
 	}
 
 	return null;

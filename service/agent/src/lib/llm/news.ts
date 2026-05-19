@@ -8,7 +8,11 @@ import type { NewsItem, SelectedNews } from "../news";
 export const newsSelectionSchema = z.object({
 	title: z.string().describe("選定したニュースのタイトル"),
 	url: z.string().describe("選定したニュースのURL"),
-	comment: z.string().describe("AIによる推薦コメント（なぜこれが面白いのか、ITエンジニア向けに1〜2文で）"),
+	comment: z
+		.string()
+		.describe(
+			"AIによる推薦コメント（なぜこれが面白いのか、ITエンジニア向けに1〜2文で）",
+		),
 });
 
 /**
@@ -25,7 +29,9 @@ export async function selectInterestingNews(
 	});
 
 	// デフォルトのレポートモデルを使用するか、フォールバックとして claude-3-5-haiku-20241022 を使用
-	const model = anthropic(DEFAULT_REPORT_MODEL_NAME || "claude-3-5-haiku-20241022");
+	const model = anthropic(
+		DEFAULT_REPORT_MODEL_NAME || "claude-3-5-haiku-20241022",
+	);
 
 	const prompt = `以下のIT関連ニュースから、ITエンジニアにとって最も面白そうなものを1つ選び、そのタイトル、URL、そして推薦理由（1〜2文）を出力してください。
 
