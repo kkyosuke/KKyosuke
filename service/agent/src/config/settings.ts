@@ -39,9 +39,7 @@ export class SettingsManager {
 
 	async getReviewModel(): Promise<string> {
 		if (this.kv) {
-			const model = await this.kv.get(
-				"pr_review:global:default_model",
-			);
+			const model = await this.kv.get("pr_review:global:default_model");
 			if (model) return model;
 		}
 		return DEFAULT_REVIEW_MODEL_NAME;
@@ -69,9 +67,7 @@ export class SettingsManager {
 
 	async isAutoReviewEnabled(): Promise<boolean> {
 		if (this.kv) {
-			const auto = await this.kv.get(
-				"pr_review:global:auto_review_enabled",
-			);
+			const auto = await this.kv.get("pr_review:global:auto_review_enabled");
 			if (auto === "false") return false;
 		}
 		return true;

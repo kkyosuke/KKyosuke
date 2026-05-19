@@ -1,5 +1,5 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { CustomAppEnv } from "../../config/env";
 import summaryPromptTemplate from "../../prompts/summary/prompt.md" with {
@@ -59,10 +59,10 @@ export async function summarizeThread(
 	console.log("[LLM:summarizeThread] Sending prompt:\n", prompt);
 
 	try {
-		const { object, usage } = await generateObject({
+		const { output: object, usage } = await generateText({
 			model,
-			schema: summarySchema,
 			prompt,
+			output: Output.object({ schema: summarySchema }),
 		});
 
 		console.log(

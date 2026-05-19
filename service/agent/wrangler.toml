@@ -23,7 +23,7 @@ FREEE_CLIENT_ID = "728756541310561"
 
 [[kv_namespaces]]
 binding = "AI_KYOSUKE_KV"
-id = "6074644670544a80a9805a8814aeeed9"
+id = "bfcf6a4ab5c54064a80358a83bbe9f63"
 
 [[d1_databases]]
 binding = "AI_KYOSUKE_DB"

@@ -1,5 +1,5 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { CustomAppEnv } from "../../config/env";
 import shareSummaryPromptTemplate from "../../prompts/weekly-report/prompt.md" with {
@@ -46,10 +46,10 @@ export async function generateWeeklyShareSummary(
 		.replace("{{weekBeforeLastData}}", weekBeforeLastData)
 		.replace("{{lastWeekData}}", lastWeekData);
 
-	const { object } = await generateObject({
+	const { output: object } = await generateText({
 		model,
-		schema: weeklyReportSchema,
 		prompt,
+		output: Output.object({ schema: weeklyReportSchema }),
 	});
 
 	return object;
