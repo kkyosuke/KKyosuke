@@ -87,7 +87,7 @@ export function buildPaidHolidayModalView({
 		},
 	];
 
-	if (selectedType === "hour") {
+	if (selectedType === "hour" || selectedType === "half") {
 		blocks.push(
 			{
 				type: "input",

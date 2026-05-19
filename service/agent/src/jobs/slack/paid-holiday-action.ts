@@ -45,7 +45,11 @@ export const handlePaidHolidayModalOpen = async ({
 		});
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
-		console.error("Error handling paid holiday modal open:", err);
+		const errorMessage = getFreeeErrorMessage(e);
+		console.error(
+			`Error handling paid holiday modal open: ${errorMessage}`,
+			err,
+		);
 
 		// Specific error string matched from getPaidHolidayModalContext
 		if (err.message.includes("申請経路が見つかりませんでした")) {
@@ -61,7 +65,6 @@ export const handlePaidHolidayModalOpen = async ({
 		}
 
 		try {
-			const errorMessage = getFreeeErrorMessage(e);
 			await context.client.views.open({
 				trigger_id: payload.trigger_id,
 				view: buildErrorModalView(errorMessage),
@@ -135,8 +138,11 @@ export const handlePaidHolidaySubmission = async ({
 		});
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
-		console.error("Error submitting paid holiday request:", err);
 		const errorMessage = getFreeeErrorMessage(e);
+		console.error(
+			`Error submitting paid holiday request: ${errorMessage}`,
+			err,
+		);
 		await context.client.chat.postMessage({
 			channel: userId,
 			text: `有給休暇の申請中にエラーが発生しました。\n詳細: ${errorMessage}\n時間を置いて再度お試しください。`,

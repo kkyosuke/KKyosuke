@@ -1,5 +1,5 @@
 import type { CustomAppEnv } from "../../../config/env";
-import type { KVBinding } from "../types";
+import { getKVClient } from "../../../lib/kv";
 
 /**
  * KVを使用した排他制御を行います。
@@ -10,12 +10,7 @@ export async function withKvLock(
 	ttlSeconds: number,
 	callback: () => Promise<void>,
 ) {
-	const kv = env.GITHUB_KV as KVBinding | undefined;
-	if (!kv) {
-		// KVが設定されていない場合はそのまま実行
-		await callback();
-		return;
-	}
+	const kv = getKVClient(env);
 
 	const isLocked = await kv.get(key);
 	if (isLocked) {

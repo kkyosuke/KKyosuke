@@ -3,14 +3,14 @@ import { type Context, Hono } from "hono";
 import { CANCEL_SIGNAL_TTL_SECONDS } from "../config";
 import type { CustomAppEnv } from "../config/env";
 import { getBotName } from "../config/env";
-import type { KVBinding } from "../jobs/common/types";
+
 import {
 	RE_REVIEW_CHECKBOX_CHECKED_PATTERN_SINGLE,
 	RE_REVIEW_CHECKBOX_UNCHECKED_PATTERN_SINGLE,
 } from "../jobs/github/constants";
 import type { ReviewQueueMessage } from "../jobs/github/queue";
 import type { CommandContext } from "../jobs/github/types";
-
+import { getKVClient } from "../lib/kv";
 type WebhookPayload = {
 	action?: string;
 	installation?: { id: number };
@@ -285,18 +285,14 @@ async function githubWebhookHandler(c: Context<{ Bindings: CustomAppEnv }>) {
 			const repo = payload.repository.name;
 			const pullNumber = payload.pull_request.number;
 
-			const kv = e.GITHUB_KV as KVBinding | undefined;
-			if (kv) {
-				const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
-				console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);
-				await kv
-					.put(cancelKey, "1", { expirationTtl: CANCEL_SIGNAL_TTL_SECONDS })
-					.catch((err: unknown) => {
-						console.error(`[Webhook] Failed to set cancellation flag:`, err);
-					});
-			} else {
-				console.warn(`[Webhook] KV not found, cannot set cancellation flag`);
-			}
+			const kv = getKVClient(e);
+			const cancelKey = `cancel-review-${owner}-${repo}-${pullNumber}`;
+			console.log(`[Webhook] Setting cancellation flag for ${cancelKey}`);
+			await kv
+				.put(cancelKey, "1", { expirationTtl: CANCEL_SIGNAL_TTL_SECONDS })
+				.catch((err: unknown) => {
+					console.error(`[Webhook] Failed to set cancellation flag:`, err);
+				});
 			break;
 		}
 

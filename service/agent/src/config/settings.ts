@@ -2,6 +2,7 @@ import {
 	DEFAULT_REPORT_MODEL_NAME,
 	DEFAULT_REVIEW_MODEL_NAME,
 } from "../lib/llm/cost";
+import { getKVClient } from "../lib/kv";
 import type { CustomAppEnv } from "./env";
 
 export class SettingsManager {
@@ -32,9 +33,13 @@ export class SettingsManager {
 
 	// --- KVを使用する動的設定 ---
 
+	private get kv() {
+		return getKVClient(this.env);
+	}
+
 	async getReviewModel(): Promise<string> {
-		if (this.env.GITHUB_KV) {
-			const model = await this.env.GITHUB_KV.get(
+		if (this.kv) {
+			const model = await this.kv.get(
 				"pr_review:global:default_model",
 			);
 			if (model) return model;
@@ -43,28 +48,28 @@ export class SettingsManager {
 	}
 
 	async setReviewModel(model: string): Promise<void> {
-		if (this.env.GITHUB_KV) {
-			await this.env.GITHUB_KV.put("pr_review:global:default_model", model);
+		if (this.kv) {
+			await this.kv.put("pr_review:global:default_model", model);
 		}
 	}
 
 	async getReportModel(): Promise<string> {
-		if (this.env.GITHUB_KV) {
-			const model = await this.env.GITHUB_KV.get("report:global:default_model");
+		if (this.kv) {
+			const model = await this.kv.get("report:global:default_model");
 			if (model) return model;
 		}
 		return DEFAULT_REPORT_MODEL_NAME;
 	}
 
 	async setReportModel(model: string): Promise<void> {
-		if (this.env.GITHUB_KV) {
-			await this.env.GITHUB_KV.put("report:global:default_model", model);
+		if (this.kv) {
+			await this.kv.put("report:global:default_model", model);
 		}
 	}
 
 	async isAutoReviewEnabled(): Promise<boolean> {
-		if (this.env.GITHUB_KV) {
-			const auto = await this.env.GITHUB_KV.get(
+		if (this.kv) {
+			const auto = await this.kv.get(
 				"pr_review:global:auto_review_enabled",
 			);
 			if (auto === "false") return false;
@@ -73,8 +78,8 @@ export class SettingsManager {
 	}
 
 	async setAutoReviewEnabled(enabled: boolean): Promise<void> {
-		if (this.env.GITHUB_KV) {
-			await this.env.GITHUB_KV.put(
+		if (this.kv) {
+			await this.kv.put(
 				"pr_review:global:auto_review_enabled",
 				enabled ? "true" : "false",
 			);
@@ -82,16 +87,16 @@ export class SettingsManager {
 	}
 
 	async getLogLevel(): Promise<string> {
-		if (this.env.GITHUB_KV) {
-			const level = await this.env.GITHUB_KV.get("pr_review:global:log_level");
+		if (this.kv) {
+			const level = await this.kv.get("agent:global:log_level");
 			if (level) return level;
 		}
 		return "info";
 	}
 
 	async setLogLevel(level: string): Promise<void> {
-		if (this.env.GITHUB_KV) {
-			await this.env.GITHUB_KV.put("pr_review:global:log_level", level);
+		if (this.kv) {
+			await this.kv.put("agent:global:log_level", level);
 		}
 	}
 }

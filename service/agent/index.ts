@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "./src/config/env";
 import { resolveEnv } from "./src/config/env";
+import { SettingsManager } from "./src/config/settings";
 import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubApp } from "./src/handlers/webhook";
@@ -49,6 +50,11 @@ export default {
 
 		// SlackからのリクエストはSlackAppで処理する
 		if (url.pathname.startsWith("/slack")) {
+			const settings = new SettingsManager(appEnv);
+			const logLevel = await settings.getLogLevel();
+			appEnv.SLACK_LOGGING_LEVEL =
+				logLevel.toUpperCase() as SlackEdgeAppEnv["SLACK_LOGGING_LEVEL"];
+
 			const slackApp = createSlackApp(appEnv);
 			return await slackApp.run(request, ctx);
 		}
