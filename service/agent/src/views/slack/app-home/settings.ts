@@ -31,8 +31,16 @@ export const buildSettingsBlocks = async (
 		const settings = new SettingsManager(env);
 
 		// 設定マネージャーから現在の設定を取得
-		const defaultModel = await settings.getReviewModel();
-		const reportModel = await settings.getReportModel();
+		let defaultModel = await settings.getReviewModel();
+		if (!AVAILABLE_MODELS.includes(defaultModel as typeof AVAILABLE_MODELS[number])) {
+			defaultModel = AVAILABLE_MODELS[0];
+		}
+		
+		let reportModel = await settings.getReportModel();
+		if (!AVAILABLE_MODELS.includes(reportModel as typeof AVAILABLE_MODELS[number])) {
+			reportModel = AVAILABLE_MODELS[0];
+		}
+		
 		const autoReviewEnabled = await settings.isAutoReviewEnabled();
 		const logLevel = await settings.getLogLevel();
 

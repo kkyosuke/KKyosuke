@@ -4,8 +4,8 @@ import { getFreeeConfig, resolveEnv } from "../../../config/env";
 import { getUserTokenByType } from "../../../datasource/db/userToken";
 import type { DBClient } from "../../../lib/db";
 import { createFreeeClient } from "../../../lib/freee/index";
-import { ensureFreeeAccessToken } from "../../freee/utils/token";
-import { getFreeeErrorMessage } from "../utils/freee";
+import { ensureFreeeAccessToken } from "../../../jobs/freee/utils/token";
+import { getFreeeErrorMessage } from "../../../jobs/slack/utils/freee";
 
 export type AttendanceState =
 	| "unknown"
