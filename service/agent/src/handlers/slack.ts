@@ -4,6 +4,7 @@ import { appHomeOpened } from "../jobs/slack/app-home";
 import { handleAttendanceAction } from "../jobs/slack/attendance-action";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/hey-cf-workers";
 import {
+	handleLeaveTypeSelect,
 	handlePaidHolidayModalOpen,
 	handlePaidHolidaySubmission,
 } from "../jobs/slack/paid-holiday-action";
@@ -56,6 +57,10 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 
 	app.view("freee_paid_holiday_modal", async (args) => {
 		return handlePaidHolidaySubmission(args);
+	});
+
+	app.action("leave_type_select", async (args: any) => {
+		return handleLeaveTypeSelect(args);
 	});
 
 	app.action("settings_pr_review_model_changed", async (args) => {
