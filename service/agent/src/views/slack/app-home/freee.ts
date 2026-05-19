@@ -21,11 +21,10 @@ export async function buildFreeeBlocks(
 ): Promise<AnyHomeTabBlock[]> {
 	const blocks: AnyHomeTabBlock[] = [
 		{
-			type: "header",
+			type: "section",
 			text: {
-				type: "plain_text",
-				text: "freee",
-				emoji: true,
+				type: "mrkdwn",
+				text: "*🏢 勤怠管理 (freee)*",
 			},
 		},
 	];
@@ -179,7 +178,10 @@ export async function buildFreeeBlocks(
 		return blocks;
 	}
 
-	// 4. 打刻のUI処理
+	// 4. 打刻のUI処理と有給申請
+	// biome-ignore lint/suspicious/noExplicitAny: actionElements type is complex
+	const actionElements: any[] = [];
+
 	if (attendanceState === "not_clocked_in") {
 		blocks.push({
 			type: "section",
@@ -188,32 +190,29 @@ export async function buildFreeeBlocks(
 				text: "現在の状態: *未出勤*",
 			},
 		});
-		blocks.push({
-			type: "actions",
-			elements: [
-				{
-					type: "button",
-					text: {
-						type: "plain_text",
-						text: "出社【本社】",
-						emoji: true,
-					},
-					value: "clock_in_office",
-					action_id: "freee_clock_in_office",
-					style: "primary",
+		actionElements.push(
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "出社【本社】",
+					emoji: true,
 				},
-				{
-					type: "button",
-					text: {
-						type: "plain_text",
-						text: "出社【リモート】",
-						emoji: true,
-					},
-					value: "clock_in_remote",
-					action_id: "freee_clock_in_remote",
+				value: "clock_in_office",
+				action_id: "freee_clock_in_office",
+				style: "primary",
+			},
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "出社【リモート】",
+					emoji: true,
 				},
-			],
-		});
+				value: "clock_in_remote",
+				action_id: "freee_clock_in_remote",
+			},
+		);
 	} else if (attendanceState === "clocked_in") {
 		blocks.push({
 			type: "section",
@@ -222,32 +221,29 @@ export async function buildFreeeBlocks(
 				text: "現在の状態: *出勤中*",
 			},
 		});
-		blocks.push({
-			type: "actions",
-			elements: [
-				{
-					type: "button",
-					text: {
-						type: "plain_text",
-						text: "休憩",
-						emoji: true,
-					},
-					value: "break_begin",
-					action_id: "freee_break_begin",
+		actionElements.push(
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "休憩",
+					emoji: true,
 				},
-				{
-					type: "button",
-					text: {
-						type: "plain_text",
-						text: "退勤",
-						emoji: true,
-					},
-					value: "clock_out",
-					action_id: "freee_clock_out",
-					style: "danger",
+				value: "break_begin",
+				action_id: "freee_break_begin",
+			},
+			{
+				type: "button",
+				text: {
+					type: "plain_text",
+					text: "退勤",
+					emoji: true,
 				},
-			],
-		});
+				value: "clock_out",
+				action_id: "freee_clock_out",
+				style: "danger",
+			},
+		);
 	} else if (attendanceState === "on_break") {
 		blocks.push({
 			type: "section",
@@ -256,55 +252,47 @@ export async function buildFreeeBlocks(
 				text: "現在の状態: *休憩中*",
 			},
 		});
-		blocks.push({
-			type: "actions",
-			elements: [
-				{
-					type: "button",
-					text: {
-						type: "plain_text",
-						text: "再開",
-						emoji: true,
-					},
-					value: "break_end",
-					action_id: "freee_break_end",
-					style: "primary",
-				},
-			],
+		actionElements.push({
+			type: "button",
+			text: {
+				type: "plain_text",
+				text: "再開",
+				emoji: true,
+			},
+			value: "break_end",
+			action_id: "freee_break_end",
+			style: "primary",
 		});
 	} else if (attendanceState === "clocked_out") {
 		blocks.push({
 			type: "section",
 			text: {
 				type: "mrkdwn",
-				text: "現在の状態: *退勤済*\n\n今日も一日お疲れさまでした。",
+				text: "現在の状態: *退勤済*\n今日も一日お疲れさまでした。",
 			},
 		});
 	}
 
-	// 5. 有給申請の処理
-	blocks.push(
-		{
-			type: "divider",
+	// 5. 有給申請ボタンをアクションに追加
+	actionElements.push({
+		type: "button",
+		text: {
+			type: "plain_text",
+			text: "有給申請",
+			emoji: true,
 		},
-		{
-			type: "section",
-			text: {
-				type: "mrkdwn",
-				text: "休暇申請",
-			},
-			accessory: {
-				type: "button",
-				text: {
-					type: "plain_text",
-					text: "有給休暇を申請する",
-					emoji: true,
-				},
-				value: "apply_paid_holiday",
-				action_id: "freee_apply_paid_holiday_open",
-			},
-		},
-	);
+		value: "apply_paid_holiday",
+		action_id: "freee_apply_paid_holiday_open",
+	});
+
+	blocks.push({
+		type: "actions",
+		elements: actionElements,
+	});
+
+	blocks.push({
+		type: "divider",
+	});
 
 	return blocks;
 }

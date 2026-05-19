@@ -98,13 +98,10 @@ export const buildSettingsBlocks = async (
 
 		return [
 			{
-				type: "divider",
-			},
-			{
 				type: "header",
 				text: {
 					type: "plain_text",
-					text: "⚙️ システム設定",
+					text: "⚙️ システム設定・運用ステータス",
 					emoji: true,
 				},
 			},
@@ -145,81 +142,37 @@ export const buildSettingsBlocks = async (
 				type: "section",
 				text: {
 					type: "mrkdwn",
-					text: "🤖 *Agent*\nエージェントが使用するモデルを選択します。",
+					text: "🤖 *AIモデル (Review / Report)*",
 				},
 			},
 			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "> *Review*\n> PRレビューおよびスレッドの自動返信",
-				},
-				accessory: {
-					type: "static_select",
-					action_id: "settings_pr_review_model_changed",
-					placeholder: {
-						type: "plain_text",
-						text: "モデルを選択",
-					},
-					initial_option: {
-						text: { type: "plain_text", text: defaultModel },
-						value: defaultModel,
-					},
-					options: modelOptions,
-				},
-			},
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "> *Report*\n> 日報や週次まとめ",
-				},
-				accessory: {
-					type: "static_select",
-					action_id: "settings_report_model_changed",
-					placeholder: {
-						type: "plain_text",
-						text: "モデルを選択",
-					},
-					initial_option: {
-						text: { type: "plain_text", text: reportModel },
-						value: reportModel,
-					},
-					options: modelOptions,
-				},
-			},
-			{
-				type: "divider",
-			},
-			{
-				type: "header",
-				text: {
-					type: "plain_text",
-					text: "📊 運用状況",
-					emoji: true,
-				},
-			},
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "🛠️ *サービス*\n現在の接続ステータス",
-				},
-			},
-			{
-				type: "section",
-				fields: [
+				type: "actions",
+				elements: [
 					{
-						type: "mrkdwn",
-						text: `> *GitHub App*\n> ${githubStatus}`,
+						type: "static_select",
+						action_id: "settings_pr_review_model_changed",
+						placeholder: {
+							type: "plain_text",
+							text: "Reviewモデル",
+						},
+						initial_option: {
+							text: { type: "plain_text", text: defaultModel },
+							value: defaultModel,
+						},
+						options: modelOptions,
 					},
 					{
-						type: "mrkdwn",
-						text: `> *LLM API*\n> ${llmStatus}`,
-					},
-					{
-						type: "mrkdwn",
-						text: `> *D1 Database*\n> ${d1Status}`,
+						type: "static_select",
+						action_id: "settings_report_model_changed",
+						placeholder: {
+							type: "plain_text",
+							text: "Reportモデル",
+						},
+						initial_option: {
+							text: { type: "plain_text", text: reportModel },
+							value: reportModel,
+						},
+						options: modelOptions,
 					},
 				],
 			},
@@ -227,36 +180,43 @@ export const buildSettingsBlocks = async (
 				type: "section",
 				text: {
 					type: "mrkdwn",
-					text: "📝 *ログ*\nエージェントのログ設定",
+					text: "📝 *ログレベル*",
 				},
 			},
 			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "> *レベル*",
-				},
-				accessory: {
-					type: "static_select",
-					action_id: "settings_log_level_changed",
-					placeholder: {
-						type: "plain_text",
-						text: "ログレベル",
-					},
-					initial_option: {
-						text: {
+				type: "actions",
+				elements: [
+					{
+						type: "static_select",
+						action_id: "settings_log_level_changed",
+						placeholder: {
 							type: "plain_text",
-							text: currentLogLabel,
+							text: "ログレベル",
 						},
-						value: logLevel,
+						initial_option: {
+							text: {
+								type: "plain_text",
+								text: currentLogLabel,
+							},
+							value: logLevel,
+						},
+						options: [
+							{ text: { type: "plain_text", text: "Debug" }, value: "debug" },
+							{ text: { type: "plain_text", text: "Info" }, value: "info" },
+							{ text: { type: "plain_text", text: "Warn" }, value: "warn" },
+							{ text: { type: "plain_text", text: "Error" }, value: "error" },
+						],
 					},
-					options: [
-						{ text: { type: "plain_text", text: "Debug" }, value: "debug" },
-						{ text: { type: "plain_text", text: "Info" }, value: "info" },
-						{ text: { type: "plain_text", text: "Warn" }, value: "warn" },
-						{ text: { type: "plain_text", text: "Error" }, value: "error" },
-					],
-				},
+				],
+			},
+			{
+				type: "context",
+				elements: [
+					{
+						type: "mrkdwn",
+						text: `🐙 *GitHub*: ${githubStatus}  |  🧠 *LLM*: ${llmStatus}  |  🗄️ *D1*: ${d1Status}`,
+					},
+				],
 			},
 		];
 	} catch (e) {

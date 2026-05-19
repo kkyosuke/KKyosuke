@@ -13,18 +13,10 @@ export const buildNewsBlocks = async (
 
 	return [
 		{
-			type: "header",
-			text: {
-				type: "plain_text",
-				text: "📰 今日の注目ITニュース",
-				emoji: true,
-			},
-		},
-		{
 			type: "section",
 			text: {
 				type: "mrkdwn",
-				text: `*<${news.url}|${news.title}>*\n${news.comment}`,
+				text: `*📰 今日の注目ITニュース*\n*<${news.url}|${news.title}>*\n${news.comment}`,
 			},
 		},
 		{

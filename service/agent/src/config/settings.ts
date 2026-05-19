@@ -1,8 +1,8 @@
+import { getKVClient } from "../lib/kv";
 import {
 	DEFAULT_REPORT_MODEL_NAME,
 	DEFAULT_REVIEW_MODEL_NAME,
 } from "../lib/llm/cost";
-import { getKVClient } from "../lib/kv";
 import type { CustomAppEnv } from "./env";
 
 export class SettingsManager {

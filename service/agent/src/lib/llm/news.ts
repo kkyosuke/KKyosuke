@@ -2,8 +2,8 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { CustomAppEnv } from "../../config/env";
-import { DEFAULT_REPORT_MODEL_NAME } from "./cost";
 import type { NewsItem, SelectedNews } from "../news";
+import { DEFAULT_REPORT_MODEL_NAME } from "./cost";
 
 export const newsSelectionSchema = z.object({
 	title: z.string().describe("選定したニュースのタイトル"),
