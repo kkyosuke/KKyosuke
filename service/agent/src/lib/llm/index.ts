@@ -3,3 +3,4 @@ export * from "./re-review";
 export * from "./review";
 export * from "./summary";
 export * from "./thread";
+export * from "./news";
