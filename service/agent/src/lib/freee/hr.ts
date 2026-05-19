@@ -183,14 +183,14 @@ export async function getApprovalFlows(
 
 export interface PaidHolidayRequest {
 	company_id: number;
-	applicant_id: number;
-	approval_flow_id: number;
+	target_date: string;
+	approval_flow_route_id: number;
 	values: {
-		type: "full" | "half" | "morning_off" | "afternoon_off" | "hour";
-		start_date: string;
-		end_date: string;
-		reason?: string;
-	};
+		type: "full" | "half" | "morning" | "afternoon" | "hourly";
+		start_at?: string;
+		end_at?: string;
+	}[];
+	comment?: string;
 }
 
 export async function postPaidHolidayRequest(

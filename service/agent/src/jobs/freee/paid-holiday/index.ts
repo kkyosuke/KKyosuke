@@ -8,7 +8,6 @@ import { ensureFreeeAccessToken } from "../utils/token";
 export interface PaidHolidayModalContext {
 	companyId: number;
 	employeeId: number;
-	approvalFlowId: number;
 }
 
 export async function getPaidHolidayModalContext(
@@ -30,24 +29,9 @@ export async function getPaidHolidayModalContext(
 		throw new Error("User has no company in freee");
 	}
 
-	const flows = await freee.hr.getApprovalFlows(accessToken, company.id);
-	if (flows.length === 0) {
-		throw new Error(
-			"申請経路が見つかりませんでした。freee人事労務の設定をご確認ください。",
-		);
-	}
-
-	const defaultFlow = flows[0];
-	if (!defaultFlow) {
-		throw new Error(
-			"申請経路が見つかりませんでした。freee人事労務の設定をご確認ください。",
-		);
-	}
-
 	return {
 		companyId: company.id,
 		employeeId: company.employee_id,
-		approvalFlowId: defaultFlow.id,
 	};
 }
 
@@ -56,8 +40,9 @@ export interface SubmitPaidHolidayParams {
 	employeeId: number;
 	approvalFlowId: number;
 	leaveType: string;
-	startDate: string;
-	endDate: string;
+	targetDate: string;
+	startTime?: string;
+	endTime?: string;
 	reason: string;
 }
 
@@ -75,15 +60,26 @@ export async function submitPaidHoliday(
 	const config = getFreeeConfig(env);
 	const freee = createFreeeClient(config);
 
+	let apiType = params.leaveType;
+	if (apiType === "morning_off") apiType = "morning";
+	if (apiType === "afternoon_off") apiType = "afternoon";
+	if (apiType === "hour") apiType = "hourly";
+
+	const valuePayload: PaidHolidayRequest["values"][0] = {
+		type: apiType as PaidHolidayRequest["values"][0]["type"],
+	};
+	if (params.startTime) {
+		valuePayload.start_at = params.startTime;
+	}
+	if (params.endTime) {
+		valuePayload.end_at = params.endTime;
+	}
+
 	await freee.hr.postPaidHolidayRequest(accessToken, {
 		company_id: params.companyId,
-		applicant_id: params.employeeId,
-		approval_flow_id: params.approvalFlowId,
-		values: {
-			type: params.leaveType as PaidHolidayRequest["values"]["type"],
-			start_date: params.startDate,
-			end_date: params.endDate,
-			reason: params.reason,
-		},
+		target_date: params.targetDate,
+		approval_flow_route_id: params.approvalFlowId,
+		values: [valuePayload],
+		comment: params.reason,
 	});
 }
