@@ -5,7 +5,6 @@ import type { CustomAppEnv } from "../../config/env";
 import summaryPromptTemplate from "../../prompts/summary/prompt.md" with {
 	type: "text",
 };
-import { DEFAULT_REVIEW_MODEL_NAME } from "./cost";
 
 export const summarySchema = z.object({
 	target_date: z
@@ -44,12 +43,13 @@ export type ThreadSummary = z.infer<typeof summarySchema>;
 export async function summarizeThread(
 	env: Partial<CustomAppEnv>,
 	threadContent: string,
+	modelName: string,
 ): Promise<ThreadSummary> {
 	const anthropic = createAnthropic({
 		apiKey: env.ANTHROPIC_API_KEY || "",
 	});
 
-	const model = anthropic(DEFAULT_REVIEW_MODEL_NAME);
+	const model = anthropic(modelName);
 
 	const prompt = summaryPromptTemplate.replace(
 		"{{threadContent}}",

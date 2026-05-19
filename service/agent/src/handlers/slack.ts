@@ -3,11 +3,21 @@ import type { CustomAppEnv } from "../config/env";
 import { appHomeOpened } from "../jobs/slack/app-home";
 import { handleAttendanceAction } from "../jobs/slack/attendance-action";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/hey-cf-workers";
+import {
+	handlePaidHolidayModalOpen,
+	handlePaidHolidaySubmission,
+} from "../jobs/slack/paid-holiday-action";
 import { routeMentionEvent } from "../jobs/slack/router";
 import {
 	summaryShortcutAck,
 	summaryShortcutLazy,
 } from "../jobs/slack/save-summary";
+import {
+	handleAutoReviewEnabledChange,
+	handleLogLevelChange,
+	handleModelChange,
+	handleReportModelChange,
+} from "../jobs/slack/settings-action";
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 	const app = new SlackApp({ env });
@@ -41,45 +51,25 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 	app.action("freee_break_end", handleAttendanceAction("break_end"));
 
 	app.action("freee_apply_paid_holiday_open", async (args) => {
-		const { handlePaidHolidayModalOpen } = await import(
-			"../jobs/slack/paid-holiday-action"
-		);
-		return handlePaidHolidayModalOpen(
-			args as unknown as Parameters<typeof handlePaidHolidayModalOpen>[0],
-		);
+		return handlePaidHolidayModalOpen(args);
 	});
 
 	app.view("freee_paid_holiday_modal", async (args) => {
-		const { handlePaidHolidaySubmission } = await import(
-			"../jobs/slack/paid-holiday-action"
-		);
-		return handlePaidHolidaySubmission(
-			args as unknown as Parameters<typeof handlePaidHolidaySubmission>[0],
-		);
+		return handlePaidHolidaySubmission(args);
 	});
 
 	app.action("settings_pr_review_model_changed", async (args) => {
-		const { handleModelChange } = await import("../jobs/slack/settings-action");
-		return handleModelChange(
-			args as unknown as Parameters<typeof handleModelChange>[0],
-		);
+		return handleModelChange(args);
+	});
+	app.action("settings_report_model_changed", async (args) => {
+		return handleReportModelChange(args);
 	});
 	app.action("settings_pr_review_auto_enabled_changed", async (args) => {
-		const { handleAutoReviewEnabledChange } = await import(
-			"../jobs/slack/settings-action"
-		);
-		return handleAutoReviewEnabledChange(
-			args as unknown as Parameters<typeof handleAutoReviewEnabledChange>[0],
-		);
+		return handleAutoReviewEnabledChange(args);
 	});
 
 	app.action("settings_log_level_changed", async (args) => {
-		const { handleLogLevelChange } = await import(
-			"../jobs/slack/settings-action"
-		);
-		return handleLogLevelChange(
-			args as unknown as Parameters<typeof handleLogLevelChange>[0],
-		);
+		return handleLogLevelChange(args);
 	});
 
 	return app;

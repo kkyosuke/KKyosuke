@@ -18,6 +18,19 @@ export const handleModelChange: AckFn = async (req) => {
 	return "";
 };
 
+export const handleReportModelChange: AckFn = async (req) => {
+	const payload = req.payload as {
+		actions?: Array<{ selected_option?: { value: string } }>;
+		user?: { id: string };
+	};
+	const selectedModel = payload.actions?.[0]?.selected_option?.value;
+	if (selectedModel) {
+		const settings = new SettingsManager(req.env);
+		await settings.setReportModel(selectedModel);
+	}
+	return "";
+};
+
 export const handleAutoReviewEnabledChange: AckFn = async (req) => {
 	const payload = req.payload as {
 		actions?: Array<{ selected_options?: Array<{ value: string }> }>;

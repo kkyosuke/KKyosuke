@@ -1,14 +1,11 @@
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
 import {
 	createReplyForReviewComment,
 	type ReviewThread,
 	resolveReviewThread,
 } from "../../../lib/github";
-import {
-	calculateCost,
-	DEFAULT_REVIEW_MODEL_NAME,
-	evaluateReviewThread,
-} from "../../../lib/llm";
+import { calculateCost, evaluateReviewThread } from "../../../lib/llm";
 import threadInstruction from "../../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
@@ -63,14 +60,21 @@ export async function processReviewThreads(
 				finalInstruction += `\n\n## リポジトリ固有のガイドライン\n以下のルールを必ず守って対応してください：\n\n${guidelines}`;
 			}
 
-			const { output: evalResult, usage: evalUsage } =
-				await evaluateReviewThread(env, {
-					threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
-					diff,
-					instruction: finalInstruction,
-				});
+			const settings = new SettingsManager(env);
+			const reviewModel = await settings.getReviewModel();
 
-			totalCost += calculateCost(evalUsage, DEFAULT_REVIEW_MODEL_NAME);
+			const { output: evalResult, usage: evalUsage } =
+				await evaluateReviewThread(
+					env,
+					{
+						threadComments: `[ファイル: ${thread.path}, 行: ${thread.line}]\n\n${threadCommentsText}`,
+						diff,
+						instruction: finalInstruction,
+					},
+					reviewModel,
+				);
+
+			totalCost += calculateCost(evalUsage, reviewModel);
 
 			console.log(
 				`[ReReviewThreads] Thread ${thread.id} action: ${evalResult.action}`,

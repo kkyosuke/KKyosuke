@@ -1,14 +1,11 @@
 import type { CustomAppEnv } from "../../../config/env";
+import { SettingsManager } from "../../../config/settings";
 import {
 	createReplyForReviewComment,
 	getReviewThreads,
 	resolveReviewThread,
 } from "../../../lib/github";
-import {
-	calculateCost,
-	DEFAULT_REVIEW_MODEL_NAME,
-	evaluateReviewThread,
-} from "../../../lib/llm";
+import { calculateCost, evaluateReviewThread } from "../../../lib/llm";
 import threadInstruction from "../../../prompts/re-review/thread-instruction.md" with {
 	type: "text",
 };
@@ -85,6 +82,9 @@ export async function runReplyAgent(
 			guidelines,
 		);
 
+		const settings = new SettingsManager(env);
+		const reviewModel = await settings.getReviewModel();
+
 		const { output: evalResult, usage: evalUsage } = await evaluateReviewThread(
 			env,
 			{
@@ -92,9 +92,10 @@ export async function runReplyAgent(
 				diff,
 				instruction: finalInstruction,
 			},
+			reviewModel,
 		);
 
-		const cost = calculateCost(evalUsage, DEFAULT_REVIEW_MODEL_NAME);
+		const cost = calculateCost(evalUsage, reviewModel);
 		console.log(
 			`[ReplyAgent] Action: ${evalResult.action}, Cost: $${cost.toFixed(4)}`,
 		);

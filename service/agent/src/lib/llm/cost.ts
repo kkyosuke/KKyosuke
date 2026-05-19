@@ -5,12 +5,23 @@ import type { LanguageModelUsage } from "ai";
  */
 export const DEFAULT_REVIEW_MODEL_NAME = "claude-haiku-4-5";
 
+/**
+ * Report機能（日報まとめ、週報）に使用するLLMのモデル名
+ */
+export const DEFAULT_REPORT_MODEL_NAME = "claude-haiku-4-5";
+
 type PricingRates = {
 	baseInput: number;
 	cacheWrites5m: number;
 	cacheReads: number;
 	output: number;
 };
+
+export const AVAILABLE_MODELS = [
+	"claude-haiku-4-5",
+	"claude-sonnet-4-5",
+	"claude-opus-4-6",
+] as const;
 
 const MODEL_PRICING: Record<string, PricingRates> = {
 	"claude-haiku-4-5": {

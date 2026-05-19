@@ -2,6 +2,7 @@ import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
 import { SettingsManager } from "../../../config/settings";
 import { getGithubApp } from "../../../lib/github";
+import { AVAILABLE_MODELS } from "../../../lib/llm/cost";
 
 export const buildSettingsBlocks = async (
 	userId: string,
@@ -31,6 +32,7 @@ export const buildSettingsBlocks = async (
 
 		// 設定マネージャーから現在の設定を取得
 		const defaultModel = await settings.getReviewModel();
+		const reportModel = await settings.getReportModel();
 		const autoReviewEnabled = await settings.isAutoReviewEnabled();
 		const logLevel = await settings.getLogLevel();
 
@@ -73,6 +75,11 @@ export const buildSettingsBlocks = async (
 		};
 		const currentLogLabel = logOptionMap[logLevel] || "Info";
 
+		const modelOptions = AVAILABLE_MODELS.map((m) => ({
+			text: { type: "plain_text" as const, text: m },
+			value: m,
+		}));
+
 		return [
 			{
 				type: "divider",
@@ -89,7 +96,7 @@ export const buildSettingsBlocks = async (
 				type: "section",
 				text: {
 					type: "mrkdwn",
-					text: "🤖 *LLMモデルの選択*\nレビューで使用するデフォルトのモデルを選択します。",
+					text: "🤖 *Review Agent モデルの選択*\nPRレビューおよびスレッドの自動返信で使用するモデルを選択します。",
 				},
 				accessory: {
 					type: "static_select",
@@ -99,35 +106,30 @@ export const buildSettingsBlocks = async (
 						text: "モデルを選択",
 					},
 					initial_option: {
-						text: {
-							type: "plain_text",
-							text: defaultModel,
-						},
+						text: { type: "plain_text", text: defaultModel },
 						value: defaultModel,
 					},
-					options: [
-						{
-							text: {
-								type: "plain_text",
-								text: "claude-haiku-4-5",
-							},
-							value: "claude-haiku-4-5",
-						},
-						{
-							text: {
-								type: "plain_text",
-								text: "claude-sonnet-4-5",
-							},
-							value: "claude-sonnet-4-5",
-						},
-						{
-							text: {
-								type: "plain_text",
-								text: "claude-opus-4-6",
-							},
-							value: "claude-opus-4-6",
-						},
-					],
+					options: modelOptions,
+				},
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "📝 *Report Agent モデルの選択*\n日報や週次まとめで使用するモデルを選択します。",
+				},
+				accessory: {
+					type: "static_select",
+					action_id: "settings_report_model_changed",
+					placeholder: {
+						type: "plain_text",
+						text: "モデルを選択",
+					},
+					initial_option: {
+						text: { type: "plain_text", text: reportModel },
+						value: reportModel,
+					},
+					options: modelOptions,
 				},
 			},
 			{
