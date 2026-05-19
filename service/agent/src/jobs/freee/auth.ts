@@ -5,10 +5,10 @@ import { getFreeeConfig } from "../../config/env";
 import { saveUserToken } from "../../datasource/db/userToken";
 import { getDatabaseClient } from "../../lib/db";
 import { createFreeeClient } from "../../lib/freee/index";
+import freeeAuthCallbackHtml from "../../resources/freee-auth-callback.html";
+import freeeAuthStartHtml from "../../resources/freee-auth-start.html";
 import { publishHomeView } from "../../views/slack/app-home";
 import { saveAccessTokenToKV } from "./utils/token";
-import freeeAuthStartHtml from "../../resources/freee-auth-start.html";
-import freeeAuthCallbackHtml from "../../resources/freee-auth-callback.html";
 
 export async function handleFreeeAuthStart(
 	c: Context<{ Bindings: CustomAppEnv }>,
@@ -18,10 +18,12 @@ export async function handleFreeeAuthStart(
 		return c.text("user_id parameter is required", 400);
 	}
 
-	const rawHtml = typeof freeeAuthStartHtml === "string"
-		? freeeAuthStartHtml
-		: (freeeAuthStartHtml as { default?: string }).default || String(freeeAuthStartHtml);
-		
+	const rawHtml =
+		typeof freeeAuthStartHtml === "string"
+			? freeeAuthStartHtml
+			: (freeeAuthStartHtml as { default?: string }).default ||
+				String(freeeAuthStartHtml);
+
 	return c.html(rawHtml.replace("{{userId}}", userId));
 }
 
@@ -104,10 +106,12 @@ export async function handleFreeeAuthCallback(
 		// 連携が完了したのでSlackのホームタブを更新する
 		await publishHomeView(userId, c.env);
 
-		const rawHtml = typeof freeeAuthCallbackHtml === "string"
-			? freeeAuthCallbackHtml
-			: (freeeAuthCallbackHtml as { default?: string }).default || String(freeeAuthCallbackHtml);
-			
+		const rawHtml =
+			typeof freeeAuthCallbackHtml === "string"
+				? freeeAuthCallbackHtml
+				: (freeeAuthCallbackHtml as { default?: string }).default ||
+					String(freeeAuthCallbackHtml);
+
 		return c.html(rawHtml);
 	} catch (e: unknown) {
 		const err = e instanceof Error ? e : new Error(String(e));
