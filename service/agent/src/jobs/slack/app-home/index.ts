@@ -31,6 +31,10 @@ export async function publishHomeView(userId: string, env: CustomAppEnv) {
 					text: "This is a sample home tab powered by slack-cloudflare-workers",
 					emoji: true,
 				},
+				{
+					type: "mrkdwn",
+					text: `<${env.APP_URL}|AI Dashboard>`,
+				},
 			],
 		},
 	];
