@@ -4,7 +4,6 @@ import type { SlackEdgeAppEnv } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "./src/config/env";
 import { resolveEnv } from "./src/config/env";
 import { SettingsManager } from "./src/config/settings";
-import { freeeApp } from "./src/handlers/freee";
 import { createSlackApp } from "./src/handlers/slack";
 import { githubApp } from "./src/handlers/webhook";
 import homeHtml from "./src/resources/home.html";
@@ -32,9 +31,6 @@ app.get("/", (c) => {
 
 // GitHub関連のエンドポイント
 app.route("/github", githubApp);
-
-// Freee関連のエンドポイント
-app.route("/freee", freeeApp);
 
 import { queueHandler } from "./src/handlers/queue";
 

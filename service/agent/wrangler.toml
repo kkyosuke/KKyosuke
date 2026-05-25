@@ -19,7 +19,6 @@ enabled = false
 # Define standard variables (secrets must be uploaded via wrangler secret put)
 [vars]
 APP_URL = "https://ai.kyosuke.dev"
-FREEE_CLIENT_ID = "728756541310561"
 
 [[kv_namespaces]]
 binding = "AI_KYOSUKE_KV"

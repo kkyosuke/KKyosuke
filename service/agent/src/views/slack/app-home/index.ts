@@ -1,18 +1,11 @@
 import type { AnyHomeTabBlock } from "slack-cloudflare-workers";
 import type { CustomAppEnv } from "../../../config/env";
-import { getDatabaseClient } from "../../../lib/db";
-import { buildFreeeBlocks } from "./freee";
-import { buildNewsBlocks } from "./news";
 import { buildSettingsBlocks } from "./settings";
 import { buildWelcomeBlocks } from "./welcome";
 
 export async function publishHomeView(userId: string, env: CustomAppEnv) {
-	const db = getDatabaseClient(env);
-
 	const blocks: AnyHomeTabBlock[] = [
 		...buildWelcomeBlocks(),
-		...(await buildNewsBlocks(env)),
-		...(await buildFreeeBlocks(db, userId, env)),
 		...(await buildSettingsBlocks(userId, env)),
 		{
 			type: "divider",
