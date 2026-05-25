@@ -27,4 +27,3 @@ export function getBotName(env: Partial<CustomAppEnv>): string {
 		typeof process !== "undefined" && process.env.NODE_ENV !== "production";
 	return resolvedEnv.BOT_NAME || (isLocal ? "test.kkyosuke.ai" : "kkyosuke.ai");
 }
-

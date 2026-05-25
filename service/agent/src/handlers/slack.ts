@@ -4,14 +4,9 @@ import { appHomeOpened } from "../jobs/slack/app-home";
 import { heyCommandAck, heyCommandLazy } from "../jobs/slack/hey-cf-workers";
 import { routeMentionEvent } from "../jobs/slack/router";
 import {
-	summaryShortcutAck,
-	summaryShortcutLazy,
-} from "../jobs/slack/save-summary";
-import {
 	handleAutoReviewEnabledChange,
 	handleLogLevelChange,
 	handleModelChange,
-	handleReportModelChange,
 } from "../jobs/slack/settings-action";
 
 export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
@@ -19,19 +14,13 @@ export function createSlackApp(env: CustomAppEnv): SlackApp<CustomAppEnv> {
 
 	app.command("/hey-cf-workers", heyCommandAck, heyCommandLazy);
 
-	app.shortcut("save-summary", summaryShortcutAck, summaryShortcutLazy);
-
 	app.event("app_home_opened", appHomeOpened);
 	app.event("app_mention", routeMentionEvent);
-
-
 
 	app.action("settings_pr_review_model_changed", async (args) => {
 		return handleModelChange(args);
 	});
-	app.action("settings_report_model_changed", async (args) => {
-		return handleReportModelChange(args);
-	});
+
 	app.action("settings_pr_review_auto_enabled_changed", async (args) => {
 		return handleAutoReviewEnabledChange(args);
 	});

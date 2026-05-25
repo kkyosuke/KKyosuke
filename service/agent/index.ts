@@ -32,7 +32,6 @@ app.get("/", (c) => {
 // GitHub関連のエンドポイント
 app.route("/github", githubApp);
 
-
 import { queueHandler } from "./src/handlers/queue";
 
 export default {

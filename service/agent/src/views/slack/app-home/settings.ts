@@ -40,15 +40,6 @@ export const buildSettingsBlocks = async (
 			defaultModel = AVAILABLE_MODELS[0];
 		}
 
-		let reportModel = await settings.getReportModel();
-		if (
-			!AVAILABLE_MODELS.includes(
-				reportModel as (typeof AVAILABLE_MODELS)[number],
-			)
-		) {
-			reportModel = AVAILABLE_MODELS[0];
-		}
-
 		const autoReviewEnabled = await settings.isAutoReviewEnabled();
 		const logLevel = await settings.getLogLevel();
 
@@ -168,26 +159,7 @@ export const buildSettingsBlocks = async (
 					options: modelOptions,
 				},
 			},
-			{
-				type: "section",
-				text: {
-					type: "mrkdwn",
-					text: "> *Report*\n> 日報や週次まとめ",
-				},
-				accessory: {
-					type: "static_select",
-					action_id: "settings_report_model_changed",
-					placeholder: {
-						type: "plain_text",
-						text: "モデルを選択",
-					},
-					initial_option: {
-						text: { type: "plain_text", text: reportModel },
-						value: reportModel,
-					},
-					options: modelOptions,
-				},
-			},
+
 			{
 				type: "divider",
 			},

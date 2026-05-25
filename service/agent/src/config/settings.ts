@@ -1,8 +1,5 @@
-import {
-	DEFAULT_REPORT_MODEL_NAME,
-	DEFAULT_REVIEW_MODEL_NAME,
-} from "../lib/llm/cost";
 import { getKVClient } from "../lib/kv";
+import { DEFAULT_REVIEW_MODEL_NAME } from "../lib/llm/cost";
 import type { CustomAppEnv } from "./env";
 
 export class SettingsManager {
@@ -48,20 +45,6 @@ export class SettingsManager {
 	async setReviewModel(model: string): Promise<void> {
 		if (this.kv) {
 			await this.kv.put("pr_review:global:default_model", model);
-		}
-	}
-
-	async getReportModel(): Promise<string> {
-		if (this.kv) {
-			const model = await this.kv.get("report:global:default_model");
-			if (model) return model;
-		}
-		return DEFAULT_REPORT_MODEL_NAME;
-	}
-
-	async setReportModel(model: string): Promise<void> {
-		if (this.kv) {
-			await this.kv.put("report:global:default_model", model);
 		}
 	}
 
